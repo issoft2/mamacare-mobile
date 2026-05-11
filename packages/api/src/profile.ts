@@ -1,0 +1,67 @@
+/**
+ * packages/api/src/profile.ts
+ * TanStack Query hooks for profile_service endpoints.
+ */
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiRequest, ApiRequestError } from "./client";
+import type {
+  Appointment,
+  CareTeamMember,
+  CreateProfileRequest,
+  Profile,
+  UpdateProfileRequest,
+} from "@mamacare/types";
+
+export const profileKeys = {
+  all: ["profile"] as const,
+  detail: () => [...profileKeys.all, "detail"] as const,
+  careTeam: () => [...profileKeys.all, "care-team"] as const,
+  appointments: () => [...profileKeys.all, "appointments"] as const,
+};
+
+export function useProfile() {
+  return useQuery({
+    queryKey: profileKeys.detail(),
+    queryFn: () => apiRequest<Profile>("/profile"),
+    // Missing profile (404) is a valid state — do not keep retrying.
+    retry: (failureCount, err) => {
+      if (err instanceof ApiRequestError && err.isNotFound) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+  });
+}
+
+export function useCreateProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateProfileRequest) =>
+      apiRequest<Profile>("/profile", { method: "POST", body: JSON.stringify(data) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: profileKeys.all }),
+  });
+}
+
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: UpdateProfileRequest) =>
+      apiRequest<Profile>("/profile", { method: "PUT", body: JSON.stringify(data) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: profileKeys.all }),
+  });
+}
+
+export function useCareTeam() {
+  return useQuery({
+    queryKey: profileKeys.careTeam(),
+    queryFn: () => apiRequest<CareTeamMember[]>("/profile/care-team"),
+  });
+}
+
+export function useAppointments() {
+  return useQuery({
+    queryKey: profileKeys.appointments(),
+    queryFn: () => apiRequest<Appointment[]>("/profile/appointments"),
+  });
+}
