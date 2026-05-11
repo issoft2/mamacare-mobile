@@ -1,0 +1,25 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@/*": ["./*"],
+      "@mamacare/types": [
+        "../packages/types/src/index.ts"
+      ],
+      "@mamacare/api": [
+        "../packages/api/src/index.ts"
+      ],
+      "@mamacare/ui": [
+        "../packages/ui/src/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.d.ts",
+    "expo-env.d.ts",
+    ".expo/types/**/*.ts"
+  ]
+}
