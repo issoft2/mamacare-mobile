@@ -1,5 +1,4 @@
 import React from "react";
-import React from "react";
 import { Platform, View } from "react-native";
 
 let NativeSvg: React.FC<any> = () => null;
