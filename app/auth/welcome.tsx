@@ -21,16 +21,18 @@ if (Platform.OS === "web") {
 
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { colors, spacing, typography } from "@mamacare/ui";
-import { PregnancyAsterix } from "../../components/PregnancyAsterix";
+import { HeartIcon } from "../../components/HeartIcon";
 
 export default function WelcomeScreen() {
   const router = useRouter();
 
-  // Placeholder: In a real app, fetch pregnancy stage from user profile/context.
-  // Until profile is loaded, consider hiding stage to avoid showing a wrong stage.
-  const pregnancyStage = "Second Trimester";
 
-  // Empathetic, brief messages — keep short for emotional impact
+  // TODO: Replace with real profile data when available
+  // If not loaded, don't show stage or message
+  const profile = undefined; // e.g., useProfile() or similar
+  const pregnancyStage = profile?.gestational_stage || null;
+
+  // Short, validating, stage-aware messages
   const stageMessages = {
     "First Trimester":
       "Welcome, mama. Whatever you're feeling today, that's okay. We're here with you.",
@@ -58,18 +60,22 @@ export default function WelcomeScreen() {
         <View style={styles.content}>
           <View style={styles.hero}>
             <View style={styles.iconGlow}>
-              <PregnancyAsterix size={96} style={styles.asterix} />
+              <HeartIcon size={96} style={styles.asterix} />
             </View>
-            <Text style={styles.greeting}>{greeting}</Text>
+            <Text style={styles.greeting}>{greeting}, mama</Text>
             <Text style={styles.logo}>MumCare</Text>
             <Text style={styles.tagline}>
               A gentle space for your pregnancy journey
             </Text>
             <View style={styles.divider} />
-            <Text style={styles.stageLabel}>{pregnancyStage}</Text>
-            <Text style={styles.stageMessage}>
-              {stageMessages[pregnancyStage]}
-            </Text>
+            {pregnancyStage && (
+              <>
+                <Text style={styles.stageLabel}>{pregnancyStage}</Text>
+                <Text style={styles.stageMessage}>
+                  {stageMessages[pregnancyStage]}
+                </Text>
+              </>
+            )}
           </View>
           <View style={styles.actions}>
             <Text style={styles.actionsHint}>Whenever you're ready</Text>
@@ -103,18 +109,22 @@ export default function WelcomeScreen() {
         <View style={styles.content}>
           <View style={styles.hero}>
             <View style={styles.iconGlow}>
-              <PregnancyAsterix size={96} style={styles.asterix} />
+              <HeartIcon size={96} style={styles.asterix} />
             </View>
-            <Text style={styles.greeting}>{greeting}</Text>
+            <Text style={styles.greeting}>{greeting}, mama</Text>
             <Text style={styles.logo}>MumCare</Text>
             <Text style={styles.tagline}>
               A gentle space for your pregnancy journey
             </Text>
             <View style={styles.divider} />
-            <Text style={styles.stageLabel}>{pregnancyStage}</Text>
-            <Text style={styles.stageMessage}>
-              {stageMessages[pregnancyStage]}
-            </Text>
+            {pregnancyStage && (
+              <>
+                <Text style={styles.stageLabel}>{pregnancyStage}</Text>
+                <Text style={styles.stageMessage}>
+                  {stageMessages[pregnancyStage]}
+                </Text>
+              </>
+            )}
           </View>
           <View style={styles.actions}>
             <Text style={styles.actionsHint}>Whenever you're ready</Text>
@@ -164,6 +174,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: spacing[6],
+    paddingTop: spacing[12], // more breathing room
   },
   iconGlow: {
     // Soft halo effect around the icon for warmth
@@ -176,12 +187,13 @@ const styles = StyleSheet.create({
   },
   asterix: {
     // Component handles its own sizing
+    // Could add animation here for gentle pulse
   },
   greeting: {
     fontSize: typography.fontSize.base,
     color: colors.navy[500],
     fontWeight: typography.fontWeight.regular,
-    marginBottom: spacing[1],
+    marginBottom: spacing[3],
     textAlign: "center",
     letterSpacing: 0.3,
   },
@@ -200,13 +212,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing[6],
     paddingHorizontal: spacing[4],
     lineHeight: typography.fontSize.base * 1.5,
+    fontStyle: "italic",
   },
   divider: {
     width: 40,
     height: 2,
     backgroundColor: colors.rose[200],
     borderRadius: 1,
-    marginBottom: spacing[5],
+    marginBottom: spacing[7],
   },
   stageLabel: {
     fontSize: typography.fontSize.sm,
