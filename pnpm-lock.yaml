@@ -83,6 +83,9 @@ importers:
       react-native-web:
         specifier: ~0.21.2
         version: 0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      react-native-web-linear-gradient:
+        specifier: ^1.1.2
+        version: 1.1.2(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))
       zod:
         specifier: ^3.23.0
         version: 3.25.76
@@ -3549,6 +3552,11 @@ packages:
     resolution: {integrity: sha512-My330Do7/DvKnEvwQc0WdcBnFPploYKp9CYlefDXzIdEaA+PAhDYllkvGeEroEzvc4Kzzj2O4yVdz8v6fjRvhA==}
     peerDependencies:
       react-native: '*'
+
+  react-native-web-linear-gradient@1.1.2:
+    resolution: {integrity: sha512-SmUnpwT49CEe78pXvIvYf72Es8Pv+ZYKCnEOgb2zAKpEUDMo0+xElfRJhwt5nfI8krJ5WbFPKnoDgD0uUjAN1A==}
+    peerDependencies:
+      react-native-web: '*'
 
   react-native-web@0.21.2:
     resolution: {integrity: sha512-SO2t9/17zM4iEnFvlu2DA9jqNbzNhoUP+AItkoCOyFmDMOhUnBBznBDCYN92fGdfAkfQlWzPoez6+zLxFNsZEg==}
@@ -8398,6 +8406,10 @@ snapshots:
     dependencies:
       react-native: 0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@6.0.6)
       whatwg-url-without-unicode: 8.0.0-3
+
+  react-native-web-linear-gradient@1.1.2(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)):
+    dependencies:
+      react-native-web: 0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
 
   react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:

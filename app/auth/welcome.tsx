@@ -7,7 +7,17 @@
  */
 
 import { useRouter } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
+
+
+import { Platform } from "react-native";
+let LinearGradient: any = View;
+if (Platform.OS === "web") {
+  // @ts-ignore
+  LinearGradient = require("react-native-web-linear-gradient").default;
+} else {
+  // @ts-ignore
+  LinearGradient = require("expo-linear-gradient").LinearGradient;
+}
 
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { colors, spacing, typography } from "@mamacare/ui";
@@ -34,55 +44,100 @@ export default function WelcomeScreen() {
   const greeting = getTimeBasedGreeting();
 
   return (
-    <LinearGradient
-      colors={[colors.rose[50], "#FFF8F4", colors.rose[100]]}
-      locations={[0, 0.5, 1]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-      style={styles.container}
-    >
-      <View style={styles.content}>
-        <View style={styles.hero}>
-          <View style={styles.iconGlow}>
-            <PregnancyAsterix size={96} style={styles.asterix} />
-          </View>
-
-          <Text style={styles.greeting}>{greeting}</Text>
-          <Text style={styles.logo}>MumCare</Text>
-          <Text style={styles.tagline}>
-            A gentle space for your pregnancy journey
-          </Text>
-
-          <View style={styles.divider} />
-
-          <Text style={styles.stageLabel}>{pregnancyStage}</Text>
-          <Text style={styles.stageMessage}>
-            {stageMessages[pregnancyStage]}
-          </Text>
-        </View>
-
-        <View style={styles.actions}>
-          <Text style={styles.actionsHint}>Whenever you're ready</Text>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={() => router.push("/auth/register")}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.primaryButtonText}>Begin your journey</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => router.push("/auth/login")}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.secondaryButtonText}>
-              I already have an account
+    Platform.OS === "web" ? (
+      <View
+        style={[
+          styles.container,
+          {
+            background: "linear-gradient(180deg, " +
+              `${colors.rose[50]}, #FFF8F4 50%, ${colors.rose[100]}` +
+              ")",
+          },
+        ]}
+      >
+        <View style={styles.content}>
+          <View style={styles.hero}>
+            <View style={styles.iconGlow}>
+              <PregnancyAsterix size={96} style={styles.asterix} />
+            </View>
+            <Text style={styles.greeting}>{greeting}</Text>
+            <Text style={styles.logo}>MumCare</Text>
+            <Text style={styles.tagline}>
+              A gentle space for your pregnancy journey
             </Text>
-          </TouchableOpacity>
+            <View style={styles.divider} />
+            <Text style={styles.stageLabel}>{pregnancyStage}</Text>
+            <Text style={styles.stageMessage}>
+              {stageMessages[pregnancyStage]}
+            </Text>
+          </View>
+          <View style={styles.actions}>
+            <Text style={styles.actionsHint}>Whenever you're ready</Text>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={() => router.push("/auth/register")}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.primaryButtonText}>Begin your journey</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={() => router.push("/auth/login")}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.secondaryButtonText}>
+                I already have an account
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </LinearGradient>
+    ) : (
+      <LinearGradient
+        colors={[colors.rose[50], "#FFF8F4", colors.rose[100]]}
+        locations={[0, 0.5, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.container}
+      >
+        <View style={styles.content}>
+          <View style={styles.hero}>
+            <View style={styles.iconGlow}>
+              <PregnancyAsterix size={96} style={styles.asterix} />
+            </View>
+            <Text style={styles.greeting}>{greeting}</Text>
+            <Text style={styles.logo}>MumCare</Text>
+            <Text style={styles.tagline}>
+              A gentle space for your pregnancy journey
+            </Text>
+            <View style={styles.divider} />
+            <Text style={styles.stageLabel}>{pregnancyStage}</Text>
+            <Text style={styles.stageMessage}>
+              {stageMessages[pregnancyStage]}
+            </Text>
+          </View>
+          <View style={styles.actions}>
+            <Text style={styles.actionsHint}>Whenever you're ready</Text>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={() => router.push("/auth/register")}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.primaryButtonText}>Begin your journey</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={() => router.push("/auth/login")}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.secondaryButtonText}>
+                I already have an account
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </LinearGradient>
+    )
   );
 }
 
