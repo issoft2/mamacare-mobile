@@ -32,7 +32,7 @@ export default function HomeScreen() {
       {hasAlerts && (
         <TouchableOpacity
           style={styles.alertBanner}
-          onPress={() => router.push("/(tabs)/symptoms")}
+          onPress={() => router.push("/tabs/symptoms")}
         >
           <Text style={styles.alertText}>
             ⚠️ Recurring symptoms detected — tap to review
@@ -45,7 +45,7 @@ export default function HomeScreen() {
       <View style={styles.quickActions}>
         <TouchableOpacity
           style={styles.actionCard}
-          onPress={() => router.push("/(tabs)/symptoms")}
+          onPress={() => router.push("/tabs/symptoms")}
         >
           <Text style={styles.actionEmoji}>🩺</Text>
           <Text style={styles.actionLabel}>Log Symptoms</Text>
@@ -53,7 +53,7 @@ export default function HomeScreen() {
 
         <TouchableOpacity
           style={styles.actionCard}
-          onPress={() => router.push("/(tabs)/chat")}
+          onPress={() => router.push("/tabs/chat")}
         >
           <Text style={styles.actionEmoji}>💬</Text>
           <Text style={styles.actionLabel}>Ask MamaCare</Text>
@@ -61,7 +61,7 @@ export default function HomeScreen() {
 
         <TouchableOpacity
           style={styles.actionCard}
-          onPress={() => router.push("/(tabs)/tracker")}
+          onPress={() => router.push("/tabs/tracker")}
         >
           <Text style={styles.actionEmoji}>👶</Text>
           <Text style={styles.actionLabel}>Count Kicks</Text>
@@ -69,7 +69,7 @@ export default function HomeScreen() {
 
         <TouchableOpacity
           style={styles.actionCard}
-          onPress={() => router.push("/(tabs)/tracker")}
+          onPress={() => router.push("/tabs/tracker")}
         >
           <Text style={styles.actionEmoji}>💧</Text>
           <Text style={styles.actionLabel}>Log Water</Text>
