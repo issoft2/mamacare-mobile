@@ -29,7 +29,7 @@ export type SocialSignInButtonsProps = {
 };
 
 export function SocialSignInButtons({
-  afterAuthHref = "/(tabs)/home",
+  afterAuthHref = "/tabs/home",
 }: SocialSignInButtonsProps) {
   const { startSSOFlow } = useSSO();
   const router = useRouter();

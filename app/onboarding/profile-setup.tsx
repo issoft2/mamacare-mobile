@@ -1,5 +1,5 @@
 /**
- * mobile/app/(onboarding)/profile-setup.tsx
+ * mobile/app/onboarding/profile-setup.tsx
  * First-time profile setup after registration.
  */
 
@@ -52,7 +52,7 @@ export default function ProfileSetupScreen() {
         estimated_due_date: edd,
         gestational_week,
       });
-      router.replace("/(tabs)/home");
+      router.replace("/tabs/home");
     } catch (err: unknown) {
       setError(
         getErrorMessage(err, "Failed to save profile. Please try again.")

@@ -1,5 +1,5 @@
 /**
- * mobile/app/(tabs)/home.tsx
+ * mobile/app/tabs/home.tsx
  * Home screen — gestational week summary, quick actions, upcoming appointment.
  */
 

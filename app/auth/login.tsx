@@ -245,10 +245,10 @@ export default function LoginScreen() {
           )}
         </TouchableOpacity>
 
-        <SocialSignInButtons afterAuthHref="/(tabs)/home" />
+        <SocialSignInButtons afterAuthHref="/tabs/home" />
       </View>
 
-      <TouchableOpacity onPress={() => router.push("/(auth)/register")}>
+      <TouchableOpacity onPress={() => router.push("/auth/register")}>
         <Text style={styles.link}>Don&apos;t have an account? Register</Text>
       </TouchableOpacity>
     </View>

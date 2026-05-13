@@ -1,5 +1,5 @@
 /**
- * mobile/app/(auth)/register.tsx
+ * mobile/app/auth/register.tsx
  * Clerk-powered registration screen.
  */
 
@@ -65,7 +65,7 @@ export default function RegisterScreen() {
       const result = await signUp.attemptEmailAddressVerification({ code });
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        router.replace("/(onboarding)/profile-setup");
+        router.replace("/onboarding/profile-setup");
       }
     } catch (err: unknown) {
       Alert.alert(
@@ -148,10 +148,10 @@ export default function RegisterScreen() {
           )}
         </TouchableOpacity>
 
-        <SocialSignInButtons afterAuthHref="/(onboarding)/profile-setup" />
+        <SocialSignInButtons afterAuthHref="/onboarding/profile-setup" />
       </View>
 
-      <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
+      <TouchableOpacity onPress={() => router.push("/auth/login")}>
         <Text style={styles.link}>Already have an account? Sign in</Text>
       </TouchableOpacity>
     </View>
