@@ -75,16 +75,16 @@ function isAuthGroupRoute(segments: string[], pathname: string) {
     p === "/welcome" ||
     p === "/login" ||
     p === "/register" ||
-    p.startsWith("/(auth)/") ||
-    p === "/(auth)/welcome" ||
-    p === "/(auth)/login" ||
-    p === "/(auth)/register"
+    p.startsWith("/auth/") ||
+    p === "/auth/welcome" ||
+    p === "/auth/login" ||
+    p === "/auth/register"
   );
 }
 
 function isRegisterRoute(pathname: string) {
   const p = pathname || "";
-  return p === "/register" || p.startsWith("/(auth)/register");
+  return p === "/register" || p.startsWith("/auth/register");
 }
 
 /** OAuth / SSO return path (see SocialSignInButtons + Clerk useSSO redirect). */
@@ -130,7 +130,7 @@ function AuthGuard() {
 
     if (syncSession) {
       if (inAuth && !onRegister) {
-        router.replace("/(tabs)/home");
+        router.replace("/tabs/home");
       }
       return;
     }
@@ -149,14 +149,14 @@ function AuthGuard() {
       const hasToken = token != null && token.length > 0;
       if (hasToken) {
         if (inAuth && !onRegister) {
-          router.replace("/(tabs)/home");
+          router.replace("/tabs/home");
         }
         return;
       }
       if (inAuth || isOAuthCallbackRoute(pathname)) {
         return;
       }
-      router.replace("/(auth)/welcome");
+      router.replace("/auth/welcome");
     })();
 
     return () => {

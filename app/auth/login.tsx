@@ -1,5 +1,5 @@
 /**
- * mobile/app/(auth)/login.tsx
+ * mobile/app/auth/login.tsx
  * Clerk-powered login: email + password, then second factor (MFA) when required.
  * Web can show the full Clerk UI; this screen must call attemptSecondFactor on mobile.
  */
