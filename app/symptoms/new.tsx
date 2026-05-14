@@ -69,7 +69,7 @@ export default function NewSymptomScreen() {
         gestational_week: profile?.gestational_week ?? 12,
         source: "builder",
       });
-      router.replace("/(tabs)/symptoms");
+      router.replace("/tabs/symptoms");
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Failed to submit."));
     }

@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { colors, spacing, typography } from "@mamacare/ui";
 
+import { AuthScreenShell } from "@/components/auth/AuthScreenShell";
 import { SocialSignInButtons } from "@/components/auth/SocialSignInButtons";
 import { getErrorMessage, isClerkSessionExistsError } from "@/lib/errors";
 import { resetClerkForSignIn } from "@/lib/resetClerkForSignIn";
@@ -79,7 +80,7 @@ export default function RegisterScreen() {
 
   if (pendingVerification) {
     return (
-      <View style={styles.container}>
+      <AuthScreenShell>
         <Text style={styles.title}>Check your email</Text>
         <Text style={styles.subtitle}>
           We sent a verification code to {email}
@@ -106,12 +107,12 @@ export default function RegisterScreen() {
             )}
           </TouchableOpacity>
         </View>
-      </View>
+      </AuthScreenShell>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <AuthScreenShell>
       <Text style={styles.title}>Create account</Text>
       <Text style={styles.subtitle}>Your pregnancy health companion awaits</Text>
 
@@ -154,17 +155,11 @@ export default function RegisterScreen() {
       <TouchableOpacity onPress={() => router.push("/auth/login")}>
         <Text style={styles.link}>Already have an account? Sign in</Text>
       </TouchableOpacity>
-    </View>
+    </AuthScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing[6],
-    paddingTop: spacing[16],
-  },
   title: {
     fontSize: typography.fontSize["3xl"],
     fontWeight: typography.fontWeight.bold,

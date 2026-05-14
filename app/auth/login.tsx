@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { colors, spacing, typography } from "@mamacare/ui";
 
+import { AuthScreenShell } from "@/components/auth/AuthScreenShell";
 import { SocialSignInButtons } from "@/components/auth/SocialSignInButtons";
 import { getErrorMessage, isClerkSessionExistsError } from "@/lib/errors";
 import { goHomeAfterClerkSetActive } from "@/lib/goHomeAfterClerkSetActive";
@@ -174,7 +175,7 @@ export default function LoginScreen() {
 
   if (mfaKind) {
     return (
-      <View style={styles.container}>
+      <AuthScreenShell>
         <Text style={styles.title}>Two-step verification</Text>
         <Text style={styles.subtitle}>{mfaHint}</Text>
         <View style={styles.form}>
@@ -203,12 +204,12 @@ export default function LoginScreen() {
             <Text style={styles.link}>Back to email and password</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </AuthScreenShell>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <AuthScreenShell>
       <Text style={styles.title}>Welcome back</Text>
       <Text style={styles.subtitle}>Sign in to continue</Text>
 
@@ -251,17 +252,11 @@ export default function LoginScreen() {
       <TouchableOpacity onPress={() => router.push("/auth/register")}>
         <Text style={styles.link}>Don&apos;t have an account? Register</Text>
       </TouchableOpacity>
-    </View>
+    </AuthScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing[6],
-    paddingTop: spacing[16],
-  },
   title: {
     fontSize: typography.fontSize["3xl"],
     fontWeight: typography.fontWeight.bold,

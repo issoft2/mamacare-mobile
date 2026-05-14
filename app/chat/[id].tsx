@@ -97,7 +97,7 @@ export default function ChatConversationScreen() {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyEmoji}>💬</Text>
-            <Text style={styles.emptyTitle}>Hi, I'm MumCare Assistant</Text>
+            <Text style={styles.emptyTitle}>Hi, I'm MamaCare Assistant</Text>
             <Text style={styles.emptySubtitle}>
               I'm here to support you through your pregnancy. Ask me anything about symptoms, nutrition, or how you're feeling.
             </Text>
@@ -108,7 +108,7 @@ export default function ChatConversationScreen() {
       {/* Typing indicator */}
       {sendMessage.isPending && (
         <View style={styles.typingIndicator}>
-          <Text style={styles.typingText}>MumCare Assistant is thinking...</Text>
+          <Text style={styles.typingText}>MamaCare Assistant is thinking...</Text>
         </View>
       )}
 

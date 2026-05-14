@@ -2,7 +2,7 @@ import React from "react";
 import { View } from "react-native";
 import Svg, { Path, Circle } from "react-native-svg";
 
-export function HeartIcon({ size = 96, color = "#F472B6", style }) {
+export function HeartIcon({ size = 96, color = "#F472B6", style }: { size?: number; color?: string; style?: any }) {
   return (
     <View style={style}>
       <Svg width={size} height={size} viewBox="0 0 96 96" fill="none">
