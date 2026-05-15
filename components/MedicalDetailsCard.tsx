@@ -29,9 +29,8 @@ export function shouldShowMedicalDetailsPrompt(profile: Profile | null | undefin
     profile.gravida == null ||
     profile.parity == null ||
     !profile.known_conditions?.length ||
-    !profile.allergies?.length ||
-    // !profile.nhs_number ||
-    // !profile.nhia_number
+    !profile.allergies?.length
+  
   );
 }
 
@@ -88,8 +87,6 @@ function countCompletedOptionalFields(profile: Profile): number {
   if (profile.parity != null) count++;
   if (profile.known_conditions?.length) count++;
   if (profile.allergies?.length) count++;
-  // if (profile.nhs_number) count++;
-  // if (profile.nhia_number) count++;
   return count;
 }
 

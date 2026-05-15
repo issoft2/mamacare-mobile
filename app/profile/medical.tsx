@@ -88,8 +88,6 @@ export default function MedicalProfileScreen() {
     setParity(profile.parity != null ? String(profile.parity) : "");
     setAllergiesText(profile.allergies?.join(", ") ?? "");
     setConditionsText(profile.known_conditions?.join(", ") ?? "");
-    // setNhsNumber(profile.nhs_number ?? "");
-    // setNhiaNumber(profile.nhia_number ?? "");
   }, [profile]);
 
   const completedCount = [
@@ -99,8 +97,7 @@ export default function MedicalProfileScreen() {
     parity,
     splitCsv(allergiesText),
     splitCsv(conditionsText),
-    // nhsNumber,
-    // nhiaNumber,
+    
   ].filter((value) => {
     if (Array.isArray(value)) return value.length > 0;
     return value != null && String(value).trim().length > 0;
@@ -135,8 +132,6 @@ export default function MedicalProfileScreen() {
       parity: parityResult.value,
       allergies: splitCsv(allergiesText),
       known_conditions: splitCsv(conditionsText),
-      // nhs_number: nhsNumber.trim() || null,
-      // nhia_number: nhiaNumber.trim() || null,
     };
   }
 
