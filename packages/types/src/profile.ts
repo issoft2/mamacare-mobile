@@ -32,6 +32,8 @@ export interface CreateProfileRequest {
   gestational_week: number;
   estimated_due_date: string;
   lmp_date?: string;
+  gravida?: number;
+  parity?: number;
   blood_type?: string;
   known_conditions?: string[];
   allergies?: string[];
@@ -39,7 +41,28 @@ export interface CreateProfileRequest {
   nhia_number?: string;
 }
 
-export interface UpdateProfileRequest extends Partial<CreateProfileRequest> {}
+export type UpdateProfileRequest = Partial<
+  Omit<
+    CreateProfileRequest,
+    | "lmp_date"
+    | "gravida"
+    | "parity"
+    | "blood_type"
+    | "known_conditions"
+    | "allergies"
+    | "nhs_number"
+    | "nhia_number"
+  >
+> & {
+  lmp_date?: string | null;
+  gravida?: number | null;
+  parity?: number | null;
+  blood_type?: string | null;
+  known_conditions?: string[] | null;
+  allergies?: string[] | null;
+  nhs_number?: string | null;
+  nhia_number?: string | null;
+};
 
 export interface CareTeamMember {
   id: UUID;

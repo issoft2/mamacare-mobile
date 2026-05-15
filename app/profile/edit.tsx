@@ -1,7 +1,7 @@
 /**
  * mobile/app/profile/edit.tsx
  *
- * PUT /profile only works when a row already exists. If GET /profile returns
+ * PATCH /profile only works when a row already exists. If GET /profile returns
  * 404, we POST to create the profile first (same form; date of birth required).
  */
 

@@ -23,6 +23,11 @@ import {
   useSleepLogs,
   useSymptomPatterns,
 } from "@mamacare/api";
+import {
+  MedicalDetailsCard,
+  shouldShowMedicalDetailsPrompt,
+} from "@/components/MedicalDetailsCard";
+
 import { colors, spacing, typography, shadows } from "@mamacare/ui";
 
 type CareIconName = "chat" | "symptoms" | "kicks" | "water" | "mood" | "sleep";
@@ -128,6 +133,7 @@ export default function HomeScreen() {
   const { user } = useUser();
   const router = useRouter();
   const [feeling, setFeeling] = useState<Feeling | null>(null);
+  const [medicalPromptDismissed, setMedicalPromptDismissed] = useState(false);
   const { data: profile } = useProfile();
   const { data: patterns } = useSymptomPatterns();
   const { data: hydration } = useHydrationLogs();
@@ -138,6 +144,8 @@ export default function HomeScreen() {
   const firstName = profile?.first_name ?? user?.firstName ?? "mama";
   const week = profile?.gestational_week;
   const hasAlerts = patterns?.has_alerts ?? false;
+  const showMedicalPrompt =
+    !medicalPromptDismissed && shouldShowMedicalDetailsPrompt(profile);
   const greeting = getTimeBasedGreeting();
   const todayHydration = hydration?.[0];
   const glassesCount = todayHydration?.glasses_count ?? 0;
@@ -185,6 +193,13 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
       </LinearGradient>
+
+      {showMedicalPrompt && profile ? (
+        <MedicalDetailsCard
+          profile={profile}
+          onDismiss={() => setMedicalPromptDismissed(true)}
+        />
+      ) : null}
 
       {hasAlerts && (
         <TouchableOpacity

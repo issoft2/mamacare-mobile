@@ -8,6 +8,21 @@ import { useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useProfile, useSubscription } from "@mamacare/api";
 import { colors, spacing, typography, shadows } from "@mamacare/ui";
+import type { Profile } from "@mamacare/types";
+
+function countCompletedMedicalFields(profile: Profile | undefined) {
+  if (!profile) return 0;
+  let count = 0;
+  if (profile.blood_type) count++;
+  if (profile.lmp_date) count++;
+  if (profile.gravida != null) count++;
+  if (profile.parity != null) count++;
+  if (profile.known_conditions?.length) count++;
+  if (profile.allergies?.length) count++;
+  if (profile.nhs_number) count++;
+  if (profile.nhia_number) count++;
+  return count;
+}
 
 export default function ProfileScreen() {
   const { signOut } = useAuth();
@@ -15,6 +30,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { data: profile } = useProfile();
   const { data: subscription } = useSubscription();
+  const medicalCompleted = countCompletedMedicalFields(profile);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -39,6 +55,11 @@ export default function ProfileScreen() {
       {/* Menu items */}
       {[
         { label: "Edit Profile", path: "/profile/edit" },
+        {
+          label: "Medical Details",
+          path: "/profile/medical",
+          meta: `${medicalCompleted} of 8 completed`,
+        },
         { label: "Care Team", path: "/profile/care-team" },
         { label: "Appointments", path: "/profile/appointments" },
         { label: "Notifications", path: "/profile/notifications" },
@@ -50,7 +71,12 @@ export default function ProfileScreen() {
           style={styles.menuItem}
           onPress={() => router.push(item.path as any)}
         >
-          <Text style={styles.menuLabel}>{item.label}</Text>
+          <View style={styles.menuText}>
+            <Text style={styles.menuLabel}>{item.label}</Text>
+            {"meta" in item && item.meta ? (
+              <Text style={styles.menuMeta}>{item.meta}</Text>
+            ) : null}
+          </View>
           <Text style={styles.menuArrow}>›</Text>
         </TouchableOpacity>
       ))}
@@ -122,6 +148,14 @@ const styles = StyleSheet.create({
   menuLabel: {
     fontSize: typography.fontSize.base,
     color: colors.gray[800],
+  },
+  menuText: {
+    flex: 1,
+  },
+  menuMeta: {
+    color: colors.gray[500],
+    fontSize: typography.fontSize.xs,
+    marginTop: spacing[1],
   },
   menuArrow: {
     fontSize: typography.fontSize.xl,
