@@ -1,22 +1,24 @@
 /**
  * mobile/app/profile/subscription.tsx
  *
- * Subscription screen — current state:
- *  - Free tier is the only active plan
- *  - Standard and Premium are shown as "Coming soon" previews
- *  - No upgrade flow yet; we'll add WhatsApp contact next
+ * Subscription screen.
  *
- * Design philosophy:
- *  - Honest: don't pretend paid plans work when they don't
- *  - Aspirational but not pushy: show what's coming without pressure
- *  - Region-aware pricing for planning purposes
- *  - Calm visual language consistent with the rest of the app
+ *  - Free is the only currently active plan
+ *  - Standard and Premium are shown as "Coming soon"
+ *  - Each coming-soon plan has a "Talk to us" button that opens
+ *    WhatsApp with a pre-filled message — the user can edit before sending
+ *
+ * WhatsApp deep linking works on iOS, Android, and web:
+ *   https://wa.me/<number>?text=<url-encoded message>
  */
 
+import { useUser } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  Linking,
   Platform,
   ScrollView,
   StyleSheet,
@@ -34,7 +36,6 @@ import { colors, spacing, typography } from "@mamacare/ui";
 
 type PlanId = "free" | "standard" | "premium";
 type Region = "NG" | "UK" | "OTHER";
-type Currency = "NGN" | "GBP" | "USD";
 
 interface PlanFeature {
   icon: keyof typeof Ionicons.glyphMap;
@@ -56,6 +57,9 @@ interface PriceInfo {
 }
 
 // ── Configuration ────────────────────────────────────────────────────────────
+
+// WhatsApp number in international format (no + or spaces).
+const WHATSAPP_NUMBER = "2349059691747";
 
 const PLANS: Plan[] = [
   {
@@ -98,18 +102,18 @@ const PLANS: Plan[] = [
 const PRICING: Record<Region, Record<PlanId, PriceInfo>> = {
   NG: {
     free: { amount: "0", symbol: "₦", period: "" },
-    standard: { amount: "--", symbol: "₦", period: "/ month" },
-    premium: { amount: "--", symbol: "₦", period: "/ month" },
+    standard: { amount: "4,000", symbol: "₦", period: "/ month" },
+    premium: { amount: "8,000", symbol: "₦", period: "/ month" },
   },
   UK: {
     free: { amount: "0", symbol: "£", period: "" },
-    standard: { amount: "--", symbol: "£", period: "/ month" },
-    premium: { amount: "--", symbol: "£", period: "/ month" },
+    standard: { amount: "9.99", symbol: "£", period: "/ month" },
+    premium: { amount: "19.99", symbol: "£", period: "/ month" },
   },
   OTHER: {
     free: { amount: "0", symbol: "$", period: "" },
-    standard: { amount: "--", symbol: "$", period: "/ month" },
-    premium: { amount: "--", symbol: "$", period: "/ month" },
+    standard: { amount: "12.99", symbol: "$", period: "/ month" },
+    premium: { amount: "24.99", symbol: "$", period: "/ month" },
   },
 };
 
@@ -133,15 +137,55 @@ function formatPlanName(planId: PlanId): string {
   return { free: "Free", standard: "Standard", premium: "Premium" }[planId];
 }
 
+function buildWhatsAppMessage(planName: string, userEmail: string | null) {
+  const emailLine = userEmail
+    ? `My account email is ${userEmail}.`
+    : "I can share my account email here when you're ready.";
+  return (
+    `Hi MumCare team,\n\n` +
+    `I'd like to upgrade to the ${planName} plan.\n` +
+    `${emailLine}\n\n` +
+    `Thank you!`
+  );
+}
+
+async function openWhatsApp(planName: string, userEmail: string | null) {
+  const message = buildWhatsAppMessage(planName, userEmail);
+  const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+    message
+  )}`;
+
+  try {
+    const supported = await Linking.canOpenURL(url);
+    if (supported) {
+      await Linking.openURL(url);
+    } else {
+      // Fallback for environments where canOpenURL is too strict
+      await Linking.openURL(url);
+    }
+  } catch (err) {
+    Alert.alert(
+      "Couldn't open WhatsApp",
+      "Please reach us at +234 905 969 1747 or message us on WhatsApp."
+    );
+  }
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function SubscriptionScreen() {
   const router = useRouter();
+  const { user } = useUser();
   const { data: subscription, isLoading } = useSubscription();
   const { data: usage } = useUsage();
 
   const region = useMemo(detectRegion, []);
   const pricing = PRICING[region];
+
+  const userEmail =
+    user?.primaryEmailAddress?.emailAddress ??
+    user?.emailAddresses?.[0]?.emailAddress ??
+    null;
 
   if (isLoading) {
     return (
@@ -180,7 +224,8 @@ export default function SubscriptionScreen() {
         <Text style={styles.title}>Your plan</Text>
         <Text style={styles.subtitle}>
           Right now everyone is on Free. We're building paid plans
-          carefully — they'll arrive soon.
+          carefully — they'll arrive soon. In the meantime, message us
+          on WhatsApp if you'd like early access.
         </Text>
 
         {/* Current plan summary */}
@@ -318,17 +363,23 @@ export default function SubscriptionScreen() {
               ) : null}
 
               {!plan.isAvailable ? (
-                <View style={styles.comingSoonFooter}>
+                <TouchableOpacity
+                  style={styles.whatsappButton}
+                  onPress={() => openWhatsApp(plan.name, userEmail)}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Contact us about ${plan.name} plan on WhatsApp`}
+                >
                   <Ionicons
-                    name="time-outline"
-                    size={16}
-                    color={colors.navy[400]}
+                    name="logo-whatsapp"
+                    size={18}
+                    color={colors.white}
                     style={{ marginRight: spacing[2] }}
                   />
-                  <Text style={styles.comingSoonFooterText}>
-                    Available soon
+                  <Text style={styles.whatsappButtonText}>
+                    Talk to us about {plan.name}
                   </Text>
-                </View>
+                </TouchableOpacity>
               ) : null}
             </View>
           );
@@ -348,6 +399,9 @@ export default function SubscriptionScreen() {
 }
 
 // ── Styles ───────────────────────────────────────────────────────────────────
+
+// WhatsApp brand green, used sparingly to signal the platform
+const WHATSAPP_GREEN = "#25D366";
 
 const styles = StyleSheet.create({
   container: {
@@ -583,20 +637,35 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.medium,
   },
 
-  // Coming soon footer
-  comingSoonFooter: {
+  // WhatsApp button
+  whatsappButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: WHATSAPP_GREEN,
+    borderRadius: 12,
     paddingVertical: spacing[3],
-    borderTopWidth: 1,
-    borderTopColor: colors.gray[100],
+    paddingHorizontal: spacing[4],
+    ...Platform.select({
+      ios: {
+        shadowColor: WHATSAPP_GREEN,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: { elevation: 2 },
+      web: {
+        // @ts-ignore
+        cursor: "pointer",
+        // @ts-ignore
+        boxShadow: "0px 2px 8px rgba(37, 211, 102, 0.25)",
+      },
+    }),
   },
-  comingSoonFooterText: {
-    color: colors.navy[400],
+  whatsappButtonText: {
+    color: colors.white,
     fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    fontStyle: "italic",
+    fontWeight: typography.fontWeight.semibold,
   },
 
   // Currency note
