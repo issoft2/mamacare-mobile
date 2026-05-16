@@ -1,25 +1,22 @@
 /**
  * mobile/app/profile/subscription.tsx
  *
- * Subscription / plan management screen.
+ * Subscription screen — current state:
+ *  - Free tier is the only active plan
+ *  - Standard and Premium are shown as "Coming soon" previews
+ *  - No upgrade flow yet; we'll add WhatsApp contact next
  *
  * Design philosophy:
- *  - Calm and informative, NOT salesy. No pushy "MOST POPULAR" badges
- *    or pressure tactics. Just clear information and choice.
- *  - Region-aware pricing: detects user's locale and shows NGN, GBP,
- *    or USD accordingly. The actual currency Clerk charges in is
- *    configured on the Clerk side; this display helps the user
- *    understand cost in their familiar currency.
- *  - Soft cream background consistent with the rest of the care screens.
- *  - Inline status banners (no native alerts) except for destructive
- *    actions like cancellation.
+ *  - Honest: don't pretend paid plans work when they don't
+ *  - Aspirational but not pushy: show what's coming without pressure
+ *  - Region-aware pricing for planning purposes
+ *  - Calm visual language consistent with the rest of the app
  */
 
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Platform,
   ScrollView,
   StyleSheet,
@@ -30,9 +27,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as Localization from "expo-localization";
 
-import { useSubscription, useUpgradePlan, useUsage } from "@mamacare/api";
+import { useSubscription, useUsage } from "@mamacare/api";
 import { colors, spacing, typography } from "@mamacare/ui";
-import { getErrorMessage } from "@/lib/errors";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -50,12 +46,11 @@ interface Plan {
   name: string;
   shortDescription: string;
   features: PlanFeature[];
-  recommended?: boolean;
+  isAvailable: boolean;
 }
 
 interface PriceInfo {
   amount: string;
-  currency: Currency;
   symbol: string;
   period: string;
 }
@@ -67,6 +62,7 @@ const PLANS: Plan[] = [
     id: "free",
     name: "Free",
     shortDescription: "Get started at no cost",
+    isAvailable: true,
     features: [
       { icon: "chatbubble-ellipses-outline", label: "AI chat — 10 messages a day" },
       { icon: "pulse-outline", label: "Symptom logging" },
@@ -77,7 +73,7 @@ const PLANS: Plan[] = [
     id: "standard",
     name: "Standard",
     shortDescription: "For everyday support",
-    recommended: true,
+    isAvailable: false,
     features: [
       { icon: "chatbubble-ellipses-outline", label: "Unlimited AI chat" },
       { icon: "analytics-outline", label: "Pattern detection across your logs" },
@@ -89,6 +85,7 @@ const PLANS: Plan[] = [
     id: "premium",
     name: "Premium",
     shortDescription: "For comprehensive care",
+    isAvailable: false,
     features: [
       { icon: "checkmark-circle-outline", label: "Everything in Standard" },
       { icon: "people-outline", label: "Unlimited care team messaging" },
@@ -98,22 +95,21 @@ const PLANS: Plan[] = [
   },
 ];
 
-// Pricing per region. Update these when your billing setup confirms NGN amounts.
 const PRICING: Record<Region, Record<PlanId, PriceInfo>> = {
   NG: {
-    free: { amount: "0", currency: "NGN", symbol: "₦", period: "" },
-    standard: { amount: "4,000", currency: "NGN", symbol: "₦", period: "/ month" },
-    premium: { amount: "8,000", currency: "NGN", symbol: "₦", period: "/ month" },
+    free: { amount: "0", symbol: "₦", period: "" },
+    standard: { amount: "--", symbol: "₦", period: "/ month" },
+    premium: { amount: "--", symbol: "₦", period: "/ month" },
   },
   UK: {
-    free: { amount: "0", currency: "GBP", symbol: "£", period: "" },
-    standard: { amount: "9.99", currency: "GBP", symbol: "£", period: "/ month" },
-    premium: { amount: "19.99", currency: "GBP", symbol: "£", period: "/ month" },
+    free: { amount: "0", symbol: "£", period: "" },
+    standard: { amount: "--", symbol: "£", period: "/ month" },
+    premium: { amount: "--", symbol: "£", period: "/ month" },
   },
   OTHER: {
-    free: { amount: "0", currency: "USD", symbol: "$", period: "" },
-    standard: { amount: "12.99", currency: "USD", symbol: "$", period: "/ month" },
-    premium: { amount: "24.99", currency: "USD", symbol: "$", period: "/ month" },
+    free: { amount: "0", symbol: "$", period: "" },
+    standard: { amount: "--", symbol: "$", period: "/ month" },
+    premium: { amount: "--", symbol: "$", period: "/ month" },
   },
 };
 
@@ -124,8 +120,7 @@ const CREAM = "#FFF8F4";
 function detectRegion(): Region {
   try {
     const locales = Localization.getLocales();
-    const code =
-      locales[0]?.regionCode || (Localization as any).region || "";
+    const code = locales[0]?.regionCode || (Localization as any).region || "";
     if (code === "NG") return "NG";
     if (code === "GB") return "UK";
     return "OTHER";
@@ -134,18 +129,8 @@ function detectRegion(): Region {
   }
 }
 
-function formatPlanRank(planId: PlanId): number {
-  return { free: 0, standard: 1, premium: 2 }[planId];
-}
-
-function getActionLabel(
-  currentPlan: PlanId,
-  targetPlan: PlanId
-): "current" | "upgrade" | "downgrade" {
-  if (currentPlan === targetPlan) return "current";
-  return formatPlanRank(targetPlan) > formatPlanRank(currentPlan)
-    ? "upgrade"
-    : "downgrade";
+function formatPlanName(planId: PlanId): string {
+  return { free: "Free", standard: "Standard", premium: "Premium" }[planId];
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -154,10 +139,6 @@ export default function SubscriptionScreen() {
   const router = useRouter();
   const { data: subscription, isLoading } = useSubscription();
   const { data: usage } = useUsage();
-  const upgradePlan = useUpgradePlan();
-
-  const [error, setError] = useState("");
-  const [pendingPlan, setPendingPlan] = useState<PlanId | null>(null);
 
   const region = useMemo(detectRegion, []);
   const pricing = PRICING[region];
@@ -171,43 +152,6 @@ export default function SubscriptionScreen() {
   }
 
   const currentPlan = (subscription?.plan ?? "free") as PlanId;
-  const planStatus = subscription?.plan_status ?? "active";
-  const isActive = planStatus === "active" || planStatus === "trialing";
-
-  function handlePlanChange(targetPlan: PlanId) {
-    const action = getActionLabel(currentPlan, targetPlan);
-    if (action === "current") return;
-
-    if (action === "downgrade") {
-      Alert.alert(
-        `Switch to ${formatPlanName(targetPlan)}?`,
-        getDowngradeWarning(currentPlan, targetPlan),
-        [
-          { text: "Keep current plan", style: "cancel" },
-          {
-            text: "Switch plan",
-            style: "destructive",
-            onPress: () => commitPlanChange(targetPlan),
-          },
-        ]
-      );
-      return;
-    }
-
-    commitPlanChange(targetPlan);
-  }
-
-  async function commitPlanChange(targetPlan: PlanId) {
-    setError("");
-    setPendingPlan(targetPlan);
-    try {
-      await upgradePlan.mutateAsync(targetPlan as any);
-    } catch (err: unknown) {
-      setError(getErrorMessage(err, "Couldn't change your plan right now."));
-    } finally {
-      setPendingPlan(null);
-    }
-  }
 
   return (
     <View style={styles.container}>
@@ -235,7 +179,8 @@ export default function SubscriptionScreen() {
       >
         <Text style={styles.title}>Your plan</Text>
         <Text style={styles.subtitle}>
-          Pick what works for you. You can change any time.
+          Right now everyone is on Free. We're building paid plans
+          carefully — they'll arrive soon.
         </Text>
 
         {/* Current plan summary */}
@@ -245,11 +190,6 @@ export default function SubscriptionScreen() {
             <Text style={styles.currentPlanName}>
               {formatPlanName(currentPlan)}
             </Text>
-            {!isActive ? (
-              <Text style={styles.currentPlanStatus}>
-                Status: {planStatus}
-              </Text>
-            ) : null}
           </View>
           {usage?.usage?.care_team_members ? (
             <View style={styles.usageBlock}>
@@ -264,65 +204,73 @@ export default function SubscriptionScreen() {
           ) : null}
         </View>
 
-        {/* Error banner */}
-        {error ? (
-          <View style={styles.errorBanner}>
-            <Ionicons
-              name="alert-circle"
-              size={18}
-              color="#A32D2D"
-              style={{ marginRight: spacing[2] }}
-            />
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        ) : null}
-
         {/* Plans */}
-        <Text style={styles.sectionLabel}>Choose a plan</Text>
+        <Text style={styles.sectionLabel}>What's available</Text>
         {PLANS.map((plan) => {
           const price = pricing[plan.id];
-          const action = getActionLabel(currentPlan, plan.id);
-          const isPending = pendingPlan === plan.id;
+          const isCurrent = plan.id === currentPlan;
 
           return (
             <View
               key={plan.id}
               style={[
                 styles.planCard,
-                action === "current" && styles.planCardCurrent,
-                plan.recommended &&
-                  action !== "current" &&
-                  styles.planCardRecommended,
+                isCurrent && styles.planCardCurrent,
+                !plan.isAvailable && styles.planCardComingSoon,
               ]}
             >
-              {/* Header row */}
+              {/* Header */}
               <View style={styles.planHeader}>
-                <View style={{ flex: 1 }}>
-                  <View style={styles.planTitleRow}>
-                    <Text style={styles.planName}>{plan.name}</Text>
-                    {plan.recommended && action !== "current" ? (
-                      <View style={styles.recommendedBadge}>
-                        <Text style={styles.recommendedBadgeText}>
-                          Recommended
-                        </Text>
-                      </View>
-                    ) : null}
-                    {action === "current" ? (
-                      <View style={styles.currentBadge}>
-                        <Text style={styles.currentBadgeText}>Current</Text>
-                      </View>
-                    ) : null}
-                  </View>
-                  <Text style={styles.planDescription}>
-                    {plan.shortDescription}
+                <View style={styles.planTitleRow}>
+                  <Text
+                    style={[
+                      styles.planName,
+                      !plan.isAvailable && styles.planNameMuted,
+                    ]}
+                  >
+                    {plan.name}
                   </Text>
+                  {isCurrent ? (
+                    <View style={styles.currentBadge}>
+                      <Text style={styles.currentBadgeText}>Current</Text>
+                    </View>
+                  ) : null}
+                  {!plan.isAvailable ? (
+                    <View style={styles.comingSoonBadge}>
+                      <Text style={styles.comingSoonBadgeText}>
+                        Coming soon
+                      </Text>
+                    </View>
+                  ) : null}
                 </View>
+                <Text
+                  style={[
+                    styles.planDescription,
+                    !plan.isAvailable && styles.planDescriptionMuted,
+                  ]}
+                >
+                  {plan.shortDescription}
+                </Text>
               </View>
 
               {/* Price */}
               <View style={styles.priceRow}>
-                <Text style={styles.priceSymbol}>{price.symbol}</Text>
-                <Text style={styles.priceAmount}>{price.amount}</Text>
+                <Text
+                  style={[
+                    styles.priceSymbol,
+                    !plan.isAvailable && styles.priceMuted,
+                  ]}
+                >
+                  {price.symbol}
+                </Text>
+                <Text
+                  style={[
+                    styles.priceAmount,
+                    !plan.isAvailable && styles.priceMuted,
+                  ]}
+                >
+                  {price.amount}
+                </Text>
                 {price.period ? (
                   <Text style={styles.pricePeriod}>{price.period}</Text>
                 ) : null}
@@ -335,16 +283,27 @@ export default function SubscriptionScreen() {
                     <Ionicons
                       name={f.icon}
                       size={16}
-                      color={colors.rose[500]}
+                      color={
+                        plan.isAvailable
+                          ? colors.rose[500]
+                          : colors.navy[300]
+                      }
                       style={{ marginRight: spacing[2] }}
                     />
-                    <Text style={styles.featureLabel}>{f.label}</Text>
+                    <Text
+                      style={[
+                        styles.featureLabel,
+                        !plan.isAvailable && styles.featureLabelMuted,
+                      ]}
+                    >
+                      {f.label}
+                    </Text>
                   </View>
                 ))}
               </View>
 
-              {/* Action button */}
-              {action === "current" ? (
+              {/* Footer state */}
+              {isCurrent ? (
                 <View style={styles.currentPlanIndicator}>
                   <Ionicons
                     name="checkmark"
@@ -356,40 +315,21 @@ export default function SubscriptionScreen() {
                     You're on this plan
                   </Text>
                 </View>
-              ) : (
-                <TouchableOpacity
-                  style={[
-                    styles.actionButton,
-                    action === "downgrade" && styles.actionButtonSecondary,
-                    isPending && styles.actionButtonDisabled,
-                  ]}
-                  onPress={() => handlePlanChange(plan.id)}
-                  disabled={isPending}
-                  activeOpacity={0.85}
-                >
-                  {isPending ? (
-                    <ActivityIndicator
-                      color={
-                        action === "downgrade"
-                          ? colors.navy[600]
-                          : colors.white
-                      }
-                    />
-                  ) : (
-                    <Text
-                      style={[
-                        styles.actionButtonText,
-                        action === "downgrade" &&
-                          styles.actionButtonTextSecondary,
-                      ]}
-                    >
-                      {action === "upgrade"
-                        ? `Switch to ${plan.name}`
-                        : `Switch to ${plan.name}`}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              )}
+              ) : null}
+
+              {!plan.isAvailable ? (
+                <View style={styles.comingSoonFooter}>
+                  <Ionicons
+                    name="time-outline"
+                    size={16}
+                    color={colors.navy[400]}
+                    style={{ marginRight: spacing[2] }}
+                  />
+                  <Text style={styles.comingSoonFooterText}>
+                    Available soon
+                  </Text>
+                </View>
+              ) : null}
             </View>
           );
         })}
@@ -397,75 +337,14 @@ export default function SubscriptionScreen() {
         {/* Currency note */}
         <Text style={styles.currencyNote}>
           {region === "NG"
-            ? "Prices shown in Nigerian Naira (₦)."
+            ? "Future prices shown in Nigerian Naira (₦)."
             : region === "UK"
-            ? "Prices shown in British Pounds (£)."
-            : "Prices shown in US Dollars ($)."}{" "}
-          Your actual charge will be in the currency configured at sign-up.
+            ? "Future prices shown in British Pounds (£)."
+            : "Future prices shown in US Dollars ($)."}
         </Text>
-
-        {/* FAQ */}
-        <View style={styles.faqSection}>
-          <Text style={styles.faqTitle}>Questions you might have</Text>
-
-          <FaqItem
-            q="Can I switch plans later?"
-            a="Yes. You can move between plans any time — your billing adjusts at the next cycle."
-          />
-          <FaqItem
-            q="What happens if I downgrade?"
-            a="You'll keep access to your current plan until the end of your billing period. After that, features outside your new plan will be paused."
-          />
-          <FaqItem
-            q="Can I cancel?"
-            a="Yes. Move back to the Free plan any time — no questions asked. Your data stays safe."
-          />
-        </View>
       </ScrollView>
     </View>
   );
-}
-
-// ── FAQ Item ─────────────────────────────────────────────────────────────────
-
-function FaqItem({ q, a }: { q: string; a: string }) {
-  const [expanded, setExpanded] = useState(false);
-  return (
-    <TouchableOpacity
-      style={styles.faqItem}
-      onPress={() => setExpanded(!expanded)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.faqQuestionRow}>
-        <Text style={styles.faqQuestion}>{q}</Text>
-        <Ionicons
-          name={expanded ? "chevron-up" : "chevron-down"}
-          size={18}
-          color={colors.navy[400]}
-        />
-      </View>
-      {expanded ? <Text style={styles.faqAnswer}>{a}</Text> : null}
-    </TouchableOpacity>
-  );
-}
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatPlanName(planId: PlanId): string {
-  return { free: "Free", standard: "Standard", premium: "Premium" }[planId];
-}
-
-function getDowngradeWarning(from: PlanId, to: PlanId): string {
-  if (from === "premium" && to === "free") {
-    return "You'll go from unlimited features to 10 AI messages a day and 1 care team member. Your data stays safe.";
-  }
-  if (from === "premium" && to === "standard") {
-    return "You'll lose unlimited care team messaging and AI triage. You'll keep unlimited chat and pattern detection.";
-  }
-  if (from === "standard" && to === "free") {
-    return "You'll go from unlimited chat to 10 messages a day. Care team messaging and pattern detection will pause.";
-  }
-  return "Some features will be limited on the new plan.";
 }
 
 // ── Styles ───────────────────────────────────────────────────────────────────
@@ -548,13 +427,6 @@ const styles = StyleSheet.create({
     color: colors.navy[700],
     letterSpacing: -0.3,
   },
-  currentPlanStatus: {
-    fontSize: typography.fontSize.xs,
-    color: colors.rose[500],
-    marginTop: 2,
-    fontStyle: "italic",
-    textTransform: "capitalize",
-  },
   usageBlock: {
     alignItems: "flex-end",
     paddingLeft: spacing[3],
@@ -570,22 +442,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.base,
     fontWeight: typography.fontWeight.semibold,
     color: colors.navy[700],
-  },
-
-  // Error banner
-  errorBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FCEBEB",
-    padding: spacing[3],
-    borderRadius: 12,
-    marginBottom: spacing[4],
-  },
-  errorText: {
-    flex: 1,
-    color: "#A32D2D",
-    fontSize: typography.fontSize.sm,
-    lineHeight: typography.fontSize.sm * 1.4,
   },
 
   // Section
@@ -606,13 +462,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.rose[100],
   },
-  planCardRecommended: {
-    borderColor: colors.rose[400],
-    borderWidth: 2,
-  },
   planCardCurrent: {
     backgroundColor: colors.rose[50],
     borderColor: colors.rose[300],
+  },
+  planCardComingSoon: {
+    backgroundColor: colors.gray[50],
+    borderColor: colors.gray[100],
   },
 
   // Plan header
@@ -632,17 +488,8 @@ const styles = StyleSheet.create({
     color: colors.navy[700],
     letterSpacing: -0.3,
   },
-  recommendedBadge: {
-    backgroundColor: colors.rose[500],
-    borderRadius: 6,
-    paddingHorizontal: spacing[2],
-    paddingVertical: 2,
-  },
-  recommendedBadgeText: {
-    color: colors.white,
-    fontSize: 10,
-    fontWeight: typography.fontWeight.semibold,
-    letterSpacing: 0.3,
+  planNameMuted: {
+    color: colors.navy[400],
   },
   currentBadge: {
     backgroundColor: colors.navy[50],
@@ -657,9 +504,24 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     textTransform: "uppercase",
   },
+  comingSoonBadge: {
+    backgroundColor: colors.navy[50],
+    borderRadius: 6,
+    paddingHorizontal: spacing[2],
+    paddingVertical: 2,
+  },
+  comingSoonBadgeText: {
+    color: colors.navy[500],
+    fontSize: 10,
+    fontWeight: typography.fontWeight.semibold,
+    letterSpacing: 0.3,
+  },
   planDescription: {
     fontSize: typography.fontSize.sm,
     color: colors.navy[500],
+  },
+  planDescriptionMuted: {
+    color: colors.navy[400],
   },
 
   // Price
@@ -685,6 +547,9 @@ const styles = StyleSheet.create({
     color: colors.navy[400],
     marginLeft: spacing[2],
   },
+  priceMuted: {
+    color: colors.navy[400],
+  },
 
   // Features
   featuresList: {
@@ -701,32 +566,8 @@ const styles = StyleSheet.create({
     color: colors.navy[600],
     lineHeight: typography.fontSize.sm * 1.4,
   },
-
-  // Action button
-  actionButton: {
-    backgroundColor: colors.rose[500],
-    borderRadius: 12,
-    paddingVertical: spacing[4],
-    alignItems: "center",
-    ...Platform.select({
-      web: { /* @ts-ignore */ cursor: "pointer" },
-    }),
-  },
-  actionButtonSecondary: {
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: colors.navy[200],
-  },
-  actionButtonDisabled: {
-    opacity: 0.6,
-  },
-  actionButtonText: {
-    color: colors.white,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-  },
-  actionButtonTextSecondary: {
-    color: colors.navy[600],
+  featureLabelMuted: {
+    color: colors.navy[400],
   },
 
   // Current plan indicator
@@ -742,55 +583,30 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.medium,
   },
 
+  // Coming soon footer
+  comingSoonFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: spacing[3],
+    borderTopWidth: 1,
+    borderTopColor: colors.gray[100],
+  },
+  comingSoonFooterText: {
+    color: colors.navy[400],
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    fontStyle: "italic",
+  },
+
   // Currency note
   currencyNote: {
     fontSize: typography.fontSize.xs,
     color: colors.navy[400],
     textAlign: "center",
     fontStyle: "italic",
-    marginVertical: spacing[5],
+    marginTop: spacing[3],
     paddingHorizontal: spacing[4],
     lineHeight: typography.fontSize.xs * 1.6,
-  },
-
-  // FAQ
-  faqSection: {
-    marginTop: spacing[4],
-  },
-  faqTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.navy[700],
-    marginBottom: spacing[3],
-    letterSpacing: -0.3,
-  },
-  faqItem: {
-    backgroundColor: colors.white,
-    borderRadius: 12,
-    padding: spacing[4],
-    marginBottom: spacing[2],
-    borderWidth: 1,
-    borderColor: colors.rose[100],
-    ...Platform.select({
-      web: { /* @ts-ignore */ cursor: "pointer" },
-    }),
-  },
-  faqQuestionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  faqQuestion: {
-    flex: 1,
-    fontSize: typography.fontSize.sm,
-    color: colors.navy[700],
-    fontWeight: typography.fontWeight.medium,
-    paddingRight: spacing[2],
-  },
-  faqAnswer: {
-    fontSize: typography.fontSize.sm,
-    color: colors.navy[500],
-    marginTop: spacing[2],
-    lineHeight: typography.fontSize.sm * 1.5,
   },
 });
