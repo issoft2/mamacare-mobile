@@ -58,7 +58,7 @@ export default function ProfileScreen() {
         {
           label: "Medical Details",
           path: "/profile/medical",
-          meta: `${medicalCompleted} of 8 completed`,
+          meta: `${medicalCompleted} of 6 completed`,
         },
         { label: "Care Team", path: "/profile/care-team" },
         { label: "Appointments", path: "/profile/appointments" },

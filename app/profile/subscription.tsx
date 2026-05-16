@@ -102,18 +102,18 @@ const PLANS: Plan[] = [
 const PRICING: Record<Region, Record<PlanId, PriceInfo>> = {
   NG: {
     free: { amount: "0", symbol: "₦", period: "" },
-    standard: { amount: "4,000", symbol: "₦", period: "/ month" },
-    premium: { amount: "8,000", symbol: "₦", period: "/ month" },
+    standard: { amount: "--", symbol: "₦", period: "/ month" },
+    premium: { amount: "--", symbol: "₦", period: "/ month" },
   },
   UK: {
     free: { amount: "0", symbol: "£", period: "" },
-    standard: { amount: "9.99", symbol: "£", period: "/ month" },
-    premium: { amount: "19.99", symbol: "£", period: "/ month" },
+    standard: { amount: "--", symbol: "£", period: "/ month" },
+    premium: { amount: "--", symbol: "£", period: "/ month" },
   },
   OTHER: {
     free: { amount: "0", symbol: "$", period: "" },
-    standard: { amount: "12.99", symbol: "$", period: "/ month" },
-    premium: { amount: "24.99", symbol: "$", period: "/ month" },
+    standard: { amount: "--", symbol: "$", period: "/ month" },
+    premium: { amount: "--", symbol: "$", period: "/ month" },
   },
 };
 
