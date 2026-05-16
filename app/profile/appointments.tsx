@@ -10,11 +10,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
 import { useAppointments } from "@mamacare/api";
 import { colors, spacing, typography, shadows } from "@mamacare/ui";
 import type { Appointment } from "@mamacare/types";
 
 export default function AppointmentsScreen() {
+  const router = useRouter();
   const { data: appointments, isLoading } = useAppointments();
 
   function renderAppointment({ item }: { item: Appointment }) {
@@ -42,12 +44,28 @@ export default function AppointmentsScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingTop: 16, marginBottom: 4 }}>
+        <TouchableOpacity
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/tabs/home');
+            }
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          style={{ padding: 4, marginRight: 8 }}
+        >
+          <Ionicons name="arrow-back" size={24} color="#1A3A6A" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Appointments</Text>
+      </View>
       <FlatList
         data={appointments ?? []}
         keyExtractor={(item) => item.id}
         renderItem={renderAppointment}
         contentContainerStyle={styles.list}
-        ListHeaderComponent={<Text style={styles.title}>Appointments</Text>}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No appointments scheduled.</Text>
         }

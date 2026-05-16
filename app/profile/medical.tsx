@@ -2,10 +2,18 @@
  * mobile/app/profile/medical.tsx
  *
  * Medical profile screen — lets users add optional medical details after
- * onboarding. All fields are optional; users can save partial information
- * and come back later.
+ * onboarding. All fields are optional and auto-save when the user leaves
+ * a field, so nothing is ever lost.
  *
  * Sensitive fields are encrypted server-side before being stored.
+ *
+ * Designed with emotional UX principles:
+ *  - Soft cream background reduces visual stress
+ *  - Conversational copy (no medical jargon)
+ *  - Auto-save removes "I'll lose this" anxiety
+ *  - Affirming feedback after each save
+ *  - Date picker instead of free-text date entry
+ *  - No "save" button — auto-save handles it
  */
 
 import { useRouter } from "expo-router";
@@ -13,6 +21,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,14 +29,23 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 
 import { useProfile, useUpdateProfile } from "@mamacare/api";
 import { colors, spacing, typography } from "@mamacare/ui";
 import type { UpdateProfileRequest } from "@mamacare/types";
 import { getErrorMessage } from "@/lib/errors";
 
+// ── Constants ────────────────────────────────────────────────────────────────
+
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-const OPTIONAL_MEDICAL_FIELD_COUNT = 8;
+const OPTIONAL_FIELD_COUNT = 6;
+const CREAM = "#FFF8F4";
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function splitCsv(value: string): string[] | null {
   const items = value
@@ -46,37 +64,61 @@ function parseOptionalNumber(
   if (!trimmed) return { value: null };
   const parsed = parseInt(trimmed, 10);
   if (Number.isNaN(parsed) || parsed < min) {
-    return { value: null, error: `${label} must be ${min} or more.` };
+    return { value: null, error: `${label} should be ${min} or more.` };
   }
   return { value: parsed };
 }
 
-function validateOptionalDate(value: string): string | null {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-    return "Use YYYY-MM-DD for the last menstrual period date.";
-  }
-  return null;
+function formatDateISO(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
+
+function formatDateFriendly(iso: string): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+function getProgressMessage(completed: number, total: number): string {
+  if (completed === 0) {
+    return "Share whatever feels comfortable.";
+  }
+  if (completed === total) {
+    return "All done — thank you for sharing.";
+  }
+  if (completed === 1) {
+    return "Thank you for sharing this.";
+  }
+  return `You've shared ${completed} things — thank you.`;
+}
+
+// ── Component ────────────────────────────────────────────────────────────────
 
 export default function MedicalProfileScreen() {
   const router = useRouter();
   const { data: profile, isLoading } = useProfile();
   const updateProfile = useUpdateProfile();
 
-  // Form state — initialized from profile when it loads
+  // Form state
   const [bloodType, setBloodType] = useState("");
   const [lmpDate, setLmpDate] = useState("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [gravida, setGravida] = useState("");
   const [parity, setParity] = useState("");
   const [allergiesText, setAllergiesText] = useState("");
   const [conditionsText, setConditionsText] = useState("");
-  // const [nhsNumber, setNhsNumber] = useState("");
-  // const [nhiaNumber, setNhiaNumber] = useState("");
 
+  // UI state
   const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [savedField, setSavedField] = useState("");
   const [autoSavingLabel, setAutoSavingLabel] = useState("");
 
   // Populate form when profile loads
@@ -97,73 +139,40 @@ export default function MedicalProfileScreen() {
     parity,
     splitCsv(allergiesText),
     splitCsv(conditionsText),
-    
   ].filter((value) => {
     if (Array.isArray(value)) return value.length > 0;
     return value != null && String(value).trim().length > 0;
   }).length;
 
-  const completionPercent =
-    (completedCount / OPTIONAL_MEDICAL_FIELD_COUNT) * 100;
-
-  function buildFullPayload(): UpdateProfileRequest | null {
-    const dateError = validateOptionalDate(lmpDate);
-    if (dateError) {
-      setError(dateError);
-      return null;
-    }
-
-    const gravidaResult = parseOptionalNumber("Gravida", gravida, 1);
-    if (gravidaResult.error) {
-      setError(gravidaResult.error);
-      return null;
-    }
-
-    const parityResult = parseOptionalNumber("Parity", parity, 0);
-    if (parityResult.error) {
-      setError(parityResult.error);
-      return null;
-    }
-
-    return {
-      blood_type: bloodType || null,
-      lmp_date: lmpDate.trim() || null,
-      gravida: gravidaResult.value,
-      parity: parityResult.value,
-      allergies: splitCsv(allergiesText),
-      known_conditions: splitCsv(conditionsText),
-    };
-  }
+  const completionPercent = (completedCount / OPTIONAL_FIELD_COUNT) * 100;
 
   async function savePartial(label: string, payload: UpdateProfileRequest) {
     if (!profile) return;
     setError("");
-    setSuccessMessage("");
     setAutoSavingLabel(label);
     try {
       await updateProfile.mutateAsync(payload);
-      setSuccessMessage(`${label} saved.`);
+      setSavedField(label);
+      // Clear the "saved" feedback after a moment
+      setTimeout(() => setSavedField(""), 2000);
     } catch (err: unknown) {
-      setError(getErrorMessage(err, "Could not save. Please try again."));
+      setError(getErrorMessage(err, "Couldn't save right now."));
     } finally {
       setAutoSavingLabel("");
     }
   }
 
-  async function handleSave() {
-    setError("");
-    setSuccessMessage("");
-
-    const updates = buildFullPayload();
-    if (!updates) return;
-
-    try {
-      await updateProfile.mutateAsync(updates);
-      setSuccessMessage("Saved! Thank you for sharing.");
-      // Brief delay so user sees success message, then return
-      setTimeout(() => router.back(), 1200);
-    } catch (err: unknown) {
-      setError(getErrorMessage(err, "Could not save. Please try again."));
+  function handleDateChange(event: DateTimePickerEvent, selectedDate?: Date) {
+    if (Platform.OS === "android") {
+      setShowDatePicker(false);
+    }
+    if (event.type === "dismissed") {
+      return;
+    }
+    if (selectedDate) {
+      const iso = formatDateISO(selectedDate);
+      setLmpDate(iso);
+      void savePartial("Last menstrual period", { lmp_date: iso });
     }
   }
 
@@ -176,229 +185,292 @@ export default function MedicalProfileScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.title}>Medical details</Text>
-      <Text style={styles.subtitle}>
-        These help us personalize your care. Every field is optional — skip
-        anything you'd rather not share right now.
-      </Text>
-
-      <View style={styles.progressCard}>
-        <View style={styles.progressHeader}>
-          <Text style={styles.progressTitle}>Profile completeness</Text>
-          <Text style={styles.progressText}>
-            {completedCount} of {OPTIONAL_MEDICAL_FIELD_COUNT} fields
-          </Text>
-        </View>
-        <View style={styles.progressTrack}>
-          <View
-            style={[
-              styles.progressFill,
-              { width: `${completionPercent}%` as any },
-            ]}
-          />
-        </View>
-        <Text style={styles.progressHint}>
-          Details save as you leave each field.
-        </Text>
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          accessibilityLabel="Go back"
+          style={styles.backButton}
+        >
+          <Ionicons name="arrow-back" size={24} color={colors.navy[700]} />
+        </TouchableOpacity>
       </View>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      {autoSavingLabel ? (
-        <Text style={styles.saving}>Saving {autoSavingLabel}...</Text>
-      ) : null}
-      {successMessage ? (
-        <Text style={styles.success}>{successMessage}</Text>
-      ) : null}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.title}>A little more about you</Text>
+        <Text style={styles.subtitle}>
+          Sharing helps us personalize your care. Every field is optional —
+          skip anything you'd rather not share right now.
+        </Text>
 
-      {/* ── Blood type ── */}
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>Blood type</Text>
-        <View style={styles.chipRow}>
-          {BLOOD_TYPES.map((bt) => (
-            <TouchableOpacity
-              key={bt}
+        {/* ── Progress card ── */}
+        <View style={styles.progressCard}>
+          <View style={styles.progressHeader}>
+            <Text style={styles.progressTitle}>
+              {getProgressMessage(completedCount, OPTIONAL_FIELD_COUNT)}
+            </Text>
+            <Text style={styles.progressText}>
+              {completedCount} of {OPTIONAL_FIELD_COUNT}
+            </Text>
+          </View>
+          <View style={styles.progressTrack}>
+            <View
               style={[
-                styles.chip,
-                bloodType === bt && styles.chipActive,
+                styles.progressFill,
+                { width: `${completionPercent}%` as any },
               ]}
-              onPress={() => {
-                const next = bloodType === bt ? "" : bt;
-                setBloodType(next);
-                void savePartial("Blood type", { blood_type: next || null });
+            />
+          </View>
+          <Text style={styles.progressHint}>
+            Your changes save as you go.
+          </Text>
+        </View>
+
+        {/* Status banners */}
+        {error ? (
+          <View style={styles.errorBanner}>
+            <Ionicons
+              name="alert-circle"
+              size={18}
+              color="#A32D2D"
+              style={{ marginRight: spacing[2] }}
+            />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+        {autoSavingLabel ? (
+          <View style={styles.savingBanner}>
+            <ActivityIndicator
+              size="small"
+              color={colors.navy[500]}
+              style={{ marginRight: spacing[2] }}
+            />
+            <Text style={styles.savingText}>Saving {autoSavingLabel}…</Text>
+          </View>
+        ) : null}
+        {savedField && !autoSavingLabel ? (
+          <View style={styles.successBanner}>
+            <Ionicons
+              name="checkmark-circle"
+              size={18}
+              color="#1E7E34"
+              style={{ marginRight: spacing[2] }}
+            />
+            <Text style={styles.successText}>{savedField} saved</Text>
+          </View>
+        ) : null}
+
+        {/* ── Blood type ── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Your blood type</Text>
+          <Text style={styles.sectionHint}>
+            Good to know in case of emergencies.
+          </Text>
+          <View style={styles.chipRow}>
+            {BLOOD_TYPES.map((bt) => (
+              <TouchableOpacity
+                key={bt}
+                style={[
+                  styles.chip,
+                  bloodType === bt && styles.chipActive,
+                ]}
+                onPress={() => {
+                  const next = bloodType === bt ? "" : bt;
+                  setBloodType(next);
+                  void savePartial("Blood type", {
+                    blood_type: next || null,
+                  });
+                }}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={`Set blood type to ${bt}`}
+              >
+                <Text
+                  style={[
+                    styles.chipText,
+                    bloodType === bt && styles.chipTextActive,
+                  ]}
+                >
+                  {bt}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* ── About your pregnancy ── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>About your pregnancy</Text>
+          <Text style={styles.sectionHint}>
+            Even a rough idea helps. Skip if you're not sure.
+          </Text>
+
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>Total pregnancies</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. 2"
+              placeholderTextColor={colors.gray[400]}
+              value={gravida}
+              onChangeText={setGravida}
+              onBlur={() => {
+                const result = parseOptionalNumber("Total pregnancies", gravida, 1);
+                if (result.error) {
+                  setError(result.error);
+                  return;
+                }
+                void savePartial("Total pregnancies", {
+                  gravida: result.value,
+                });
               }}
-              activeOpacity={0.7}
+              keyboardType="number-pad"
+            />
+            <Text style={styles.fieldHint}>Including this one</Text>
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>Previous births</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. 1"
+              placeholderTextColor={colors.gray[400]}
+              value={parity}
+              onChangeText={setParity}
+              onBlur={() => {
+                const result = parseOptionalNumber("Previous births", parity, 0);
+                if (result.error) {
+                  setError(result.error);
+                  return;
+                }
+                void savePartial("Previous births", { parity: result.value });
+              }}
+              keyboardType="number-pad"
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>
+              First day of your last period
+            </Text>
+            <Pressable
+              style={styles.input}
+              onPress={() => setShowDatePicker(true)}
               accessibilityRole="button"
-              accessibilityLabel={`Set blood type to ${bt}`}
+              accessibilityLabel="Pick last menstrual period date"
             >
               <Text
                 style={[
-                  styles.chipText,
-                  bloodType === bt && styles.chipTextActive,
+                  styles.dateText,
+                  !lmpDate && styles.datePlaceholder,
                 ]}
               >
-                {bt}
+                {lmpDate ? formatDateFriendly(lmpDate) : "Tap to choose a date"}
               </Text>
-            </TouchableOpacity>
-          ))}
+            </Pressable>
+            {showDatePicker ? (
+              <DateTimePicker
+                value={lmpDate ? new Date(lmpDate) : new Date()}
+                mode="date"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                maximumDate={new Date()}
+                onChange={handleDateChange}
+              />
+            ) : null}
+            <Text style={styles.fieldHint}>
+              Helps us track gestational timing.
+            </Text>
+          </View>
         </View>
-      </View>
 
-      {/* ── Pregnancy history ── */}
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>Pregnancy history</Text>
+        {/* ── Health info ── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Anything we should know?</Text>
+          <Text style={styles.sectionHint}>
+            Sharing helps us guide you better. Separate items with commas.
+          </Text>
 
-        <Text style={styles.fieldLabel}>
-          Total pregnancies (gravida)
-        </Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g. 2"
-          placeholderTextColor={colors.gray[400]}
-          value={gravida}
-          onChangeText={setGravida}
-          onBlur={() => {
-            const result = parseOptionalNumber("Gravida", gravida, 1);
-            if (result.error) {
-              setError(result.error);
-              return;
-            }
-            void savePartial("Gravida", { gravida: result.value });
-          }}
-          keyboardType="number-pad"
-        />
-        <Text style={styles.fieldHint}>
-          Including this one
-        </Text>
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>Allergies</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="e.g. peanuts, penicillin"
+              placeholderTextColor={colors.gray[400]}
+              value={allergiesText}
+              onChangeText={setAllergiesText}
+              onBlur={() =>
+                void savePartial("Allergies", {
+                  allergies: splitCsv(allergiesText),
+                })
+              }
+              multiline
+            />
+          </View>
 
-        <Text style={[styles.fieldLabel, { marginTop: spacing[3] }]}>
-          Previous births (parity)
-        </Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g. 1"
-          placeholderTextColor={colors.gray[400]}
-          value={parity}
-          onChangeText={setParity}
-          onBlur={() => {
-            const result = parseOptionalNumber("Parity", parity, 0);
-            if (result.error) {
-              setError(result.error);
-              return;
-            }
-            void savePartial("Parity", { parity: result.value });
-          }}
-          keyboardType="number-pad"
-        />
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>Known conditions</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="e.g. gestational diabetes, anemia"
+              placeholderTextColor={colors.gray[400]}
+              value={conditionsText}
+              onChangeText={setConditionsText}
+              onBlur={() =>
+                void savePartial("Known conditions", {
+                  known_conditions: splitCsv(conditionsText),
+                })
+              }
+              multiline
+            />
+          </View>
+        </View>
 
-        <Text style={[styles.fieldLabel, { marginTop: spacing[3] }]}>
-          Last menstrual period (YYYY-MM-DD)
-        </Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g. 2025-11-15"
-          placeholderTextColor={colors.gray[400]}
-          value={lmpDate}
-          onChangeText={setLmpDate}
-          onBlur={() => {
-            const dateError = validateOptionalDate(lmpDate);
-            if (dateError) {
-              setError(dateError);
-              return;
-            }
-            void savePartial("Last menstrual period", {
-              lmp_date: lmpDate.trim() || null,
-            });
-          }}
-          keyboardType="numbers-and-punctuation"
-        />
-      </View>
-
-      {/* ── Health info ── */}
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>Health information</Text>
-
-        <Text style={styles.fieldLabel}>Allergies</Text>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder="e.g. peanuts, penicillin"
-          placeholderTextColor={colors.gray[400]}
-          value={allergiesText}
-          onChangeText={setAllergiesText}
-          onBlur={() =>
-            void savePartial("Allergies", {
-              allergies: splitCsv(allergiesText),
-            })
-          }
-          multiline
-        />
-        <Text style={styles.fieldHint}>
-          Separate multiple items with commas
-        </Text>
-
-        <Text style={[styles.fieldLabel, { marginTop: spacing[3] }]}>
-          Known conditions
-        </Text>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder="e.g. gestational diabetes, anemia"
-          placeholderTextColor={colors.gray[400]}
-          value={conditionsText}
-          onChangeText={setConditionsText}
-          onBlur={() =>
-            void savePartial("Known conditions", {
-              known_conditions: splitCsv(conditionsText),
-            })
-          }
-          multiline
-        />
-        <Text style={styles.fieldHint}>
-          Separate multiple items with commas
-        </Text>
-      </View>
-
-      {/* ── Healthcare IDs ── */}
-       
-      {/* ── Actions ── */}
-      <TouchableOpacity
-        style={[
-          styles.saveButton,
-          updateProfile.isPending && styles.saveButtonDisabled,
-        ]}
-        onPress={handleSave}
-        disabled={updateProfile.isPending}
-        activeOpacity={0.85}
-      >
-        {updateProfile.isPending ? (
-          <ActivityIndicator color={colors.white} />
-        ) : (
-          <Text style={styles.saveButtonText}>Save details</Text>
-        )}
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.cancelButton}
-        onPress={() => router.back()}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.cancelButtonText}>Cancel</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        {/* Done — no Save button since auto-save handles it */}
+        <TouchableOpacity
+          style={styles.doneButton}
+          onPress={() => router.back()}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.doneButtonText}>Done</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
   );
 }
+
+// ── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
+    backgroundColor: CREAM,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: CREAM,
+  },
+
+  // Header
+  header: {
+    flexDirection: "row",
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[6],
+    paddingBottom: spacing[2],
+  },
+  backButton: {
+    padding: spacing[2],
+    marginLeft: -spacing[2],
+  },
+
+  // Content
   content: {
     paddingHorizontal: spacing[6],
-    paddingTop: spacing[8],
     paddingBottom: spacing[12],
     ...Platform.select({
       web: {
@@ -408,26 +480,25 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: colors.white,
-  },
+
+  // Titles
   title: {
     fontSize: typography.fontSize["2xl"],
     fontWeight: typography.fontWeight.bold,
     color: colors.navy[700],
     marginBottom: spacing[2],
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: typography.fontSize.base,
-    color: colors.gray[500],
-    marginBottom: spacing[6],
+    color: colors.navy[500],
+    marginBottom: spacing[5],
     lineHeight: typography.fontSize.base * 1.5,
   },
+
+  // Progress card
   progressCard: {
-    backgroundColor: colors.rose[50],
+    backgroundColor: colors.white,
     borderColor: colors.rose[100],
     borderRadius: 16,
     borderWidth: 1,
@@ -435,25 +506,28 @@ const styles = StyleSheet.create({
     padding: spacing[4],
   },
   progressHeader: {
-    alignItems: "center",
+    alignItems: "flex-start",
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: spacing[3],
+    gap: spacing[3],
   },
   progressTitle: {
+    flex: 1,
     color: colors.navy[700],
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.semibold,
+    lineHeight: typography.fontSize.sm * 1.4,
   },
   progressText: {
-    color: colors.rose[600],
+    color: colors.rose[500],
     fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.medium,
+    fontWeight: typography.fontWeight.semibold,
   },
   progressTrack: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.rose[50],
     borderRadius: 999,
-    height: 7,
+    height: 8,
     overflow: "hidden",
   },
   progressFill: {
@@ -462,71 +536,117 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   progressHint: {
-    color: colors.gray[500],
+    color: colors.navy[400],
     fontSize: typography.fontSize.xs,
     marginTop: spacing[2],
+    fontStyle: "italic",
   },
-  error: {
+
+  // Status banners
+  errorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#FCEBEB",
+    padding: spacing[3],
+    borderRadius: 12,
+    marginBottom: spacing[4],
+  },
+  errorText: {
+    flex: 1,
     color: "#A32D2D",
-    padding: spacing[3],
-    borderRadius: 8,
     fontSize: typography.fontSize.sm,
-    marginBottom: spacing[4],
+    lineHeight: typography.fontSize.sm * 1.4,
   },
-  saving: {
-    backgroundColor: colors.navy[50],
+  savingBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.white,
+    padding: spacing[3],
+    borderRadius: 12,
+    marginBottom: spacing[4],
+    borderWidth: 1,
+    borderColor: colors.rose[100],
+  },
+  savingText: {
     color: colors.navy[600],
-    padding: spacing[3],
-    borderRadius: 8,
     fontSize: typography.fontSize.sm,
-    marginBottom: spacing[4],
+    fontStyle: "italic",
   },
-  success: {
+  successBanner: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#E6F4EA",
-    color: "#1E7E34",
     padding: spacing[3],
-    borderRadius: 8,
-    fontSize: typography.fontSize.sm,
+    borderRadius: 12,
     marginBottom: spacing[4],
   },
+  successText: {
+    color: "#1E7E34",
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+  },
+
+  // Section
   section: {
-    marginBottom: spacing[6],
+    marginBottom: spacing[7],
   },
   sectionLabel: {
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.lg,
     fontWeight: typography.fontWeight.semibold,
-    color: colors.rose[500],
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: spacing[3],
+    color: colors.navy[700],
+    marginBottom: spacing[1],
+    letterSpacing: -0.3,
+  },
+  sectionHint: {
+    fontSize: typography.fontSize.sm,
+    color: colors.navy[400],
+    marginBottom: spacing[4],
+    lineHeight: typography.fontSize.sm * 1.5,
+    fontStyle: "italic",
+  },
+
+  // Field
+  field: {
+    marginBottom: spacing[4],
   },
   fieldLabel: {
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.medium,
-    color: colors.gray[700],
-    marginBottom: spacing[1],
+    color: colors.navy[600],
+    marginBottom: spacing[2],
   },
   fieldHint: {
     fontSize: typography.fontSize.xs,
-    color: colors.gray[400],
-    marginTop: spacing[1],
+    color: colors.navy[400],
+    marginTop: spacing[2],
     fontStyle: "italic",
+    lineHeight: typography.fontSize.xs * 1.5,
   },
   input: {
     borderWidth: 1,
-    borderColor: colors.gray[200],
-    borderRadius: 12,
+    borderColor: colors.rose[100],
+    borderRadius: 16,
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[4],
     fontSize: typography.fontSize.base,
-    color: colors.gray[900],
-    backgroundColor: colors.gray[50],
+    color: colors.navy[700],
+    backgroundColor: colors.white,
   },
   textArea: {
-    minHeight: 80,
+    minHeight: 90,
     textAlignVertical: "top",
   },
+
+  // Date input
+  dateText: {
+    fontSize: typography.fontSize.base,
+    color: colors.navy[700],
+  },
+  datePlaceholder: {
+    color: colors.gray[400],
+  },
+
+  // Blood type chips
   chipRow: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -534,11 +654,13 @@ const styles = StyleSheet.create({
   },
   chip: {
     paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
+    paddingVertical: spacing[3],
     borderRadius: 20,
-    backgroundColor: colors.gray[50],
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: colors.gray[200],
+    borderColor: colors.rose[100],
+    minWidth: 56,
+    alignItems: "center",
     ...Platform.select({
       web: { /* @ts-ignore */ cursor: "pointer" },
     }),
@@ -549,41 +671,40 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: typography.fontSize.sm,
-    color: colors.gray[700],
+    color: colors.navy[600],
     fontWeight: typography.fontWeight.medium,
   },
   chipTextActive: {
     color: colors.white,
   },
-  saveButton: {
+
+  // Done button
+  doneButton: {
     backgroundColor: colors.rose[500],
-    borderRadius: 12,
+    borderRadius: 20,
     paddingVertical: spacing[4],
     alignItems: "center",
     marginTop: spacing[4],
     ...Platform.select({
-      web: { /* @ts-ignore */ cursor: "pointer" },
+      ios: {
+        shadowColor: colors.rose[400],
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+      },
+      android: { elevation: 4 },
+      web: {
+        // @ts-ignore
+        cursor: "pointer",
+        // @ts-ignore
+        boxShadow: "0px 4px 12px rgba(244, 114, 182, 0.25)",
+      },
     }),
   },
-  saveButtonDisabled: {
-    opacity: 0.6,
-  },
-  saveButtonText: {
+  doneButtonText: {
     color: colors.white,
-    fontSize: typography.fontSize.base,
+    fontSize: typography.fontSize.lg,
     fontWeight: typography.fontWeight.semibold,
-  },
-  cancelButton: {
-    paddingVertical: spacing[3],
-    alignItems: "center",
-    marginTop: spacing[2],
-    ...Platform.select({
-      web: { /* @ts-ignore */ cursor: "pointer" },
-    }),
-  },
-  cancelButtonText: {
-    color: colors.gray[500],
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
+    letterSpacing: 0.3,
   },
 });

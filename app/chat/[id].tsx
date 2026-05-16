@@ -17,6 +17,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
 import { useChatSession, useSendMessage } from "@mamacare/api";
 import { colors, spacing, typography, shadows } from "@mamacare/ui";
 import type { ChatMessage } from "@mamacare/types";
@@ -87,6 +88,17 @@ export default function ChatConversationScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={90}
     >
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingTop: 16, marginBottom: 4 }}>
+        <TouchableOpacity
+          onPress={() => router.replace('/tabs/chat')}
+          accessibilityRole="button"
+          accessibilityLabel="Go back to chat list"
+          style={{ padding: 4, marginRight: 8 }}
+        >
+          <Ionicons name="arrow-back" size={24} color="#1A3A6A" />
+        </TouchableOpacity>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1A3A6A' }}>Conversation</Text>
+      </View>
       {/* Messages */}
       <FlatList
         ref={listRef}

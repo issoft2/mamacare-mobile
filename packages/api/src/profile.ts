@@ -12,6 +12,17 @@ import type {
   Profile,
   UpdateProfileRequest,
 } from "@mamacare/types";
+export function useAddCareTeamMember() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Omit<CareTeamMember, 'id' | 'user_id' | 'created_at' | 'updated_at'>) =>
+      apiRequest<CareTeamMember>("/profile/care-team", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: profileKeys.careTeam() }),
+  });
+}
 
 export const profileKeys = {
   all: ["profile"] as const,

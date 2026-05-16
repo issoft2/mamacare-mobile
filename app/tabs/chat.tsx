@@ -5,6 +5,7 @@
 
 import { useRouter } from "expo-router";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
 import { useChatSessions, useCreateChatSession } from "@mamacare/api";
 import { useProfile } from "@mamacare/api";
 import { colors, spacing, typography, shadows } from "@mamacare/ui";
@@ -38,6 +39,23 @@ export default function ChatScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingTop: 16, marginBottom: 4 }}>
+        <TouchableOpacity
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/tabs/home');
+            }
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          style={{ padding: 4, marginRight: 8 }}
+        >
+          <Ionicons name="arrow-back" size={24} color="#1A3A6A" />
+        </TouchableOpacity>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1A3A6A' }}>Chat</Text>
+      </View>
       <TouchableOpacity style={styles.newChatButton} onPress={handleNewChat}>
         <Text style={styles.newChatText}>+ Start New Conversation</Text>
       </TouchableOpacity>

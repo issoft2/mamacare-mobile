@@ -3,6 +3,7 @@
  */
 
 import { useRouter } from "expo-router";
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -45,14 +46,28 @@ export default function CareTeamScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingTop: 16, marginBottom: 4 }}>
+        <TouchableOpacity
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/tabs/home');
+            }
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          style={{ padding: 4, marginRight: 8 }}
+        >
+          <Ionicons name="arrow-back" size={24} color="#1A3A6A" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Your Care Team</Text>
+      </View>
       <FlatList
         data={careTeam ?? []}
         keyExtractor={(item) => item.id}
         renderItem={renderMember}
         contentContainerStyle={styles.list}
-        ListHeaderComponent={
-          <Text style={styles.title}>Your Care Team</Text>
-        }
         ListEmptyComponent={
           isLoading
             ? <ActivityIndicator color={colors.rose[500]} style={{ marginTop: spacing[8] }} />
