@@ -1,131 +1,122 @@
 /**
  * mobile/app/tracker/sleep.tsx
+ * Refined Sleep Logger - Soft Indigo Theme
  */
 
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import {
-  ActivityIndicator, ScrollView, StyleSheet,
-  Text, TextInput, TouchableOpacity, View,
-} from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ImageBackground } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from '@expo/vector-icons';
 import { useLogSleep } from "@mamacare/api";
-import { colors, spacing, typography } from "@mamacare/ui";
-import type { SleepDurationBand, SleepQuality } from "@mamacare/types";
 
-import { getErrorMessage } from "@/lib/errors";
-
-const BANDS: { value: SleepDurationBand; label: string }[] = [
-  { value: "under_4h", label: "Under 4 hours" },
-  { value: "4_6h",     label: "4 – 6 hours"   },
-  { value: "6_8h",     label: "6 – 8 hours"   },
-  { value: "over_8h",  label: "Over 8 hours"  },
+const BANDS = [
+  { value: "under_4h", label: "< 4h" },
+  { value: "4_6h",     label: "4-6h"   },
+  { value: "6_8h",     label: "6-8h"   },
+  { value: "over_8h",  label: "8h+"  },
 ];
 
-const QUALITIES: { value: SleepQuality; label: string; emoji: string }[] = [
-  { value: "poor", label: "Poor",  emoji: "😔" },
-  { value: "fair", label: "Fair",  emoji: "😐" },
-  { value: "good", label: "Good",  emoji: "😊" },
+const QUALITIES = [
+  { value: "poor", label: "Poor",  emoji: "😴" },
+  { value: "fair", label: "Fair",  emoji: "🌤️" },
+  { value: "good", label: "Great",  emoji: "✨" },
 ];
 
 export default function SleepLogScreen() {
   const router = useRouter();
   const logSleep = useLogSleep();
-  const [band,    setBand]    = useState<SleepDurationBand>("6_8h");
-  const [quality, setQuality] = useState<SleepQuality>("good");
-  const [notes,   setNotes]   = useState("");
-  const [error,   setError]   = useState("");
-
-  async function handleSubmit() {
-    setError("");
-    try {
-      await logSleep.mutateAsync({ duration_band: band, quality, notes: notes || undefined });
-      router.back();
-    } catch (err: unknown) {
-      setError(getErrorMessage(err, "Failed to save sleep log."));
-    }
-  }
+  const [band, setBand] = useState("6_8h");
+  const [quality, setQuality] = useState("good");
+  const [notes, setNotes] = useState("");
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Log Sleep</Text>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+    <View style={styles.screen}>
+      <ImageBackground source={require("@/assets/images/mamacare-home-bg.png")} style={styles.bgImage}>
+        <LinearGradient colors={["rgba(26, 35, 126, 0.05)", "rgba(255, 255, 255, 0.9)"]} style={styles.bgOverlay}>
+          <ScrollView contentContainerStyle={styles.content}>
+            
+            <View style={styles.header}>
+              <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                <Ionicons name="chevron-back" size={24} color="#1A237E" />
+              </TouchableOpacity>
+              <Text style={styles.title}>Sleep Journal</Text>
+            </View>
 
-      <Text style={styles.label}>How long did you sleep?</Text>
-      <View style={styles.options}>
-        {BANDS.map(b => (
-          <TouchableOpacity
-            key={b.value}
-            style={[styles.option, band === b.value && styles.optionActive]}
-            onPress={() => setBand(b.value)}
-          >
-            <Text style={[styles.optionText, band === b.value && styles.optionTextActive]}>
-              {b.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+            <View style={styles.glassCard}>
+              <Text style={styles.label}>Duration</Text>
+              <View style={styles.bandRow}>
+                {BANDS.map(b => (
+                  <TouchableOpacity
+                    key={b.value}
+                    style={[styles.bandBtn, band === b.value && styles.bandActive]}
+                    onPress={() => setBand(b.value)}
+                  >
+                    <Text style={[styles.bandText, band === b.value && styles.bandTextActive]}>{b.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-      <Text style={styles.label}>Sleep quality</Text>
-      <View style={styles.qualityRow}>
-        {QUALITIES.map(q => (
-          <TouchableOpacity
-            key={q.value}
-            style={[styles.qualityBtn, quality === q.value && styles.qualityBtnActive]}
-            onPress={() => setQuality(q.value)}
-          >
-            <Text style={styles.qualityEmoji}>{q.emoji}</Text>
-            <Text style={[styles.qualityText, quality === q.value && styles.qualityTextActive]}>
-              {q.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+              <Text style={styles.label}>Quality of Rest</Text>
+              <View style={styles.qualityGrid}>
+                {QUALITIES.map(q => (
+                  <TouchableOpacity
+                    key={q.value}
+                    style={[styles.qualityCard, quality === q.value && styles.qualityActive]}
+                    onPress={() => setQuality(q.value)}
+                  >
+                    <Text style={styles.qualityEmoji}>{q.emoji}</Text>
+                    <Text style={[styles.qualityLabel, quality === q.value && styles.qualityLabelActive]}>{q.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-      <Text style={styles.label}>Notes (optional)</Text>
-      <TextInput
-        style={styles.textarea}
-        placeholder="Any sleep issues, dreams, or notes..."
-        placeholderTextColor={colors.gray[400]}
-        value={notes}
-        onChangeText={setNotes}
-        multiline
-        numberOfLines={3}
-        textAlignVertical="top"
-      />
+              <Text style={styles.label}>Notes</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Any vivid dreams or interruptions?"
+                placeholderTextColor="#9E9E9E"
+                value={notes}
+                onChangeText={setNotes}
+                multiline
+              />
 
-      <TouchableOpacity
-        style={[styles.button, logSleep.isPending && styles.buttonDisabled]}
-        onPress={handleSubmit}
-        disabled={logSleep.isPending}
-      >
-        {logSleep.isPending
-          ? <ActivityIndicator color={colors.white} />
-          : <Text style={styles.buttonText}>Save Sleep Log</Text>
-        }
-      </TouchableOpacity>
-    </ScrollView>
+              <TouchableOpacity style={styles.submitBtn} onPress={() => logSleep.mutateAsync({ duration_band: band, quality, notes })}>
+                <LinearGradient colors={["#6B7BB8", "#1A237E"]} style={styles.submitGradient}>
+                  {logSleep.isPending ? <ActivityIndicator color="#FFF" /> : <Text style={styles.submitText}>Save Log</Text>}
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </LinearGradient>
+      </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container:      { flex: 1, backgroundColor: colors.white },
-  content:        { padding: spacing[6], maxWidth: 480, alignSelf: "center", width: "100%", gap: spacing[4] },
-  title:          { fontSize: typography.fontSize["2xl"], fontWeight: typography.fontWeight.bold, color: colors.navy[700] },
-  error:          { backgroundColor: "#FCEBEB", color: "#A32D2D", padding: spacing[3], borderRadius: 8, fontSize: typography.fontSize.sm },
-  label:          { fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.semibold, color: colors.gray[700] },
-  options:        { gap: spacing[2] },
-  option:         { borderWidth: 1, borderColor: colors.gray[200], borderRadius: 10, paddingVertical: spacing[3], paddingHorizontal: spacing[4] },
-  optionActive:   { borderColor: colors.rose[500], backgroundColor: colors.rose[100] },
-  optionText:     { fontSize: typography.fontSize.base, color: colors.gray[700] },
-  optionTextActive: { color: colors.rose[600], fontWeight: typography.fontWeight.medium },
-  qualityRow:     { flexDirection: "row", gap: spacing[3] },
-  qualityBtn:     { flex: 1, borderWidth: 1, borderColor: colors.gray[200], borderRadius: 12, padding: spacing[3], alignItems: "center", gap: spacing[1] },
-  qualityBtnActive: { borderColor: colors.rose[500], backgroundColor: colors.rose[100] },
-  qualityEmoji:   { fontSize: 28 },
-  qualityText:    { fontSize: typography.fontSize.sm, color: colors.gray[600] },
-  qualityTextActive: { color: colors.rose[600], fontWeight: typography.fontWeight.medium },
-  textarea:       { borderWidth: 1, borderColor: colors.gray[200], borderRadius: 12, padding: spacing[4], fontSize: typography.fontSize.base, color: colors.gray[900], backgroundColor: colors.gray[50], minHeight: 80 },
-  button:         { backgroundColor: colors.rose[500], borderRadius: 12, paddingVertical: spacing[4], alignItems: "center", marginTop: spacing[2] },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText:     { color: colors.white, fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semibold },
+  screen: { flex: 1 },
+  bgImage: { flex: 1 },
+  bgOverlay: { flex: 1 },
+  content: { padding: 20, paddingTop: 60 },
+  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 30 },
+  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', marginRight: 15, elevation: 3 },
+  title: { fontSize: 24, fontWeight: "800", color: "#1A237E" },
+  glassCard: { backgroundColor: "rgba(255,255,255,0.7)", borderRadius: 30, padding: 20, elevation: 5 },
+  label: { fontSize: 12, fontWeight: '800', color: '#1A237E', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12, marginLeft: 4 },
+  bandRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 25 },
+  bandBtn: { flex: 1, marginHorizontal: 4, paddingVertical: 12, borderRadius: 12, backgroundColor: '#FFF', alignItems: 'center', borderWidth: 1, borderColor: '#E0E0E0' },
+  bandActive: { borderColor: '#6B7BB8', backgroundColor: 'rgba(107, 123, 184, 0.1)' },
+  bandText: { color: '#757575', fontWeight: '600' },
+  bandTextActive: { color: '#1A237E' },
+  qualityGrid: { flexDirection: 'row', gap: 10, marginBottom: 25 },
+  qualityCard: { flex: 1, backgroundColor: '#FFF', padding: 15, borderRadius: 20, alignItems: 'center', borderWidth: 1, borderColor: '#E0E0E0' },
+  qualityActive: { borderColor: '#6B7BB8', backgroundColor: 'rgba(107, 123, 184, 0.05)' },
+  qualityEmoji: { fontSize: 30, marginBottom: 5 },
+  qualityLabel: { fontSize: 13, color: '#757575', fontWeight: '600' },
+  qualityLabelActive: { color: '#1A237E' },
+  input: { backgroundColor: '#FFF', borderRadius: 20, padding: 15, minHeight: 80, textAlignVertical: 'top', fontSize: 15 },
+  submitBtn: { marginTop: 30, borderRadius: 20, overflow: 'hidden' },
+  submitGradient: { padding: 18, alignItems: 'center' },
+  submitText: { color: '#FFF', fontWeight: '700', fontSize: 16 }
 });

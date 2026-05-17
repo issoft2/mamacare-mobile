@@ -1,114 +1,109 @@
 /**
  * mobile/app/tracker/mood.tsx
+ * Refined Emotional Check-in
  */
 
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import {
-  ActivityIndicator, ScrollView, StyleSheet,
-  Text, TextInput, TouchableOpacity, View,
-} from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ImageBackground } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useLogMood } from "@mamacare/api";
-import { colors, spacing, typography } from "@mamacare/ui";
 import type { Mood } from "@mamacare/types";
 
 const MOODS: { value: Mood; emoji: string; label: string }[] = [
-  { value: "happy",   emoji: "😊", label: "Happy"   },
-  { value: "neutral", emoji: "😐", label: "Neutral" },
+  { value: "happy", emoji: "😊", label: "Happy" },
+  { value: "neutral", emoji: "😐", label: "Steady" },
   { value: "anxious", emoji: "😰", label: "Anxious" },
-  { value: "low",     emoji: "😔", label: "Low"     },
+  { value: "low", emoji: "😔", label: "Low" },
 ];
 
 export default function MoodLogScreen() {
   const router = useRouter();
   const logMood = useLogMood();
-  const [mood,  setMood]  = useState<Mood>("neutral");
+  const [mood, setMood] = useState<Mood>("neutral");
   const [notes, setNotes] = useState("");
-  const [error, setError] = useState("");
-
-  async function handleSubmit() {
-    setError("");
-    try {
-      await logMood.mutateAsync({ mood, notes: notes || undefined });
-      router.back();
-    } catch (err: any) {
-      setError(err.body?.error?.message ?? "Failed to save mood log.");
-    }
-  }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>How are you feeling?</Text>
-      <Text style={styles.subtitle}>Your emotional wellbeing matters</Text>
+    <View style={styles.screen}>
+      <ImageBackground source={require("@/assets/images/mamacare-home-bg.png")} style={styles.bgImage}>
+        <LinearGradient colors={["rgba(255,255,255,0.8)", "rgba(255,245,245,0.6)"]} style={styles.bgOverlay}>
+          <ScrollView contentContainerStyle={styles.content}>
+            
+            <View style={styles.header}>
+              <Text style={styles.title}>Emotional Check-in</Text>
+              <Text style={styles.subtitle}>How is your heart feeling today?</Text>
+            </View>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+            <View style={styles.glassCard}>
+              <View style={styles.moodGrid}>
+                {MOODS.map(m => (
+                  <TouchableOpacity
+                    key={m.value}
+                    style={[styles.moodCard, mood === m.value && styles.moodCardActive]}
+                    onPress={() => setMood(m.value)}
+                  >
+                    <Text style={styles.moodEmoji}>{m.emoji}</Text>
+                    <Text style={[styles.moodLabel, mood === m.value && styles.moodLabelActive]}>{m.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-      <View style={styles.moodGrid}>
-        {MOODS.map(m => (
-          <TouchableOpacity
-            key={m.value}
-            style={[styles.moodCard, mood === m.value && styles.moodCardActive]}
-            onPress={() => setMood(m.value)}
-          >
-            <Text style={styles.moodEmoji}>{m.emoji}</Text>
-            <Text style={[styles.moodLabel, mood === m.value && styles.moodLabelActive]}>
-              {m.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+              {(mood === "anxious" || mood === "low") && (
+                <View style={styles.supportBanner}>
+                   <Text style={styles.supportText}>💙 You're not alone. It's okay to feel this way. Take a deep breath.</Text>
+                </View>
+              )}
 
-      {(mood === "anxious" || mood === "low") && (
-        <View style={styles.supportBanner}>
-          <Text style={styles.supportText}>
-            💙 It's okay to feel this way during pregnancy. If you're struggling, please speak to your midwife or call the Samaritans on 116 123.
-          </Text>
-        </View>
-      )}
+              <Text style={styles.inputLabel}>Additional Thoughts</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="What's on your mind?"
+                placeholderTextColor="#BDBDBD"
+                value={notes}
+                onChangeText={setNotes}
+                multiline
+              />
 
-      <Text style={styles.label}>Notes (optional)</Text>
-      <TextInput
-        style={styles.textarea}
-        placeholder="What's on your mind?"
-        placeholderTextColor={colors.gray[400]}
-        value={notes}
-        onChangeText={setNotes}
-        multiline
-        numberOfLines={3}
-        textAlignVertical="top"
-      />
+              <TouchableOpacity style={styles.submitBtn} onPress={() => logMood.mutateAsync({ mood, notes })}>
+                <LinearGradient colors={["#E8697C", "#FFA07A"]} start={{x:0, y:0}} end={{x:1, y:0}} style={styles.submitGradient}>
+                  {logMood.isPending ? <ActivityIndicator color="#FFF" /> : <Text style={styles.submitText}>Save Reflection</Text>}
+                </LinearGradient>
+              </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.button, logMood.isPending && styles.buttonDisabled]}
-        onPress={handleSubmit}
-        disabled={logMood.isPending}
-      >
-        {logMood.isPending
-          ? <ActivityIndicator color={colors.white} />
-          : <Text style={styles.buttonText}>Save Mood</Text>
-        }
-      </TouchableOpacity>
-    </ScrollView>
+              <TouchableOpacity onPress={() => router.back()} style={styles.cancel}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+
+          </ScrollView>
+        </LinearGradient>
+      </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container:       { flex: 1, backgroundColor: colors.white },
-  content:         { padding: spacing[6], maxWidth: 480, alignSelf: "center", width: "100%", gap: spacing[5] },
-  title:           { fontSize: typography.fontSize["2xl"], fontWeight: typography.fontWeight.bold, color: colors.navy[700] },
-  subtitle:        { fontSize: typography.fontSize.base, color: colors.gray[500], marginTop: -spacing[3] },
-  error:           { backgroundColor: "#FCEBEB", color: "#A32D2D", padding: spacing[3], borderRadius: 8, fontSize: typography.fontSize.sm },
-  moodGrid:        { flexDirection: "row", flexWrap: "wrap", gap: spacing[3] },
-  moodCard:        { width: "47%", borderWidth: 1, borderColor: colors.gray[200], borderRadius: 16, padding: spacing[5], alignItems: "center", gap: spacing[2] },
-  moodCardActive:  { borderColor: colors.rose[500], backgroundColor: colors.rose[50] },
-  moodEmoji:       { fontSize: 40 },
-  moodLabel:       { fontSize: typography.fontSize.base, color: colors.gray[600] },
-  moodLabelActive: { color: colors.rose[600], fontWeight: typography.fontWeight.semibold },
-  supportBanner:   { backgroundColor: "#E6EEF8", borderRadius: 12, padding: spacing[4] },
-  supportText:     { fontSize: typography.fontSize.sm, color: "#1A3A6A", lineHeight: 20 },
-  label:           { fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.semibold, color: colors.gray[700] },
-  textarea:        { borderWidth: 1, borderColor: colors.gray[200], borderRadius: 12, padding: spacing[4], fontSize: typography.fontSize.base, color: colors.gray[900], backgroundColor: colors.gray[50], minHeight: 80 },
-  button:          { backgroundColor: colors.rose[500], borderRadius: 12, paddingVertical: spacing[4], alignItems: "center" },
-  buttonDisabled:  { opacity: 0.6 },
-  buttonText:      { color: colors.white, fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semibold },
+  screen: { flex: 1 },
+  bgImage: { flex: 1 },
+  bgOverlay: { flex: 1 },
+  content: { padding: 20, paddingTop: 60 },
+  header: { marginBottom: 30 },
+  title: { fontSize: 26, fontWeight: "700", color: "#1A237E" },
+  subtitle: { fontSize: 16, color: "#757575", marginTop: 4 },
+  glassCard: { backgroundColor: "rgba(255,255,255,0.7)", borderRadius: 30, padding: 20, elevation: 10, shadowOpacity: 0.1 },
+  moodGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 20 },
+  moodCard: { width: '48%', backgroundColor: '#FFF', padding: 20, borderRadius: 20, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  moodCardActive: { borderColor: '#E8697C', backgroundColor: 'rgba(232, 105, 124, 0.05)' },
+  moodEmoji: { fontSize: 40, marginBottom: 8 },
+  moodLabel: { fontSize: 14, color: '#757575', fontWeight: '600' },
+  moodLabelActive: { color: '#E8697C' },
+  supportBanner: { backgroundColor: 'rgba(74, 144, 226, 0.1)', padding: 15, borderRadius: 15, marginBottom: 20 },
+  supportText: { fontSize: 13, color: '#4A90E2', lineHeight: 18, textAlign: 'center' },
+  inputLabel: { fontSize: 12, fontWeight: '700', color: '#9E9E9E', textTransform: 'uppercase', marginBottom: 10, marginLeft: 5 },
+  input: { backgroundColor: '#FFF', borderRadius: 20, padding: 15, minHeight: 100, textAlignVertical: 'top', fontSize: 15 },
+  submitBtn: { marginTop: 30, borderRadius: 20, overflow: 'hidden' },
+  submitGradient: { padding: 18, alignItems: 'center' },
+  submitText: { color: '#FFF', fontWeight: '700', fontSize: 16 },
+  cancel: { marginTop: 20, alignItems: 'center' },
+  cancelText: { color: '#BDBDBD' }
 });

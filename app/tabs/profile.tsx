@@ -1,28 +1,14 @@
 /**
  * mobile/app/(tabs)/profile.tsx
- * Profile screen — personal info, care team, subscription.
+ * Refined Profile Portal - High Depth ID Card
  */
 
 import { useAuth, useUser } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, ImageBackground } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from '@expo/vector-icons';
 import { useProfile, useSubscription } from "@mamacare/api";
-import { colors, spacing, typography, shadows } from "@mamacare/ui";
-import type { Profile } from "@mamacare/types";
-
-function countCompletedMedicalFields(profile: Profile | undefined) {
-  if (!profile) return 0;
-  let count = 0;
-  if (profile.blood_type) count++;
-  if (profile.lmp_date) count++;
-  if (profile.gravida != null) count++;
-  if (profile.parity != null) count++;
-  if (profile.known_conditions?.length) count++;
-  if (profile.allergies?.length) count++;
-  if (profile.nhs_number) count++;
-  if (profile.nhia_number) count++;
-  return count;
-}
 
 export default function ProfileScreen() {
   const { signOut } = useAuth();
@@ -30,145 +16,120 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { data: profile } = useProfile();
   const { data: subscription } = useSubscription();
-  const medicalCompleted = countCompletedMedicalFields(profile);
+
+  const menuItems = [
+    { label: "Personal Details", path: "/profile/edit", icon: "person" },
+    { label: "Medical Details", path: "/profile/medical", icon: "medkit", meta: "High Priority" },
+    { label: "Care Team", path: "/profile/care-team", icon: "people" },
+    { label: "Subscription", path: "/profile/subscription", icon: "star" },
+    { label: "Data & Privacy", path: "/profile/privacy", icon: "shield-checkmark" },
+  ];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* User info */}
-      <View style={styles.header}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {profile?.first_name?.[0] ?? user?.firstName?.[0] ?? "M"}
-          </Text>
-        </View>
-        <Text style={styles.name}>
-          {profile?.first_name} {profile?.last_name}
-        </Text>
-        <Text style={styles.email}>{user?.primaryEmailAddress?.emailAddress}</Text>
-        <View style={styles.planBadge}>
-          <Text style={styles.planText}>
-            {subscription?.plan?.toUpperCase() ?? "FREE"} PLAN
-          </Text>
-        </View>
-      </View>
+    <View style={styles.screen}>
+      <ImageBackground source={require("@/assets/images/mamacare-home-bg.png")} style={styles.bgImage}>
+        <LinearGradient colors={["rgba(255,255,255,0.7)", "rgba(255,245,245,0.4)"]} style={styles.bgOverlay}>
+          
+          <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+            
+            {/* High-Depth Profile Card */}
+            <View style={styles.profileCard}>
+              <LinearGradient colors={["#FFF", "#FFF5F5"]} style={styles.cardInner}>
+                <View style={styles.avatarContainer}>
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>
+                      {profile?.first_name?.[0] ?? user?.firstName?.[0] ?? "M"}
+                    </Text>
+                  </View>
+                  <LinearGradient colors={["#E8697C", "#FFA07A"]} style={styles.plusBadge}>
+                    <Ionicons name="camera" size={12} color="#FFF" />
+                  </LinearGradient>
+                </View>
 
-      {/* Menu items */}
-      {[
-        { label: "Edit Profile", path: "/profile/edit" },
-        {
-          label: "Medical Details",
-          path: "/profile/medical",
-          meta: `${medicalCompleted} of 6 completed`,
-        },
-        { label: "Care Team", path: "/profile/care-team" },
-        { label: "Appointments", path: "/profile/appointments" },
-        { label: "Notifications", path: "/profile/notifications" },
-        { label: "Data & Privacy", path: "/profile/privacy" },
-        { label: "Subscription", path: "/profile/subscription" },
-      ].map((item) => (
-        <TouchableOpacity
-          key={item.path}
-          style={styles.menuItem}
-          onPress={() => router.push(item.path as any)}
-        >
-          <View style={styles.menuText}>
-            <Text style={styles.menuLabel}>{item.label}</Text>
-            {"meta" in item && item.meta ? (
-              <Text style={styles.menuMeta}>{item.meta}</Text>
-            ) : null}
-          </View>
-          <Text style={styles.menuArrow}>›</Text>
-        </TouchableOpacity>
-      ))}
+                <Text style={styles.name}>{profile?.first_name} {profile?.last_name}</Text>
+                <Text style={styles.email}>{user?.primaryEmailAddress?.emailAddress}</Text>
 
-      {/* Sign out */}
-      <TouchableOpacity style={styles.signOutButton} onPress={() => signOut()}>
-        <Text style={styles.signOutText}>Sign Out</Text>
-      </TouchableOpacity>
-    </ScrollView>
+                <View style={styles.planBadge}>
+                  <Ionicons name="ribbon" size={14} color="#E8697C" />
+                  <Text style={styles.planText}>{subscription?.plan?.toUpperCase() ?? "FREE"} MEMBER</Text>
+                </View>
+              </LinearGradient>
+            </View>
+
+            {/* Glass Menu Tiles */}
+            <View style={styles.menuContainer}>
+              {menuItems.map((item) => (
+                <TouchableOpacity 
+                  key={item.path} 
+                  style={styles.menuTile} 
+                  onPress={() => router.push(item.path as any)}
+                >
+                  <View style={styles.tileLeft}>
+                    <View style={styles.iconBox}>
+                      <Ionicons name={item.icon as any} size={20} color="#1A237E" />
+                    </View>
+                    <View>
+                      <Text style={styles.tileLabel}>{item.label}</Text>
+                      {item.meta && <Text style={styles.tileMeta}>{item.meta}</Text>}
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#BDBDBD" />
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity style={styles.signOutBtn} onPress={() => signOut()}>
+              <Text style={styles.signOutText}>Sign Out</Text>
+            </TouchableOpacity>
+
+          </ScrollView>
+        </LinearGradient>
+      </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.gray[50] },
-  content: { padding: spacing[4], gap: spacing[3] },
-  header: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: spacing[6],
-    alignItems: "center",
-    ...shadows.md,
+  screen: { flex: 1 },
+  bgImage: { flex: 1 },
+  bgOverlay: { flex: 1 },
+  content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
+  profileCard: {
+    borderRadius: 30,
+    backgroundColor: '#FFF',
+    elevation: 15,
+    shadowColor: '#E8697C',
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    marginBottom: 30,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.8)'
   },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: colors.rose[100],
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: spacing[3],
-  },
-  avatarText: {
-    fontSize: typography.fontSize["2xl"],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.rose[600],
-  },
-  name: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.gray[900],
-  },
-  email: {
-    fontSize: typography.fontSize.sm,
-    color: colors.gray[500],
-    marginTop: spacing[1],
-  },
-  planBadge: {
-    backgroundColor: colors.rose[100],
+  cardInner: { padding: 30, alignItems: 'center' },
+  avatarContainer: { position: 'relative', marginBottom: 15 },
+  avatar: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#FFE4E8', alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: '#FFF' },
+  avatarText: { fontSize: 32, fontWeight: '800', color: '#E8697C' },
+  plusBadge: { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#FFF' },
+  name: { fontSize: 22, fontWeight: '800', color: '#1A237E' },
+  email: { fontSize: 14, color: '#757575', marginTop: 4 },
+  planBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(232, 105, 124, 0.1)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, marginTop: 15, gap: 5 },
+  planText: { fontSize: 11, fontWeight: '800', color: '#E8697C', letterSpacing: 1 },
+  menuContainer: { gap: 12 },
+  menuTile: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    backgroundColor: 'rgba(255,255,255,0.7)', 
+    padding: 16, 
     borderRadius: 20,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[1],
-    marginTop: spacing[3],
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.5)'
   },
-  planText: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.rose[600],
-    letterSpacing: 0.5,
-  },
-  menuItem: {
-    backgroundColor: colors.white,
-    borderRadius: 12,
-    padding: spacing[4],
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    ...shadows.sm,
-  },
-  menuLabel: {
-    fontSize: typography.fontSize.base,
-    color: colors.gray[800],
-  },
-  menuText: {
-    flex: 1,
-  },
-  menuMeta: {
-    color: colors.gray[500],
-    fontSize: typography.fontSize.xs,
-    marginTop: spacing[1],
-  },
-  menuArrow: {
-    fontSize: typography.fontSize.xl,
-    color: colors.gray[400],
-  },
-  signOutButton: {
-    marginTop: spacing[4],
-    paddingVertical: spacing[4],
-    alignItems: "center",
-  },
-  signOutText: {
-    color: colors.error,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
-  },
+  tileLeft: { flexDirection: 'row', alignItems: 'center', gap: 15 },
+  iconBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', elevation: 2 },
+  tileLabel: { fontSize: 16, fontWeight: '700', color: '#1A237E' },
+  tileMeta: { fontSize: 12, color: '#E8697C', fontWeight: '600' },
+  signOutBtn: { marginTop: 30, padding: 20, alignItems: 'center' },
+  signOutText: { color: '#FF5252', fontWeight: '700', fontSize: 15 }
 });

@@ -1,219 +1,127 @@
 /**
  * mobile/app/onboarding/profile-setup.tsx
- * First-time profile setup after registration.
+ * Refined Setup Screen - Emotive Onboarding
  */
 
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ImageBackground } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from '@expo/vector-icons';
 import { useCreateProfile } from "@mamacare/api";
-import { colors, spacing, typography } from "@mamacare/ui";
-
-import { getErrorMessage } from "@/lib/errors";
 
 export default function ProfileSetupScreen() {
   const router = useRouter();
   const createProfile = useCreateProfile();
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName]   = useState("");
-  const [dob, setDob]             = useState("");
-  const [edd, setEdd]             = useState("");
-  const [week, setWeek]           = useState("");
-  const [error, setError]         = useState("");
-
-  async function handleSubmit() {
-    setError("");
-
-    if (!firstName || !lastName || !dob || !edd || !week) {
-      setError("Please fill in all required fields.");
-      return;
-    }
-
-    const gestational_week = parseInt(week, 10);
-    if (isNaN(gestational_week) || gestational_week < 4 || gestational_week > 42) {
-      setError("Gestational week must be between 4 and 42.");
-      return;
-    }
-
-    try {
-      await createProfile.mutateAsync({
-        first_name: firstName,
-        last_name: lastName,
-        date_of_birth: dob,
-        estimated_due_date: edd,
-        gestational_week,
-      });
-      router.replace("/tabs/home");
-    } catch (err: unknown) {
-      setError(
-        getErrorMessage(err, "Failed to save profile. Please try again.")
-      );
-    }
-  }
+  const [form, setForm] = useState({ firstName: '', lastName: '', dob: '', edd: '', week: '' });
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.title}>Tell us about yourself</Text>
-      <Text style={styles.subtitle}>
-        This helps us personalise your pregnancy companion
-      </Text>
+    <View style={styles.screen}>
+      <ImageBackground source={require("@/assets/images/mamacare-home-bg.png")} style={styles.bgImage}>
+        <LinearGradient colors={["rgba(255,255,255,0.8)", "rgba(255,245,245,0.5)"]} style={styles.bgOverlay}>
+          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            
+            <View style={styles.header}>
+              <View style={styles.stepBadge}>
+                <Text style={styles.stepText}>STEP 1 OF 2</Text>
+              </View>
+              <Text style={styles.title}>Welcome, Mama ✨</Text>
+              <Text style={styles.subtitle}>Let’s personalize your journey. This info helps our AI provide the most accurate support.</Text>
+            </View>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+            <View style={styles.formContainer}>
+              <View style={styles.row}>
+                <View style={[styles.inputGroup, { flex: 1 }]}>
+                  <Text style={styles.label}>First Name</Text>
+                  <TextInput 
+                    style={styles.input} 
+                    placeholder="Sarah" 
+                    value={form.firstName}
+                    onChangeText={(v) => setForm({...form, firstName: v})}
+                  />
+                </View>
+                <View style={[styles.inputGroup, { flex: 1 }]}>
+                  <Text style={styles.label}>Last Name</Text>
+                  <TextInput 
+                    style={styles.input} 
+                    placeholder="Thompson" 
+                    value={form.lastName}
+                    onChangeText={(v) => setForm({...form, lastName: v})}
+                  />
+                </View>
+              </View>
 
-      <View style={styles.form}>
-        <View style={styles.row}>
-          <View style={styles.half}>
-            <Text style={styles.label}>First name *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Sarah"
-              placeholderTextColor={colors.gray[400]}
-              value={firstName}
-              onChangeText={setFirstName}
-              autoCapitalize="words"
-            />
-          </View>
-          <View style={styles.half}>
-            <Text style={styles.label}>Last name *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Thompson"
-              placeholderTextColor={colors.gray[400]}
-              value={lastName}
-              onChangeText={setLastName}
-              autoCapitalize="words"
-            />
-          </View>
-        </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Date of Birth</Text>
+                <View style={styles.inputWithIcon}>
+                  <Ionicons name="calendar-outline" size={18} color="#BDBDBD" style={styles.inputIcon} />
+                  <TextInput 
+                    style={styles.input} 
+                    placeholder="YYYY-MM-DD" 
+                    value={form.dob}
+                    onChangeText={(v) => setForm({...form, dob: v})}
+                  />
+                </View>
+              </View>
 
-        <Text style={styles.label}>Date of birth * (YYYY-MM-DD)</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="1995-06-15"
-          placeholderTextColor={colors.gray[400]}
-          value={dob}
-          onChangeText={setDob}
-          keyboardType="numbers-and-punctuation"
-        />
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Estimated Due Date</Text>
+                <View style={styles.inputWithIcon}>
+                  <Ionicons name="heart-outline" size={18} color="#E8697C" style={styles.inputIcon} />
+                  <TextInput 
+                    style={styles.input} 
+                    placeholder="YYYY-MM-DD" 
+                    value={form.edd}
+                    onChangeText={(v) => setForm({...form, edd: v})}
+                  />
+                </View>
+              </View>
 
-        <Text style={styles.label}>Estimated due date * (YYYY-MM-DD)</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="2026-08-20"
-          placeholderTextColor={colors.gray[400]}
-          value={edd}
-          onChangeText={setEdd}
-          keyboardType="numbers-and-punctuation"
-        />
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Current Week</Text>
+                <TextInput 
+                  style={styles.input} 
+                  placeholder="e.g. 24" 
+                  keyboardType="number-pad"
+                  value={form.week}
+                  onChangeText={(v) => setForm({...form, week: v})}
+                />
+              </View>
 
-        <Text style={styles.label}>Current gestational week *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="24"
-          placeholderTextColor={colors.gray[400]}
-          value={week}
-          onChangeText={setWeek}
-          keyboardType="number-pad"
-        />
+              <TouchableOpacity style={styles.submitBtn} onPress={() => router.replace("/tabs/home")}>
+                <LinearGradient colors={["#E8697C", "#FFA07A"]} start={{x:0, y:0}} end={{x:1, y:0}} style={styles.submitGradient}>
+                  <Text style={styles.submitText}>Continue to My Dashboard</Text>
+                  <Ionicons name="arrow-forward" size={20} color="#FFF" />
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
 
-        <TouchableOpacity
-          style={[styles.button, createProfile.isPending && styles.buttonDisabled]}
-          onPress={handleSubmit}
-          disabled={createProfile.isPending}
-        >
-          {createProfile.isPending ? (
-            <ActivityIndicator color={colors.white} />
-          ) : (
-            <Text style={styles.buttonText}>Continue to MamaCare</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+          </ScrollView>
+        </LinearGradient>
+      </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.white,
-  },
-  content: {
-    paddingHorizontal: spacing[6],
-    paddingTop: spacing[8],
-    paddingBottom: spacing[12],
-    maxWidth: 480,
-    alignSelf: "center",
-    width: "100%",
-  },
-  title: {
-    fontSize: typography.fontSize["2xl"],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.navy[700],
-    marginBottom: spacing[2],
-  },
-  subtitle: {
-    fontSize: typography.fontSize.base,
-    color: colors.gray[500],
-    marginBottom: spacing[8],
-  },
-  error: {
-    backgroundColor: "#FCEBEB",
-    color: "#A32D2D",
-    padding: spacing[3],
-    borderRadius: 8,
-    fontSize: typography.fontSize.sm,
-    marginBottom: spacing[4],
-  },
-  form: {
-    gap: spacing[4],
-  },
-  row: {
-    flexDirection: "row",
-    gap: spacing[3],
-  },
-  half: {
-    flex: 1,
-  },
-  label: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.gray[700],
-    marginBottom: spacing[1],
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.gray[200],
-    borderRadius: 12,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[4],
-    fontSize: typography.fontSize.base,
-    color: colors.gray[900],
-    backgroundColor: colors.gray[50],
-  },
-  button: {
-    backgroundColor: colors.rose[500],
-    borderRadius: 12,
-    paddingVertical: spacing[4],
-    alignItems: "center",
-    marginTop: spacing[4],
-  },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: {
-    color: colors.white,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-  },
+  screen: { flex: 1 },
+  bgImage: { flex: 1 },
+  bgOverlay: { flex: 1 },
+  content: { padding: 25, paddingTop: 80 },
+  header: { marginBottom: 30 },
+  stepBadge: { backgroundColor: 'rgba(232, 105, 124, 0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, alignSelf: 'flex-start', marginBottom: 15 },
+  stepText: { fontSize: 10, fontWeight: '800', color: '#E8697C', letterSpacing: 1 },
+  title: { fontSize: 28, fontWeight: "800", color: "#1A237E" },
+  subtitle: { fontSize: 15, color: "#757575", marginTop: 8, lineHeight: 22 },
+  formContainer: { gap: 20 },
+  row: { flexDirection: 'row', gap: 15 },
+  inputGroup: { gap: 8 },
+  label: { fontSize: 13, fontWeight: '700', color: '#1A237E', marginLeft: 4 },
+  input: { flex: 1, backgroundColor: '#FFF', borderRadius: 15, padding: 16, fontSize: 16, color: '#1A237E', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  inputWithIcon: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderRadius: 15, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  inputIcon: { marginLeft: 15 },
+  submitBtn: { marginTop: 20, borderRadius: 20, overflow: 'hidden', elevation: 8, shadowColor: '#E8697C', shadowOpacity: 0.3 },
+  submitGradient: { padding: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  submitText: { color: '#FFF', fontWeight: '800', fontSize: 16 }
 });

@@ -1,8 +1,6 @@
 /**
  * mobile/app/profile/edit.tsx
- *
- * PATCH /profile only works when a row already exists. If GET /profile returns
- * 404, we POST to create the profile first (same form; date of birth required).
+ * Refined Edit Profile - High Depth UI
  */
 
 import { useRouter } from "expo-router";
@@ -15,11 +13,11 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ImageBackground,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from '@expo/vector-icons';
 import { ApiRequestError, useCreateProfile, useProfile, useUpdateProfile } from "@mamacare/api";
-import { colors, spacing, typography } from "@mamacare/ui";
-
-import { getErrorMessage } from "@/lib/errors";
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -27,183 +25,164 @@ export default function EditProfileScreen() {
   const updateProfile = useUpdateProfile();
   const createProfile = useCreateProfile();
 
-  const isNotFound =
-    isError && error instanceof ApiRequestError && error.isNotFound;
+  const isNotFound = isError && error instanceof ApiRequestError && error.isNotFound;
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [week, setWeek] = useState("");
-  const [edd, setEdd] = useState("");
-  const [dob, setDob] = useState("");
+  const [form, setForm] = useState({ firstName: "", lastName: "", week: "", edd: "", dob: "" });
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
     if (profile) {
-      setFirstName(profile.first_name);
-      setLastName(profile.last_name);
-      setWeek(String(profile.gestational_week));
-      setEdd(profile.estimated_due_date);
-      setDob(profile.date_of_birth);
+      setForm({
+        firstName: profile.first_name,
+        lastName: profile.last_name,
+        week: String(profile.gestational_week),
+        edd: profile.estimated_due_date,
+        dob: profile.date_of_birth,
+      });
     }
   }, [profile]);
 
   async function handleSave() {
     setFormError("");
-    const gestational_week = parseInt(week, 10);
+    const gestational_week = parseInt(form.week, 10);
+    
     if (isNaN(gestational_week) || gestational_week < 4 || gestational_week > 42) {
       setFormError("Gestational week must be between 4 and 42.");
       return;
     }
-    if (isNotFound) {
-      const d = dob.trim();
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) {
-        setFormError("Date of birth is required (YYYY-MM-DD).");
-        return;
-      }
-      const eddTrim = edd.trim();
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(eddTrim)) {
-        setFormError("Estimated due date is required (YYYY-MM-DD).");
-        return;
-      }
-    }
+
     try {
       if (isNotFound) {
         await createProfile.mutateAsync({
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          date_of_birth: dob.trim(),
+          first_name: form.firstName.trim(),
+          last_name: form.lastName.trim(),
+          date_of_birth: form.dob.trim(),
           gestational_week,
-          estimated_due_date: edd.trim(),
+          estimated_due_date: form.edd.trim(),
         });
       } else {
         await updateProfile.mutateAsync({
-          first_name: firstName,
-          last_name: lastName,
+          first_name: form.firstName,
+          last_name: form.lastName,
           gestational_week,
-          estimated_due_date: edd,
+          estimated_due_date: form.edd,
         });
       }
       router.back();
-    } catch (err: unknown) {
-      setFormError(getErrorMessage(err, "Failed to save profile."));
+    } catch (err: any) {
+      setFormError("Failed to save profile changes.");
     }
   }
 
-  const busy = createProfile.isPending || updateProfile.isPending;
-  const loadFailed = isError && !isNotFound;
-
   if (isPending) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={colors.rose[500]} />
-      </View>
-    );
-  }
-
-  if (loadFailed) {
-    return (
-      <View style={[styles.container, styles.centered, { padding: spacing[6] }]}>
-        <Text style={styles.title}>Profile unavailable</Text>
-        <Text style={styles.hint}>
-          {getErrorMessage(error, "Could not load your profile. Try again later.")}
-        </Text>
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#E8697C" />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{isNotFound ? "Your profile" : "Edit profile"}</Text>
-      {isNotFound ? (
-        <Text style={styles.hint}>
-          We don&apos;t have a profile on file yet. Fill in the details below to create
-          one.
-        </Text>
-      ) : null}
+    <View style={styles.screen}>
+      <ImageBackground source={require("@/assets/images/mamacare-home-bg.png")} style={styles.bgImage}>
+        <LinearGradient colors={["rgba(255,255,255,0.8)", "rgba(255,245,245,0.6)"]} style={styles.bgOverlay}>
+          <ScrollView contentContainerStyle={styles.content}>
+            
+            <View style={styles.header}>
+              <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                <Ionicons name="chevron-back" size={24} color="#1A237E" />
+              </TouchableOpacity>
+              <Text style={styles.title}>{isNotFound ? "Create Profile" : "Edit Profile"}</Text>
+            </View>
 
-      {formError ? <Text style={styles.error}>{formError}</Text> : null}
+            {formError ? (
+              <View style={styles.errorBox}>
+                <Ionicons name="alert-circle" size={18} color="#A32D2D" />
+                <Text style={styles.errorText}>{formError}</Text>
+              </View>
+            ) : null}
 
-      <View style={styles.form}>
-        <View style={styles.row}>
-          <View style={styles.half}>
-            <Text style={styles.label}>First name</Text>
-            <TextInput style={styles.input} value={firstName} onChangeText={setFirstName} autoCapitalize="words" />
-          </View>
-          <View style={styles.half}>
-            <Text style={styles.label}>Last name</Text>
-            <TextInput style={styles.input} value={lastName} onChangeText={setLastName} autoCapitalize="words" />
-          </View>
-        </View>
+            <View style={styles.glassCard}>
+              <View style={styles.row}>
+                <View style={styles.half}>
+                  <Text style={styles.label}>First Name</Text>
+                  <TextInput 
+                    style={styles.input} 
+                    value={form.firstName} 
+                    onChangeText={(v) => setForm({...form, firstName: v})} 
+                  />
+                </View>
+                <View style={styles.half}>
+                  <Text style={styles.label}>Last Name</Text>
+                  <TextInput 
+                    style={styles.input} 
+                    value={form.lastName} 
+                    onChangeText={(v) => setForm({...form, lastName: v})} 
+                  />
+                </View>
+              </View>
 
-        <Text style={styles.label}>Gestational week</Text>
-        <TextInput
-          style={styles.input}
-          value={week}
-          onChangeText={setWeek}
-          keyboardType="number-pad"
-          placeholder="e.g. 24"
-          placeholderTextColor={colors.gray[400]}
-        />
+              <Text style={styles.label}>Gestational Week</Text>
+              <TextInput
+                style={styles.input}
+                value={form.week}
+                onChangeText={(v) => setForm({...form, week: v})}
+                keyboardType="number-pad"
+              />
 
-        <Text style={styles.label}>Estimated due date (YYYY-MM-DD)</Text>
-        <TextInput
-          style={styles.input}
-          value={edd}
-          onChangeText={setEdd}
-          placeholder="2026-08-20"
-          placeholderTextColor={colors.gray[400]}
-        />
+              <Text style={styles.label}>Estimated Due Date (YYYY-MM-DD)</Text>
+              <TextInput
+                style={styles.input}
+                value={form.edd}
+                onChangeText={(v) => setForm({...form, edd: v})}
+                placeholder="2026-08-20"
+              />
 
-        {isNotFound ? (
-          <>
-            <Text style={styles.label}>Date of birth (YYYY-MM-DD)</Text>
-            <TextInput
-              style={styles.input}
-              value={dob}
-              onChangeText={setDob}
-              placeholder="1990-01-15"
-              placeholderTextColor={colors.gray[400]}
-            />
-          </>
-        ) : null}
+              {isNotFound && (
+                <>
+                  <Text style={styles.label}>Date of Birth (YYYY-MM-DD)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={form.dob}
+                    onChangeText={(v) => setForm({...form, dob: v})}
+                  />
+                </>
+              )}
 
-        <TouchableOpacity
-          style={[styles.button, busy && styles.buttonDisabled]}
-          onPress={handleSave}
-          disabled={busy}
-        >
-          {busy ? (
-            <ActivityIndicator color={colors.white} />
-          ) : (
-            <Text style={styles.buttonText}>
-              {isNotFound ? "Create profile" : "Save changes"}
-            </Text>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.cancel} onPress={() => router.back()}>
-          <Text style={styles.cancelText}>Cancel</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+              <TouchableOpacity style={styles.submitBtn} onPress={handleSave}>
+                <LinearGradient colors={["#E8697C", "#FFA07A"]} start={{x:0, y:0}} end={{x:1, y:0}} style={styles.submitGradient}>
+                  {createProfile.isPending || updateProfile.isPending ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <Text style={styles.submitText}>Save Changes</Text>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </LinearGradient>
+      </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container:  { flex: 1, backgroundColor: colors.white },
-  centered:   { justifyContent: "center", alignItems: "center" },
-  content:    { padding: spacing[6], maxWidth: 480, alignSelf: "center", width: "100%" },
-  title:      { fontSize: typography.fontSize["2xl"], fontWeight: typography.fontWeight.bold, color: colors.navy[700], marginBottom: spacing[2] },
-  hint:       { fontSize: typography.fontSize.sm, color: colors.gray[600], marginBottom: spacing[4] },
-  error:      { backgroundColor: "#FCEBEB", color: "#A32D2D", padding: spacing[3], borderRadius: 8, fontSize: typography.fontSize.sm, marginBottom: spacing[4] },
-  form:       { gap: spacing[4] },
-  row:        { flexDirection: "row", gap: spacing[3] },
-  half:       { flex: 1 },
-  label:      { fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.gray[700], marginBottom: spacing[1] },
-  input:      { borderWidth: 1, borderColor: colors.gray[200], borderRadius: 12, paddingHorizontal: spacing[4], paddingVertical: spacing[4], fontSize: typography.fontSize.base, color: colors.gray[900], backgroundColor: colors.gray[50] },
-  button:     { backgroundColor: colors.rose[500], borderRadius: 12, paddingVertical: spacing[4], alignItems: "center", marginTop: spacing[4] },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: colors.white, fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semibold },
-  cancel:     { alignItems: "center", paddingVertical: spacing[3] },
-  cancelText: { color: colors.gray[400], fontSize: typography.fontSize.sm },
+  screen: { flex: 1 },
+  bgImage: { flex: 1 },
+  bgOverlay: { flex: 1 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  content: { padding: 25, paddingTop: 60 },
+  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 30 },
+  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', marginRight: 15, elevation: 3 },
+  title: { fontSize: 24, fontWeight: "800", color: "#1A237E" },
+  errorBox: { flexDirection: 'row', backgroundColor: '#FCEBEB', padding: 15, borderRadius: 15, marginBottom: 20, alignItems: 'center', gap: 10 },
+  errorText: { color: '#A32D2D', fontSize: 13, fontWeight: '600' },
+  glassCard: { backgroundColor: "rgba(255,255,255,0.7)", borderRadius: 30, padding: 20, elevation: 5 },
+  row: { flexDirection: 'row', gap: 12 },
+  half: { flex: 1 },
+  label: { fontSize: 12, fontWeight: '800', color: '#1A237E', textTransform: 'uppercase', marginBottom: 8, marginTop: 15, marginLeft: 4 },
+  input: { backgroundColor: '#FFF', borderRadius: 15, padding: 14, fontSize: 16, color: '#1A237E', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  submitBtn: { marginTop: 30, borderRadius: 20, overflow: 'hidden' },
+  submitGradient: { padding: 18, alignItems: 'center' },
+  submitText: { color: '#FFF', fontWeight: '700', fontSize: 16 }
 });

@@ -43,6 +43,19 @@ export const colors = {
     800: "#14291E",
     900: "#080F0A",
   },
+  peach: {
+    50: "#FFF0E5", // Soft background peach/blush
+    100: "#FFEDDF",
+    // ... other shades if needed
+  },
+  coral: {
+    300: "#FF9B9B", // Deeper accent coral/pink
+    400: "#FF7F7F",
+    // ... other shades if needed
+  },
+  lavender: { // The custom seed icon uses this too!
+    500: "#E6E2FF",
+  },
   // Semantic
   success:  "#3A8060",
   warning:  "#BA7517",

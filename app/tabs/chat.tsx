@@ -1,15 +1,14 @@
 /**
  * mobile/app/(tabs)/chat.tsx
- * Chat sessions list — tap to open a conversation.
+ * Refined Chat Sessions - High Depth List
  */
 
 import { useRouter } from "expo-router";
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, StyleSheet, Text, TouchableOpacity, View, ImageBackground } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from '@expo/vector-icons';
-import { useChatSessions, useCreateChatSession } from "@mamacare/api";
-import { useProfile } from "@mamacare/api";
-import { colors, spacing, typography, shadows } from "@mamacare/ui";
-import type { ChatSession } from "@mamacare/types";
+import { useChatSessions, useCreateChatSession, useProfile } from "@mamacare/api";
+import { colors, shadows } from "@mamacare/ui";
 
 export default function ChatScreen() {
   const router = useRouter();
@@ -23,93 +22,84 @@ export default function ChatScreen() {
     router.push(`/chat/${session.id}`);
   }
 
-  function renderSession({ item }: { item: ChatSession }) {
+  function renderSession({ item }: { item: any }) {
     return (
       <TouchableOpacity
         style={styles.sessionCard}
         onPress={() => router.push(`/chat/${item.id}`)}
       >
-        <Text style={styles.sessionTitle}>{item.title ?? "New conversation"}</Text>
-        <Text style={styles.sessionMeta}>
-          Week {item.gestational_week} · {item.message_count} messages
-        </Text>
+        <View style={styles.sessionInfo}>
+          <Text style={styles.sessionTitle}>{item.title ?? "New conversation"}</Text>
+          <Text style={styles.sessionMeta}>
+            Week {item.gestational_week} • {item.message_count} messages
+          </Text>
+        </View>
+        <View style={styles.arrowCircle}>
+          <Ionicons name="chevron-forward" size={18} color="#E8697C" />
+        </View>
       </TouchableOpacity>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingTop: 16, marginBottom: 4 }}>
-        <TouchableOpacity
-          onPress={() => {
-            if (router.canGoBack()) {
-              router.back();
-            } else {
-              router.replace('/tabs/home');
-            }
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          style={{ padding: 4, marginRight: 8 }}
-        >
-          <Ionicons name="arrow-back" size={24} color="#1A3A6A" />
-        </TouchableOpacity>
-        <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1A3A6A' }}>Chat</Text>
-      </View>
-      <TouchableOpacity style={styles.newChatButton} onPress={handleNewChat}>
-        <Text style={styles.newChatText}>+ Start New Conversation</Text>
-      </TouchableOpacity>
+    <View style={styles.screen}>
+      <ImageBackground source={require("@/assets/images/mamacare-home-bg.png")} style={styles.bgImage}>
+        <LinearGradient colors={["rgba(255,255,255,0.7)", "rgba(255,245,245,0.4)"]} style={styles.bgOverlay}>
+          
+          <View style={styles.header}>
+             <Text style={styles.screenTitle}>Conversations</Text>
+          </View>
 
-      <FlatList
-        data={sessions ?? []}
-        keyExtractor={(item) => item.id}
-        renderItem={renderSession}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>
-            No conversations yet. Start one above.
-          </Text>
-        }
-      />
+          <TouchableOpacity style={styles.newChatBtn} onPress={handleNewChat}>
+            <LinearGradient colors={["#E8697C", "#FFA07A"]} start={{x:0, y:0}} end={{x:1, y:0}} style={styles.newChatGradient}>
+              <Ionicons name="add" size={24} color="#FFF" />
+              <Text style={styles.newChatText}>Start New Conversation</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <FlatList
+            data={sessions ?? []}
+            keyExtractor={(item) => item.id}
+            renderItem={renderSession}
+            contentContainerStyle={styles.list}
+            ListEmptyComponent={
+              <View style={styles.emptyWrap}>
+                 <Text style={styles.emptyText}>No conversations yet. Your journey starts here.</Text>
+              </View>
+            }
+          />
+        </LinearGradient>
+      </ImageBackground>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.gray[50] },
-  newChatButton: {
-    margin: spacing[4],
-    backgroundColor: colors.rose[500],
-    borderRadius: 12,
-    paddingVertical: spacing[4],
-    alignItems: "center",
-  },
-  newChatText: {
-    color: colors.white,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-  },
-  list: { paddingHorizontal: spacing[4], gap: spacing[3] },
+  screen: { flex: 1 },
+  bgImage: { flex: 1 },
+  bgOverlay: { flex: 1 },
+  header: { paddingTop: 60, paddingHorizontal: 20 },
+  screenTitle: { fontSize: 28, fontWeight: "700", color: "#1A237E" },
+  list: { padding: 20, paddingBottom: 120 },
+  newChatBtn: { marginHorizontal: 20, marginTop: 20, borderRadius: 20, overflow: 'hidden', elevation: 8, shadowColor: "#E8697C", shadowOpacity: 0.3, shadowRadius: 10 },
+  newChatGradient: { padding: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  newChatText: { color: "#FFF", fontWeight: "700", fontSize: 16 },
   sessionCard: {
-    backgroundColor: colors.white,
-    borderRadius: 12,
-    padding: spacing[4],
-    ...shadows.sm,
+    backgroundColor: "rgba(255,255,255,0.75)",
+    borderRadius: 24,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.5)",
+    elevation: 3,
+    shadowOpacity: 0.05
   },
-  sessionTitle: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.gray[900],
-  },
-  sessionMeta: {
-    fontSize: typography.fontSize.sm,
-    color: colors.gray[500],
-    marginTop: spacing[1],
-  },
-  emptyText: {
-    textAlign: "center",
-    color: colors.gray[400],
-    marginTop: spacing[12],
-    fontSize: typography.fontSize.base,
-  },
+  sessionInfo: { flex: 1 },
+  sessionTitle: { fontSize: 17, fontWeight: "700", color: "#1A237E", marginBottom: 4 },
+  sessionMeta: { fontSize: 13, color: "#757575" },
+  arrowCircle: { width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(232,105,124,0.1)", alignItems: 'center', justifyContent: 'center' },
+  emptyWrap: { marginTop: 60, alignItems: 'center' },
+  emptyText: { color: "#9E9E9E", textAlign: 'center', fontSize: 15 }
 });
