@@ -165,8 +165,11 @@ export default function WelcomeScreen() {
         <View style={styles.guideOverlay}>
           <View style={styles.guideCard}>
             <View style={styles.guideHeader}>
-              <View style={styles.guideIcon}>
+              <View style={styles.guideBrowserHint}>
                 <Ionicons name="share-outline" size={22} color="#E8697C" />
+                <Text style={styles.guideBrowserHintText}>
+                  Safari toolbar
+                </Text>
               </View>
               <TouchableOpacity
                 style={styles.guideClose}
@@ -179,21 +182,29 @@ export default function WelcomeScreen() {
 
             <Text style={styles.guideTitle}>Install MumCare on iPhone</Text>
             <Text style={styles.guideText}>
-              Tap the Share button in Safari, then choose Add to Home Screen.
+              iPhone does not let websites open the install menu directly.
+              Close this guide, then use Safari&apos;s real Share button in the
+              browser toolbar.
             </Text>
 
             <View style={styles.guideSteps}>
               <View style={styles.guideStep}>
                 <Text style={styles.guideStepNumber}>1</Text>
-                <Text style={styles.guideStepText}>Open this page in Safari.</Text>
+                <Text style={styles.guideStepText}>
+                  If Safari says Private, switch to normal browsing.
+                </Text>
               </View>
               <View style={styles.guideStep}>
                 <Text style={styles.guideStepNumber}>2</Text>
-                <Text style={styles.guideStepText}>Tap the Share icon.</Text>
+                <Text style={styles.guideStepText}>
+                  Tap Safari&apos;s Share button in the browser toolbar.
+                </Text>
               </View>
               <View style={styles.guideStep}>
                 <Text style={styles.guideStepNumber}>3</Text>
-                <Text style={styles.guideStepText}>Select Add to Home Screen.</Text>
+                <Text style={styles.guideStepText}>
+                  Choose Add to Home Screen from the menu.
+                </Text>
               </View>
             </View>
 
@@ -202,7 +213,7 @@ export default function WelcomeScreen() {
               onPress={() => setInstallGuideOpen(false)}
               activeOpacity={0.9}
             >
-              <Text style={styles.guideButtonText}>Got it</Text>
+              <Text style={styles.guideButtonText}>Close guide</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -398,6 +409,20 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(232,105,124,0.12)",
     alignItems: "center",
     justifyContent: "center",
+  },
+  guideBrowserHint: {
+    minHeight: 44,
+    borderRadius: 14,
+    backgroundColor: "rgba(232,105,124,0.12)",
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  guideBrowserHintText: {
+    color: colors.rose[500],
+    fontSize: 13,
+    fontWeight: "800",
   },
   guideClose: {
     width: 38,
