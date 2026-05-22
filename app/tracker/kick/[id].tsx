@@ -70,7 +70,7 @@ export default function KickCounterScreen() {
           </LinearGradient>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.endBtn} onPress={() => endSession.mutateAsync().then(() => router.back())}>
+        <TouchableOpacity style={styles.endBtn} onPress={() => endSession.mutateAsync().then(() => router.push("/tabs/tracker"))}>
           <Text style={styles.endBtnText}>Finish & Save Session</Text>
         </TouchableOpacity>
 

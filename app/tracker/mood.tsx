@@ -5,10 +5,12 @@
 
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ImageBackground } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLogMood } from "@mumcare/api";
 import type { Mood } from "@mumcare/types";
+import { Ionicons } from '@expo/vector-icons';
+
 
 const MOODS: { value: Mood; emoji: string; label: string }[] = [
   { value: "happy", emoji: "😊", label: "Happy" },
@@ -25,13 +27,14 @@ export default function MoodLogScreen() {
 
   return (
     <View style={styles.screen}>
-      {/* <ImageBackground source={require("@/assets/welcome-bg.png")} style={styles.bgImage}> */}
         <LinearGradient colors={["rgba(255,255,255,0.8)", "rgba(255,245,245,0.6)"]} style={styles.bgOverlay}>
           <ScrollView contentContainerStyle={styles.content}>
-            
+        
             <View style={styles.header}>
+              <TouchableOpacity onPress={() => router.push("/tabs/tracker")} style={styles.backBtn}>
+                   <Ionicons name="chevron-back" size={24} color="#1A237E" />
+                </TouchableOpacity>
               <Text style={styles.title}>Emotional Check-in</Text>
-              <Text style={styles.subtitle}>How is your heart feeling today?</Text>
             </View>
 
             <View style={styles.glassCard}>
@@ -77,7 +80,6 @@ export default function MoodLogScreen() {
 
           </ScrollView>
         </LinearGradient>
-      {/* </ImageBackground> */}
     </View>
   );
 }
@@ -105,5 +107,7 @@ const styles = StyleSheet.create({
   submitGradient: { padding: 18, alignItems: 'center' },
   submitText: { color: '#FFF', fontWeight: '700', fontSize: 16 },
   cancel: { marginTop: 20, alignItems: 'center' },
-  cancelText: { color: '#BDBDBD' }
+  cancelText: { color: '#BDBDBD' },
+  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', marginRight: 15, elevation: 3 },
+
 });

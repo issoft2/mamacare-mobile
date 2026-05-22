@@ -65,7 +65,7 @@ export default function MedicalProfileScreen() {
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.push("/tabs/profile")} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={24} color="#1A237E" />
           </TouchableOpacity>
           <Text style={styles.title}>Medical Details</Text>

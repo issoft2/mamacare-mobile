@@ -33,12 +33,11 @@ export default function SleepLogScreen() {
 
   return (
     <View style={styles.screen}>
-      {/* <ImageBackground source={require("@/assets/welcome-bg.png")} style={styles.bgImage}> */}
         <LinearGradient colors={["rgba(26, 35, 126, 0.05)", "rgba(255, 255, 255, 0.9)"]} style={styles.bgOverlay}>
           <ScrollView contentContainerStyle={styles.content}>
             
             <View style={styles.header}>
-              <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+              <TouchableOpacity onPress={() => router.push("/tabs/tracker")} style={styles.backBtn}>
                 <Ionicons name="chevron-back" size={24} color="#1A237E" />
               </TouchableOpacity>
               <Text style={styles.title}>Sleep Journal</Text>
@@ -90,7 +89,6 @@ export default function SleepLogScreen() {
             </View>
           </ScrollView>
         </LinearGradient>
-      {/* </ImageBackground> */}
     </View>
   );
 }

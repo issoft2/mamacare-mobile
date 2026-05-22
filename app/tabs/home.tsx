@@ -16,7 +16,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
-  Animated,
   Platform,
   ScrollView,
   StyleSheet,
@@ -35,12 +34,9 @@ import {
   useSleepLogs,
   useSymptomPatterns,
   useSymptomLogs,
-  useCurrentWeekContent,
+  useLogHydration
 } from "@mumcare/api";
-import {
-  MedicalDetailsCard,
-  shouldShowMedicalDetailsPrompt,
-} from "@/components/MedicalDetailsCard";
+
 import { colors } from "@mumcare/ui";
 import { getTimeBasedGreeting } from "../../lib/greetings";
 import { WeeklyContentCard } from "@/components/home/WeeklyContentCard";
@@ -236,29 +232,26 @@ export default function HomeScreen() {
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 980;
   const [feeling, setFeeling] = useState<Feeling | null>(null);
-  const [medicalPromptDismissed, setMedicalPromptDismissed] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
   const { data: profile }      = useProfile();
-  const { data: patterns }     = useSymptomPatterns();
+  // const { data: patterns }     = useSymptomPatterns();
   const { data: symptomLogs }  = useSymptomLogs(10, 0);
   const { data: hydration }    = useHydrationLogs();
   const { data: mood }         = useMoodLogs();
   const { data: sleep }        = useSleepLogs();
   const { data: appointments } = useAppointments();
-  const { data: weeklyContent } = useCurrentWeekContent();
 
   const firstName = profile?.first_name ?? user?.firstName ?? "mama";
-  const week      = profile?.gestational_week;
-  const showMedicalPrompt =
-    !medicalPromptDismissed && shouldShowMedicalDetailsPrompt(profile);
+
 
   // Hydration
   const todayHydration    = hydration?.[0];
   const glassesCount      = todayHydration?.glasses_count  ?? 0;
   const targetGlasses     = todayHydration?.target_glasses ?? 8;
   const hydrationProgress = Math.min(100, (glassesCount / targetGlasses) * 100);
-
+  const logWater = useLogHydration();
+  
   // Sleep
   const sleepBand    = sleep?.[0]?.duration_band;
   const sleepQuality = useMemo(() => getSleepQuality(sleepBand), [sleepBand]);
@@ -370,51 +363,65 @@ export default function HomeScreen() {
             <View style={styles.careGrid}>
 
               {/* Hydration */}
-              <View style={[styles.careCard, isWide && styles.careCardWide]}>
-                <View style={[styles.iconBox, { backgroundColor: CARE_CARD_COLORS.water.bg }]}>
-                  <CareIcon name="water" color={CARE_CARD_COLORS.water.icon} size={20} />
+                <View style={[styles.careCard, isWide && styles.careCardWide]} >
+                  <View style={[styles.iconBox, { backgroundColor: CARE_CARD_COLORS.water.bg }]}>
+                    <CareIcon name="water" color={CARE_CARD_COLORS.water.icon} size={20} />
+                  </View>
+                  <Text style={styles.careCardLabel}>Hydration</Text>
+                  <Text style={styles.careCardVal} numberOfLines={1} adjustsFontSizeToFit>
+                    {glassesCount}/{targetGlasses} Glasses
+                  </Text>
+                  <View style={styles.miniTrack}>
+                    <View style={[styles.miniFill, { width: `${hydrationProgress}%`, backgroundColor: CARE_CARD_COLORS.water.icon }]} />
+                  </View>
+                  <TouchableOpacity style={styles.widgetBtn} onPress={() => logWater.mutateAsync({ glasses_count: glassesCount + 1 })}>
+                          <Text style={styles.widgetBtnText}>+ Add a Glass</Text>
+                  </TouchableOpacity>
                 </View>
-                <Text style={styles.careCardLabel}>Hydration</Text>
-                <Text style={styles.careCardVal} numberOfLines={1} adjustsFontSizeToFit>
-                  {glassesCount}/{targetGlasses} Glasses
-                </Text>
-                <View style={styles.miniTrack}>
-                  <View style={[styles.miniFill, { width: `${hydrationProgress}%`, backgroundColor: CARE_CARD_COLORS.water.icon }]} />
-                </View>
-              </View>
+
 
               {/* Mood */}
-              <View style={[styles.careCard, isWide && styles.careCardWide]}>
-                <View style={[styles.iconBox, { backgroundColor: CARE_CARD_COLORS.mood.bg }]}>
-                  <CareIcon name="mood" color={CARE_CARD_COLORS.mood.icon} size={20} />
-                </View>
-                <Text style={styles.careCardLabel}>Mood</Text>
-                <Text style={styles.careCardVal} numberOfLines={1} adjustsFontSizeToFit>
-                  {capitaliseMood(mood?.[0]?.mood)}
-                </Text>
-                <View style={styles.miniTrackPlaceholder} />
+              
+                <View style={[styles.careCard, isWide && styles.careCardWide]}>
+                  <TouchableOpacity onPress={() => router.push("/tracker/mood" as any)}>
+                  <View style={[styles.iconBox, { backgroundColor: CARE_CARD_COLORS.mood.bg }]}>
+                    <CareIcon name="mood" color={CARE_CARD_COLORS.mood.icon} size={20} />
+                  </View>
+                  <Text style={styles.careCardLabel}>Mood</Text>
+                  <Text style={styles.careCardVal} numberOfLines={1} adjustsFontSizeToFit>
+                    {capitaliseMood(mood?.[0]?.mood)}
+                  </Text>
+                  <View style={styles.miniTrackPlaceholder} />
+                  </TouchableOpacity>
               </View>
 
+              
+
               {/* Rest — dynamic colour coding */}
-              <View style={[styles.careCard, isWide && styles.careCardWide]}>
-                <View style={[styles.iconBox, { backgroundColor: sleepQuality.bgColor }]}>
-                  <CareIcon name="sleep" color={sleepQuality.color} size={20} />
+
+                <View style={[styles.careCard, isWide && styles.careCardWide]}>
+                  <TouchableOpacity onPress={() => router.push("/tracker/sleep" as any)}>
+
+                    <View style={[styles.iconBox, { backgroundColor: sleepQuality.bgColor }]}>
+                      <CareIcon name="sleep" color={sleepQuality.color} size={20} />
+                    </View>
+                    <Text style={styles.careCardLabel}>Rest</Text>
+                    <Text style={styles.careCardVal} numberOfLines={1} adjustsFontSizeToFit>
+                      {formatSleepDuration(sleepBand)}
+                    </Text>
+                    <View style={[styles.qualityBadge, { backgroundColor: sleepQuality.bgColor }]}>
+                      <Text style={[styles.qualityBadgeText, { color: sleepQuality.color }]}>
+                        {sleepQuality.qualityLabel}
+                      </Text>
+                    </View>
+                    {sleepQuality.progress > 0 && (
+                      <View style={styles.miniTrack}>
+                        <View style={[styles.miniFill, { width: `${sleepQuality.progress}%`, backgroundColor: sleepQuality.color }]} />
+                      </View>
+                    )}
+                  </TouchableOpacity>
                 </View>
-                <Text style={styles.careCardLabel}>Rest</Text>
-                <Text style={styles.careCardVal} numberOfLines={1} adjustsFontSizeToFit>
-                  {formatSleepDuration(sleepBand)}
-                </Text>
-                <View style={[styles.qualityBadge, { backgroundColor: sleepQuality.bgColor }]}>
-                  <Text style={[styles.qualityBadgeText, { color: sleepQuality.color }]}>
-                    {sleepQuality.qualityLabel}
-                  </Text>
-                </View>
-                {sleepQuality.progress > 0 && (
-                  <View style={styles.miniTrack}>
-                    <View style={[styles.miniFill, { width: `${sleepQuality.progress}%`, backgroundColor: sleepQuality.color }]} />
-                  </View>
-                )}
-              </View>
+              
 
               {/* Symptoms — replaces Next Visit */}
               <TouchableOpacity
@@ -653,4 +660,8 @@ const styles = StyleSheet.create({
   },
   miniFill: { height: "100%", borderRadius: 3 },
   miniTrackPlaceholder: { height: 5, marginTop: "auto" },
+  widgetBtn: { backgroundColor: 'rgba(255,255,255,0.8)', paddingVertical: 12, borderRadius: 15, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  widgetBtnText: { fontWeight: "700", color: "#1A237E" },
+
+
 });

@@ -45,7 +45,6 @@ export default function TrackerScreen() {
 
   return (
     <View style={styles.screen}>
-      {/* <ImageBackground source={require("@/assets/welcome-bg.png")} style={styles.bgImage}> */}
         <LinearGradient colors={["rgba(255,255,255,0.7)", "rgba(255,245,245,0.4)"]} style={styles.bgOverlay}>
           
           <ScrollView
@@ -123,7 +122,6 @@ export default function TrackerScreen() {
 
           </ScrollView>
         </LinearGradient>
-      {/* </ImageBackground> */}
     </View>
   );
 }
