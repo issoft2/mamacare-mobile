@@ -6,6 +6,7 @@
 import { Stack, useRouter } from "expo-router";
 import {
   Image,
+  Modal,
   Platform,
   StyleSheet,
   Text,
@@ -30,6 +31,7 @@ export default function WelcomeScreen() {
   const isWide = Platform.OS === "web" && width >= 900;
   const install = usePwaInstallPrompt();
   const [installBannerDismissed, setInstallBannerDismissed] = useState(false);
+  const [installGuideOpen, setInstallGuideOpen] = useState(false);
   
   // Memoize greeting and message to prevent shift on re-renders
   const greeting = useMemo(() => getTimeBasedGreeting(), []);
@@ -66,6 +68,49 @@ export default function WelcomeScreen() {
       />
 
       <SafeAreaView style={styles.safeArea}>
+        {showInstallBanner && (
+          <View style={styles.installBannerFloating}>
+            <View style={styles.installIcon}>
+              <Ionicons name="phone-portrait-outline" size={20} color="#E8697C" />
+            </View>
+            <View style={styles.installCopy}>
+              <Text style={styles.installTitle}>Install MumCare</Text>
+              <Text style={styles.installHint}>
+                {install.canPrompt
+                  ? "Add it to your home screen for quick access."
+                  : isAppleMobileBrowser
+                    ? "Use Share, then Add to Home Screen."
+                    : "Add it from your browser menu when available."}
+              </Text>
+            </View>
+            {install.canPrompt ? (
+              <TouchableOpacity
+                style={styles.installAction}
+                onPress={install.promptInstall}
+                activeOpacity={0.86}
+              >
+                <Text style={styles.installActionText}>Install</Text>
+              </TouchableOpacity>
+            ) : isAppleMobileBrowser ? (
+              <TouchableOpacity
+                style={styles.installAction}
+                onPress={() => setInstallGuideOpen(true)}
+                activeOpacity={0.86}
+              >
+                <Text style={styles.installActionText}>How</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.installDismiss}
+                onPress={() => setInstallBannerDismissed(true)}
+                activeOpacity={0.86}
+              >
+                <Ionicons name="close" size={18} color="#7B8498" />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         <View style={[styles.content, isWide && styles.contentWide]}>
             
           {/* Upper Hero Section */}
@@ -86,41 +131,6 @@ export default function WelcomeScreen() {
 
           {/* Lower Action Section */}
           <View style={styles.footer}>
-            {showInstallBanner && (
-              <View style={styles.installBanner}>
-                <View style={styles.installIcon}>
-                  <Ionicons name="phone-portrait-outline" size={20} color="#E8697C" />
-                </View>
-                <View style={styles.installCopy}>
-                  <Text style={styles.installTitle}>Install MumCare</Text>
-                  <Text style={styles.installHint}>
-                    {install.canPrompt
-                      ? "Add it to your home screen for quick access."
-                      : isAppleMobileBrowser
-                        ? "Use Share, then Add to Home Screen."
-                        : "Add it from your browser menu when available."}
-                  </Text>
-                </View>
-                {install.canPrompt ? (
-                  <TouchableOpacity
-                    style={styles.installAction}
-                    onPress={install.promptInstall}
-                    activeOpacity={0.86}
-                  >
-                    <Text style={styles.installActionText}>Install</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.installDismiss}
-                    onPress={() => setInstallBannerDismissed(true)}
-                    activeOpacity={0.86}
-                  >
-                    <Ionicons name="close" size={18} color="#7B8498" />
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
-
             <Text style={styles.tagline}>
               Your personalized companion for a healthy, supported pregnancy.
             </Text>
@@ -145,6 +155,58 @@ export default function WelcomeScreen() {
 
         </View>
       </SafeAreaView>
+
+      <Modal
+        visible={installGuideOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setInstallGuideOpen(false)}
+      >
+        <View style={styles.guideOverlay}>
+          <View style={styles.guideCard}>
+            <View style={styles.guideHeader}>
+              <View style={styles.guideIcon}>
+                <Ionicons name="share-outline" size={22} color="#E8697C" />
+              </View>
+              <TouchableOpacity
+                style={styles.guideClose}
+                onPress={() => setInstallGuideOpen(false)}
+                activeOpacity={0.86}
+              >
+                <Ionicons name="close" size={20} color="#7B8498" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.guideTitle}>Install MumCare on iPhone</Text>
+            <Text style={styles.guideText}>
+              Tap the Share button in Safari, then choose Add to Home Screen.
+            </Text>
+
+            <View style={styles.guideSteps}>
+              <View style={styles.guideStep}>
+                <Text style={styles.guideStepNumber}>1</Text>
+                <Text style={styles.guideStepText}>Open this page in Safari.</Text>
+              </View>
+              <View style={styles.guideStep}>
+                <Text style={styles.guideStepNumber}>2</Text>
+                <Text style={styles.guideStepText}>Tap the Share icon.</Text>
+              </View>
+              <View style={styles.guideStep}>
+                <Text style={styles.guideStepNumber}>3</Text>
+                <Text style={styles.guideStepText}>Select Add to Home Screen.</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.guideButton}
+              onPress={() => setInstallGuideOpen(false)}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.guideButtonText}>Got it</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -248,6 +310,22 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     ...shadows.sm,
   },
+  installBannerFloating: {
+    position: "absolute",
+    top: 10,
+    left: 16,
+    right: 16,
+    zIndex: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "rgba(255,255,255,0.96)",
+    borderWidth: 1,
+    borderColor: "rgba(232,105,124,0.2)",
+    borderRadius: 16,
+    padding: 12,
+    ...shadows.md,
+  },
   installIcon: {
     width: 38,
     height: 38,
@@ -291,6 +369,93 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#F6F7FB",
+  },
+  guideOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(13,22,42,0.36)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 22,
+  },
+  guideCard: {
+    width: "100%",
+    maxWidth: 420,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 20,
+    ...shadows.lg,
+  },
+  guideHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  guideIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "rgba(232,105,124,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  guideClose: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F6F7FB",
+  },
+  guideTitle: {
+    color: colors.navy[700],
+    fontSize: 20,
+    fontWeight: "800",
+    marginBottom: 8,
+  },
+  guideText: {
+    color: colors.navy[500],
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  guideSteps: {
+    gap: 10,
+    marginTop: 18,
+    marginBottom: 22,
+  },
+  guideStep: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  guideStepNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(232,105,124,0.12)",
+    color: colors.rose[500],
+    textAlign: "center",
+    lineHeight: 28,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  guideStepText: {
+    flex: 1,
+    color: colors.navy[600],
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  guideButton: {
+    minHeight: 48,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.rose[500],
+  },
+  guideButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "800",
   },
   tagline: {
     fontSize: 15,
