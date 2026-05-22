@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   dot: { flex: 1, height: 6, borderRadius: 3, backgroundColor: '#E0E0E0' },
   dotActive: { backgroundColor: '#E8697C' },
   content: { padding: 25 },
-  stepContainer: { animationDuration: '0.3s' },
+  stepContainer: {},
   stepTitle: { fontSize: 26, fontWeight: '800', color: '#1A237E', marginBottom: 10 },
   stepSub: { fontSize: 16, color: '#757575', lineHeight: 24, marginBottom: 30 },
   inputGroup: { marginBottom: 20 },

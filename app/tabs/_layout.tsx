@@ -16,10 +16,12 @@
 import { Tabs, usePathname, useRouter } from "expo-router";
 import { useAuth } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
 import {
   Platform,
   StyleSheet,
   Image,
+  Pressable,
   Text,
   TouchableOpacity,
   useWindowDimensions,
@@ -33,6 +35,8 @@ import { usePwaInstallPrompt } from "@/lib/usePwaInstallPrompt";
 
 const TAB_BAR_BASE_HEIGHT = 60;
 const SIDEBAR_WIDTH = 248;
+const DRAWER_WIDTH = 292;
+const MOBILE_HEADER_HEIGHT = 64;
 const DESKTOP_BREAKPOINT = 900;
 const ROSE = "#E8697C";
 const BRAND_LOGO = require("../../assets/mumcaresplash.png");
@@ -105,6 +109,7 @@ export default function TabsLayout() {
 
   // Full tab bar height including device bottom inset (gesture bar / home indicator)
   const tabBarHeight = TAB_BAR_BASE_HEIGHT + insets.bottom;
+  const mobileHeaderHeight = MOBILE_HEADER_HEIGHT + insets.top;
 
   return (
     <Tabs
@@ -113,7 +118,9 @@ export default function TabsLayout() {
           {...props}
           isDesktop={isDesktop}
           tabBarHeight={tabBarHeight}
+          mobileHeaderHeight={mobileHeaderHeight}
           bottomInset={insets.bottom}
+          topInset={insets.top}
         />
       )}
       screenOptions={{
@@ -128,7 +135,8 @@ export default function TabsLayout() {
         // Scrollable content will always end above the tab bar
         // without touching a single ScrollView or FlatList.
         sceneStyle: {
-          paddingBottom: isDesktop ? 0 : tabBarHeight,
+          paddingBottom: 0,
+          paddingTop: isDesktop ? 0 : mobileHeaderHeight,
           marginLeft: isDesktop ? SIDEBAR_WIDTH : 0,
         },
       }}
@@ -180,7 +188,9 @@ function ResponsiveTabBar({
   navigation,
   isDesktop,
   tabBarHeight,
+  mobileHeaderHeight,
   bottomInset,
+  topInset,
 }: any) {
   const install = usePwaInstallPrompt();
   const { signOut } = useAuth();
@@ -188,6 +198,7 @@ function ResponsiveTabBar({
   const pathname = usePathname();
   const privacyActive = pathname.startsWith("/profile/privacy");
   const notificationsActive = pathname.startsWith("/profile/notifications");
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const items = state.routes.map((route: any, index: number) => {
     const focused = state.index === index;
@@ -205,19 +216,20 @@ function ResponsiveTabBar({
       if (!focused && !event.defaultPrevented) {
         navigation.navigate(route.name);
       }
+      setDrawerOpen(false);
     };
 
     return (
       <TouchableOpacity
         key={route.key}
         onPress={onPress}
-        style={isDesktop ? styles.sidebarItem : styles.bottomItem}
+        style={isDesktop ? styles.sidebarItem : styles.drawerItem}
         activeOpacity={0.82}
       >
         <TabIcon name={route.name} color={color} focused={focused} />
         <Text
           style={[
-            isDesktop ? styles.sidebarLabel : styles.bottomLabel,
+            isDesktop ? styles.sidebarLabel : styles.drawerLabel,
             focused && styles.activeLabel,
           ]}
         >
@@ -326,34 +338,176 @@ function ResponsiveTabBar({
   }
 
   return (
-    <View
-      style={[
-        styles.bottomBar,
-        {
-          height: tabBarHeight,
-          paddingBottom: bottomInset > 0 ? bottomInset : 8,
-        },
-      ]}
-    >
-      {items}
+    <View pointerEvents="box-none" style={styles.mobileNavLayer}>
+      <View
+        style={[
+          styles.mobileHeader,
+          { height: mobileHeaderHeight, paddingTop: topInset },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.menuButton}
+          onPress={() => setDrawerOpen(true)}
+          activeOpacity={0.82}
+        >
+          <Ionicons name="menu" size={24} color="#1A237E" />
+        </TouchableOpacity>
+        <View style={styles.mobileBrand}>
+          <Image source={BRAND_LOGO} style={styles.mobileLogo} resizeMode="contain" />
+          <Text style={styles.mobileBrandText}>MumCare</Text>
+        </View>
+      </View>
+
+      {drawerOpen && (
+        <View style={styles.drawerOverlay}>
+          <Pressable
+            style={styles.drawerBackdrop}
+            onPress={() => setDrawerOpen(false)}
+          />
+          <View
+            style={[
+              styles.mobileDrawer,
+              {
+                paddingTop: topInset + 18,
+                paddingBottom: bottomInset + 18,
+              },
+            ]}
+          >
+            <View style={styles.drawerHeader}>
+              <View style={styles.brandMark}>
+                <Image
+                  source={BRAND_LOGO}
+                  style={styles.brandLogo}
+                  resizeMode="contain"
+                />
+              </View>
+              <View style={styles.drawerTitleWrap}>
+                <Text style={styles.brandName}>MumCare</Text>
+                <Text style={styles.brandSub}>Pregnancy care hub</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.drawerClose}
+                onPress={() => setDrawerOpen(false)}
+                activeOpacity={0.82}
+              >
+                <Ionicons name="close" size={22} color="#7B8498" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.drawerNav}>{items}</View>
+
+            <View style={styles.drawerSubNav}>
+              <TouchableOpacity
+                style={styles.drawerItem}
+                onPress={() => {
+                  setDrawerOpen(false);
+                  router.push("/profile/notifications");
+                }}
+                activeOpacity={0.82}
+              >
+                <View
+                  style={[
+                    styles.sidebarExtraIcon,
+                    notificationsActive && styles.sidebarExtraIconActive,
+                  ]}
+                >
+                  <Ionicons
+                    name="notifications-outline"
+                    size={21}
+                    color={notificationsActive ? ROSE : "#7B8498"}
+                  />
+                </View>
+                <Text
+                  style={[
+                    styles.drawerLabel,
+                    notificationsActive && styles.activeLabel,
+                  ]}
+                >
+                  Notifications
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.drawerItem}
+                onPress={() => {
+                  setDrawerOpen(false);
+                  router.push("/profile/privacy");
+                }}
+                activeOpacity={0.82}
+              >
+                <View
+                  style={[
+                    styles.sidebarExtraIcon,
+                    privacyActive && styles.sidebarExtraIconActive,
+                  ]}
+                >
+                  <Ionicons
+                    name="shield-checkmark-outline"
+                    size={21}
+                    color={privacyActive ? ROSE : "#7B8498"}
+                  />
+                </View>
+                <Text
+                  style={[styles.drawerLabel, privacyActive && styles.activeLabel]}
+                >
+                  Data & Privacy
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.drawerFooter}>
+              {install.canPrompt && (
+                <TouchableOpacity
+                  style={styles.installButton}
+                  onPress={() => {
+                    setDrawerOpen(false);
+                    void install.promptInstall();
+                  }}
+                  activeOpacity={0.84}
+                >
+                  <Text style={styles.installTitle}>Install app</Text>
+                  <Text style={styles.installHint}>Open MumCare like a mobile app</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={styles.signOutButton}
+                onPress={() => {
+                  setDrawerOpen(false);
+                  void signOut();
+                }}
+                activeOpacity={0.84}
+              >
+                <Text style={styles.signOutText}>Sign out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  bottomBar: {
+  mobileNavLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 50,
+  },
+
+  mobileHeader: {
     position: "absolute",
-    bottom: 0,
+    top: 0,
     left: 0,
     right: 0,
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderTopWidth: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: "#EEF1F6",
+    paddingHorizontal: 16,
     ...Platform.select({
       ios: {
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: -4 },
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08,
         shadowRadius: 12,
       },
@@ -363,18 +517,107 @@ const styles = StyleSheet.create({
     }),
   },
 
-  bottomItem: {
-    flex: 1,
+  menuButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: "rgba(26,35,126,0.06)",
     alignItems: "center",
     justifyContent: "center",
-    paddingTop: 10,
   },
 
-  bottomLabel: {
-    fontSize: 10,
-    fontWeight: "600",
-    marginTop: 1,
-    letterSpacing: 0.2,
+  mobileBrand: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginLeft: 12,
+  },
+
+  mobileLogo: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    backgroundColor: "#1A2E4A",
+  },
+
+  mobileBrandText: {
+    color: "#1A237E",
+    fontSize: 18,
+    fontWeight: "800",
+  },
+
+  drawerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: "row",
+  },
+
+  drawerBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(13, 22, 42, 0.28)",
+  },
+
+  mobileDrawer: {
+    width: DRAWER_WIDTH,
+    height: "100%",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 18,
+    justifyContent: "space-between",
+    shadowColor: "#1A2E4A",
+    shadowOpacity: 0.18,
+    shadowRadius: 28,
+    shadowOffset: { width: 10, height: 0 },
+    elevation: 20,
+  },
+
+  drawerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 26,
+  },
+
+  drawerTitleWrap: {
+    flex: 1,
+  },
+
+  drawerClose: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F6F7FB",
+  },
+
+  drawerNav: {
+    gap: 6,
+  },
+
+  drawerSubNav: {
+    borderTopWidth: 1,
+    borderTopColor: "#EEF1F6",
+    marginTop: 10,
+    paddingTop: 10,
+    gap: 6,
+  },
+
+  drawerFooter: {
+    gap: 12,
+  },
+
+  drawerItem: {
+    minHeight: 48,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  drawerLabel: {
+    color: "#7B8498",
+    fontSize: 15,
+    fontWeight: "700",
   },
 
   sidebar: {
