@@ -46,13 +46,31 @@ export async function apiRequest<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
+  const response = await apiFetch(path, options);
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return response.json();
+}
+
+export async function apiFetch(
+  path: string,
+  options: RequestInit = {}
+): Promise<Response> {
   const baseUrl = await getBaseUrl();
   const token = await _getToken();
-
+  const optionHeaders = options.headers as Record<string, string> | undefined;
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(options.headers as Record<string, string> | undefined),
+    ...(optionHeaders ?? {}),
   };
+  const isFormData =
+    typeof FormData !== "undefined" && options.body instanceof FormData;
+
+  if (!isFormData && !headers["Content-Type"] && !headers["content-type"]) {
+    headers["Content-Type"] = "application/json";
+  }
 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
@@ -70,11 +88,7 @@ export async function apiRequest<T>(
     throw new ApiRequestError(response.status, error);
   }
 
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return response.json();
+  return response;
 }
 
 export class ApiRequestError extends Error {

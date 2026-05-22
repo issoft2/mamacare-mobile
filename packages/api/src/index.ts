@@ -15,3 +15,4 @@ export * from "./tracker";
 export * from "./billing";
 export * from "./dashboardStats";
 export * from "./weekly_content";
+export * from "./voice";
