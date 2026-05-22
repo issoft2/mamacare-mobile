@@ -4,17 +4,70 @@
  */
 
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ImageBackground } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from '@expo/vector-icons';
-import { useCreateProfile } from "@mumcare/api";
+import { ApiRequestError, useCreateProfile, useProfile, useUpdateProfile} from "@mumcare/api";
 
 export default function ProfileSetupScreen() {
   const router = useRouter();
   const createProfile = useCreateProfile();
+  const { data: profile, isError, error, isPending } = useProfile();
 
+  const isNotFound = isError && error instanceof ApiRequestError && error.isNotFound;
+  
   const [form, setForm] = useState({ firstName: '', lastName: '', dob: '', edd: '', week: '' });
+  const [formError, setFormError] = useState('');
+
+  useEffect(() => {
+    if (profile) {
+      setForm({
+        firstName: profile.first_name,
+        lastName: profile.last_name,
+        dob: profile.date_of_birth,
+        edd: profile.estimated_due_date,
+        week: String(profile.gestational_week),
+      });
+    }
+  }, [profile]);
+
+  // handle save
+  async function handleSave() {
+    setFormError('');
+    const gestational_week = parseInt(form.week, 10);
+    
+    if (isNaN(gestational_week) || gestational_week < 1 || gestational_week > 42) {
+      setFormError('Gestational week must be between 1 and 42.');
+      return;
+    }
+
+    try {
+      if(isNotFound) {
+        await createProfile.mutateAsync({
+          first_name: form.firstName.trim(),
+          last_name: form.lastName.trim(),
+          date_of_birth: form.dob.trim(),
+          estimated_due_date: form.edd.trim(),
+          gestational_week,
+        });
+      } 
+      router.back();
+    }catch (err: any) {
+      console.error("Failed to save profile:", err);
+      setFormError("An error occurred while saving. Please try again.");
+    }
+  }
+  
+  if (isPending) {
+    return (
+      <View style={[styles.screen, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#E8697C" />
+      </View>
+    );
+  }
+ 
+
 
   return (
     <View style={styles.screen}>
@@ -89,7 +142,7 @@ export default function ProfileSetupScreen() {
                 />
               </View>
 
-              <TouchableOpacity style={styles.submitBtn} onPress={() => router.replace("/tabs/home")}>
+              <TouchableOpacity style={styles.submitBtn} onPress={handleSave}>
                 <LinearGradient colors={["#E8697C", "#FFA07A"]} start={{x:0, y:0}} end={{x:1, y:0}} style={styles.submitGradient}>
                   <Text style={styles.submitText}>Continue to My Dashboard</Text>
                   <Ionicons name="arrow-forward" size={20} color="#FFF" />

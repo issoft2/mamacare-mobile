@@ -46,8 +46,8 @@ export default function EditProfileScreen() {
     setFormError("");
     const gestational_week = parseInt(form.week, 10);
     
-    if (isNaN(gestational_week) || gestational_week < 4 || gestational_week > 42) {
-      setFormError("Gestational week must be between 4 and 42.");
+    if (isNaN(gestational_week) || gestational_week < 1 || gestational_week > 42) {
+      setFormError("Gestational week must be between 1 and 42.");
       return;
     }
 
