@@ -1,0 +1,4 @@
+
+> @mumcare/api@0.0.1 type-check /home/issoft/Workspace/mama-care/frontend/packages/api
+> tsc --noEmit
+

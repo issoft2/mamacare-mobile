@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "MumCare Assistant",
+    "slug": "MumCare-assistant",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/mumcaresplash.png",
+    "scheme": "mumcare",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/mumcaresplash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1A2E4A"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.mumcare.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/mumcaresplash.png",
+        "backgroundColor": "#1A2E4A"
+      },
+      "package": "com.mumcare.app",
+      "googleServicesFile": "./google-services.json"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/mumcaresplash.png",
+      "name": "MumCare Assistant",
+      "shortName": "MumCare",
+      "themeColor": "#1A2E4A",
+      "backgroundColor": "#FFF8F4"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "sdkVersion": "54.0.0"
+  }
+}

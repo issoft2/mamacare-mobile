@@ -1,0 +1,172 @@
+/**
+ * mobile/app/(tabs)/chat.tsx
+ * Refined Chat Sessions - High Depth List
+ */
+
+import { useEffect } from "react";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import {
+  FlatList,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
+
+import {
+  useChatSessions,
+  useCreateChatSession,
+  useProfile,
+} from "@mumcare/api";
+import { colors, shadows } from "@mumcare/ui";
+
+export default function ChatScreen() {
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isWide = Platform.OS === "web" && width >= 980;
+  const { data: sessions } = useChatSessions();
+  const { data: profile } = useProfile();
+  const createSession = useCreateChatSession();
+
+  // ✅ Inside the component — hooks must always live here
+  const { prompt } = useLocalSearchParams<{ prompt?: string }>();
+
+  // If arriving from WeeklyContentCard, auto-create a session
+  // and navigate into it with the prompt pre-filled
+  useEffect(() => {
+    if (!prompt) return;
+
+    async function openWithPrompt() {
+      const week = profile?.gestational_week ?? 12;
+      const session = await createSession.mutateAsync({
+        gestational_week: week,
+      });
+      router.push({
+        pathname: `/chat/${session.id}` as any,
+        params: { prompt },
+      });
+    }
+
+    void openWithPrompt();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // runs once on mount
+
+  function renderSession({ item }: { item: any }) {
+    return (
+      <TouchableOpacity
+        style={styles.sessionCard}
+        onPress={() => router.push(`/chat/${item.id}`)}
+      >
+        <View style={styles.sessionInfo}>
+          <Text style={styles.sessionTitle}>
+            {item.title ?? "New conversation"}
+          </Text>
+          <Text style={styles.sessionMeta}>
+            Week {item.gestational_week} • {item.message_count} messages
+          </Text>
+        </View>
+        <View style={styles.arrowCircle}>
+          <Ionicons name="chevron-forward" size={18} color="#E8697C" />
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <View style={styles.screen}>
+      <LinearGradient
+        colors={["rgba(255,255,255,0.7)", "rgba(255,245,245,0.4)"]}
+        style={styles.bgOverlay}
+      >
+        <View style={[styles.page, isWide && styles.pageWide]}>
+        <View style={styles.header}>
+          <Text style={styles.screenTitle}>Conversations</Text>
+        </View>
+
+        <FlatList
+          data={sessions ?? []}
+          keyExtractor={(item) => item.id}
+          renderItem={renderSession}
+          contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            <View style={styles.emptyWrap}>
+              <Text style={styles.emptyText}>
+                No conversations yet. Open your weekly pregnancy note from Home
+                to begin a guided chat.
+              </Text>
+              <TouchableOpacity
+                style={styles.homeCta}
+                onPress={() => router.push("/tabs/home")}
+                activeOpacity={0.84}
+              >
+                <Text style={styles.homeCtaText}>Go to weekly note</Text>
+                <Ionicons name="chevron-forward" size={16} color="#E8697C" />
+              </TouchableOpacity>
+            </View>
+          }
+        />
+        </View>
+      </LinearGradient>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1 },
+  bgOverlay: { flex: 1 },
+  page: { flex: 1 },
+  pageWide: { width: "100%", maxWidth: 1100, alignSelf: "center", paddingHorizontal: 12 },
+  header: { paddingTop: 60, paddingHorizontal: 20 },
+  screenTitle: { fontSize: 28, fontWeight: "700", color: "#1A237E" },
+  list: { padding: 20, paddingBottom: 32 },
+  sessionCard: {
+    backgroundColor: "rgba(255,255,255,0.75)",
+    borderRadius: 24,
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.5)",
+    elevation: 3,
+    shadowOpacity: 0.05,
+  },
+  sessionInfo: { flex: 1 },
+  sessionTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#1A237E",
+    marginBottom: 4,
+  },
+  sessionMeta: { fontSize: 13, color: "#757575" },
+  arrowCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(232,105,124,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyWrap: { marginTop: 60, alignItems: "center", gap: 14 },
+  emptyText: {
+    color: "#9E9E9E",
+    textAlign: "center",
+    fontSize: 15,
+    lineHeight: 22,
+    maxWidth: 360,
+  },
+  homeCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(232,105,124,0.10)",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  homeCtaText: { color: "#E8697C", fontSize: 14, fontWeight: "800" },
+});
