@@ -660,7 +660,7 @@ const styles = StyleSheet.create({
   },
   miniFill: { height: "100%", borderRadius: 3 },
   miniTrackPlaceholder: { height: 5, marginTop: "auto" },
-  widgetBtn: { backgroundColor: 'rgba(255,255,255,0.8)', paddingVertical: 12, borderRadius: 15, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  widgetBtn: { backgroundColor: 'rgba(255,255,255,0.8)', paddingVertical: 5, borderRadius: 15, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
   widgetBtnText: { fontWeight: "700", color: "#1A237E" },
 
 
