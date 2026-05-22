@@ -5,7 +5,7 @@
 
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ImageBackground } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from '@expo/vector-icons';
 import { ApiRequestError, useCreateProfile, useProfile, useUpdateProfile} from "@mumcare/api";
@@ -13,9 +13,11 @@ import { ApiRequestError, useCreateProfile, useProfile, useUpdateProfile} from "
 export default function ProfileSetupScreen() {
   const router = useRouter();
   const createProfile = useCreateProfile();
+  const updateProfile = useUpdateProfile();
   const { data: profile, isError, error, isPending } = useProfile();
 
   const isNotFound = isError && error instanceof ApiRequestError && error.isNotFound;
+  const isSaving = createProfile.isPending || updateProfile.isPending;
   
   const [form, setForm] = useState({ firstName: '', lastName: '', dob: '', edd: '', week: '' });
   const [formError, setFormError] = useState('');
@@ -35,7 +37,16 @@ export default function ProfileSetupScreen() {
   // handle save
   async function handleSave() {
     setFormError('');
+    const firstName = form.firstName.trim();
+    const lastName = form.lastName.trim();
+    const dob = form.dob.trim();
+    const edd = form.edd.trim();
     const gestational_week = parseInt(form.week, 10);
+
+    if (!firstName || !lastName || !dob || !edd) {
+      setFormError('Please complete all profile fields.');
+      return;
+    }
     
     if (isNaN(gestational_week) || gestational_week < 1 || gestational_week > 42) {
       setFormError('Gestational week must be between 1 and 42.');
@@ -45,14 +56,22 @@ export default function ProfileSetupScreen() {
     try {
       if(isNotFound) {
         await createProfile.mutateAsync({
-          first_name: form.firstName.trim(),
-          last_name: form.lastName.trim(),
-          date_of_birth: form.dob.trim(),
-          estimated_due_date: form.edd.trim(),
+          first_name: firstName,
+          last_name: lastName,
+          date_of_birth: dob,
+          estimated_due_date: edd,
           gestational_week,
         });
-      } 
-      router.back();
+      } else {
+        await updateProfile.mutateAsync({
+          first_name: firstName,
+          last_name: lastName,
+          date_of_birth: dob,
+          estimated_due_date: edd,
+          gestational_week,
+        });
+      }
+      router.replace("/tabs/home");
     }catch (err: any) {
       console.error("Failed to save profile:", err);
       setFormError("An error occurred while saving. Please try again.");
@@ -84,6 +103,13 @@ export default function ProfileSetupScreen() {
             </View>
 
             <View style={styles.formContainer}>
+              {formError ? (
+                <View style={styles.errorBox}>
+                  <Ionicons name="alert-circle" size={18} color="#A32D2D" />
+                  <Text style={styles.errorText}>{formError}</Text>
+                </View>
+              ) : null}
+
               <View style={styles.row}>
                 <View style={[styles.inputGroup, { flex: 1 }]}>
                   <Text style={styles.label}>First Name</Text>
@@ -142,10 +168,20 @@ export default function ProfileSetupScreen() {
                 />
               </View>
 
-              <TouchableOpacity style={styles.submitBtn} onPress={handleSave}>
+              <TouchableOpacity
+                style={[styles.submitBtn, isSaving && styles.submitBtnDisabled]}
+                onPress={handleSave}
+                disabled={isSaving}
+              >
                 <LinearGradient colors={["#E8697C", "#FFA07A"]} start={{x:0, y:0}} end={{x:1, y:0}} style={styles.submitGradient}>
-                  <Text style={styles.submitText}>Continue to My Dashboard</Text>
-                  <Ionicons name="arrow-forward" size={20} color="#FFF" />
+                  {isSaving ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <>
+                      <Text style={styles.submitText}>Continue to My Dashboard</Text>
+                      <Ionicons name="arrow-forward" size={20} color="#FFF" />
+                    </>
+                  )}
                 </LinearGradient>
               </TouchableOpacity>
             </View>
@@ -168,6 +204,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: "800", color: "#1A237E" },
   subtitle: { fontSize: 15, color: "#757575", marginTop: 8, lineHeight: 22 },
   formContainer: { gap: 20 },
+  errorBox: { flexDirection: 'row', backgroundColor: '#FCEBEB', padding: 15, borderRadius: 15, alignItems: 'center', gap: 10 },
+  errorText: { flex: 1, color: '#A32D2D', fontSize: 13, fontWeight: '600' },
   row: { flexDirection: 'row', gap: 15 },
   inputGroup: { gap: 8 },
   label: { fontSize: 13, fontWeight: '700', color: '#1A237E', marginLeft: 4 },
@@ -175,6 +213,7 @@ const styles = StyleSheet.create({
   inputWithIcon: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderRadius: 15, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
   inputIcon: { marginLeft: 15 },
   submitBtn: { marginTop: 20, borderRadius: 20, overflow: 'hidden', elevation: 8, shadowColor: '#E8697C', shadowOpacity: 0.3 },
+  submitBtnDisabled: { opacity: 0.72 },
   submitGradient: { padding: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
   submitText: { color: '#FFF', fontWeight: '800', fontSize: 16 }
 });
