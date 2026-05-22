@@ -5,13 +5,13 @@
 
 import { Stack, useRouter } from "expo-router";
 import {
-  ImageBackground,
+  Image,
   Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
-  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -20,11 +20,12 @@ import { HeartIcon } from "../../components/HeartIcon";
 import { useMemo } from "react";
 import { getTimeBasedGreeting, getDailyMessage } from "../../lib/greetings";
 
-const { width } = Dimensions.get("window");
 const WELCOME_BG = require("../../assets/welcome-bg.png");
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isWide = Platform.OS === "web" && width >= 900;
   
   // Memoize greeting and message to prevent shift on re-renders
   const greeting = useMemo(() => getTimeBasedGreeting(), []);
@@ -33,65 +34,68 @@ export default function WelcomeScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
-      
-      <ImageBackground
+
+      <Image
         source={WELCOME_BG}
-        style={StyleSheet.absoluteFill}
+        style={styles.backgroundImage}
         resizeMode="cover"
-      >
-        {/* Multilayered Gradient for maximum text legibility without hiding the photo */}
-        <LinearGradient
-          colors={['rgba(255,248,244,0.1)', 'rgba(255,248,244,0.8)', '#FFF8F4']}
-          locations={[0, 0.4, 0.8]}
-          style={StyleSheet.absoluteFill}
-        />
+      />
 
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.content}>
+      <LinearGradient
+        colors={
+          isWide
+            ? ["rgba(255,248,244,0.12)", "rgba(255,248,244,0.72)", "#FFF8F4"]
+            : ["rgba(255,248,244,0.18)", "rgba(255,248,244,0.82)", "#FFF8F4"]
+        }
+        locations={isWide ? [0, 0.54, 0.9] : [0, 0.46, 0.78]}
+        style={StyleSheet.absoluteFill}
+      />
+
+      <SafeAreaView style={styles.safeArea}>
+        <View style={[styles.content, isWide && styles.contentWide]}>
             
-            {/* Upper Hero Section */}
-            <View style={styles.hero}>
-              <View style={styles.brandWrapper}>
-                <View style={styles.iconCircle}>
-                  <HeartIcon size={56} color={colors.rose[500]} />
-                </View>
-                <Text style={styles.logoText}>mumcare</Text>
+          {/* Upper Hero Section */}
+          <View style={[styles.hero, isWide && styles.heroWide]}>
+            <View style={styles.brandWrapper}>
+              <View style={styles.iconCircle}>
+                <HeartIcon size={48} color={colors.rose[500]} />
               </View>
-
-              <View style={styles.messageStack}>
-                <Text style={styles.timeGreeting}>{greeting}, mama</Text>
-                <Text style={styles.dailyQuote}>"{dailyMessage}"</Text>
-                <View style={styles.accentLine} />
-              </View>
+              <Text style={styles.logoText}>mumcare</Text>
             </View>
 
-            {/* Lower Action Section */}
-            <View style={styles.footer}>
-              <Text style={styles.tagline}>
-                Your personalized companion for a healthy, supported pregnancy.
-              </Text>
-              
-              <TouchableOpacity
-                style={styles.mainBtn}
-                onPress={() => router.push("/auth/register")}
-                activeOpacity={0.9}
-              >
-                <Text style={styles.mainBtnText}>Begin your journey</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.loginBtn}
-                onPress={() => router.push("/auth/login")}
-              >
-                <Text style={styles.loginBtnText}>
-                  Already a member? <Text style={styles.footerLink}>Sign in</Text>
-                </Text>
-              </TouchableOpacity>
+            <View style={styles.messageStack}>
+              <Text style={styles.timeGreeting}>{greeting}, mama</Text>
+              <Text style={styles.dailyQuote}>"{dailyMessage}"</Text>
+              <View style={styles.accentLine} />
             </View>
-
           </View>
-        </SafeAreaView>
-      </ImageBackground>
+
+          {/* Lower Action Section */}
+          <View style={styles.footer}>
+            <Text style={styles.tagline}>
+              Your personalized companion for a healthy, supported pregnancy.
+            </Text>
+              
+            <TouchableOpacity
+              style={styles.mainBtn}
+              onPress={() => router.push("/auth/register")}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.mainBtnText}>Begin your journey</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.loginBtn}
+              onPress={() => router.push("/auth/login")}
+            >
+              <Text style={styles.loginBtnText}>
+                Already a member? <Text style={styles.footerLink}>Sign in</Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+        </View>
+      </SafeAreaView>
     </View>
   );
 }
@@ -99,22 +103,50 @@ export default function WelcomeScreen() {
 // ── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F4' },
+  container: {
+    flex: 1,
+    minHeight: "100%",
+    backgroundColor: '#FFF8F4',
+    overflow: "hidden",
+  },
+  backgroundImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
+  },
   safeArea: { flex: 1 },
   content: { 
     flex: 1, 
-    paddingHorizontal: 30, 
+    width: "100%",
+    maxWidth: 520,
+    alignSelf: "center",
+    paddingHorizontal: 24, 
     justifyContent: 'space-between',
-    paddingBottom: 20 
+    paddingTop: 18,
+    paddingBottom: 24,
+  },
+  contentWide: {
+    maxWidth: 560,
+    marginLeft: 48,
+    marginRight: "auto",
   },
   
   // Hero
-  hero: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 40 },
-  brandWrapper: { alignItems: 'center', marginBottom: 40 },
+  hero: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 12,
+    minHeight: 360,
+  },
+  heroWide: {
+    minHeight: 420,
+  },
+  brandWrapper: { alignItems: 'center', marginBottom: 28 },
   iconCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 86,
+    height: 86,
+    borderRadius: 43,
     backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
@@ -122,25 +154,24 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   logoText: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '800',
     color: colors.navy[700],
-    letterSpacing: -1,
   },
   
   messageStack: { alignItems: 'center', gap: 12 },
   timeGreeting: {
-    fontSize: 16,
+    fontSize: 13,
     color: colors.navy[400],
     textTransform: 'uppercase',
-    letterSpacing: 2,
+    letterSpacing: 1.8,
     fontWeight: '600'
   },
   dailyQuote: {
-    fontSize: 22,
+    fontSize: 21,
     color: colors.navy[700],
     textAlign: 'center',
-    lineHeight: 32,
+    lineHeight: 30,
     fontStyle: 'italic',
     fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
   },
@@ -153,7 +184,9 @@ const styles = StyleSheet.create({
   },
 
   // Footer
-  footer: { paddingBottom: 40 },
+  footer: {
+    paddingBottom: 18,
+  },
   tagline: {
     fontSize: 15,
     color: colors.navy[500],
@@ -163,8 +196,8 @@ const styles = StyleSheet.create({
   },
   mainBtn: {
     backgroundColor: colors.rose[500],
-    paddingVertical: 18,
-    borderRadius: 20,
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: 'center',
     ...shadows.md,
   },

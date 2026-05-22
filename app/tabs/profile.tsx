@@ -3,7 +3,7 @@
  * Refined Profile Portal - High Depth ID Card
  */
 
-import { useUser } from "@clerk/clerk-expo";
+import { useAuth, useUser } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import {
   Platform,
@@ -21,6 +21,7 @@ import { useProfile, useSubscription } from "@mumcare/api";
 
 export default function ProfileScreen() {
   const { user } = useUser();
+  const { signOut } = useAuth();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 980;
@@ -39,7 +40,6 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.screen}>
-      {/* <ImageBackground source={require("@/assets/welcome-bg.png")} style={styles.bgImage}> */}
         <LinearGradient colors={["rgba(255,255,255,0.7)", "rgba(255,245,245,0.4)"]} style={styles.bgOverlay}>
           
           <ScrollView
@@ -92,12 +92,37 @@ export default function ProfileScreen() {
                     <Ionicons name="chevron-forward" size={18} color="#BDBDBD" />
                   </TouchableOpacity>
                 ))}
+
+                <TouchableOpacity
+                  style={[
+                    styles.menuTile,
+                    styles.signOutTile,
+                    isWide && styles.menuTileWide,
+                  ]}
+                  onPress={() => {
+                    void signOut();
+                  }}
+                  activeOpacity={0.82}
+                >
+                  <View style={styles.tileLeft}>
+                    <View style={[styles.iconBox, styles.signOutIconBox]}>
+                      <Ionicons name="log-out-outline" size={20} color="#FF5252" />
+                    </View>
+                    <View>
+                      <Text style={[styles.tileLabel, styles.signOutLabel]}>
+                        Sign out
+                      </Text>
+                      <Text style={styles.signOutMeta}>Leave this account</Text>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#FFB4B4" />
+                </TouchableOpacity>
               </View>
             </View>
 
           </ScrollView>
         </LinearGradient>
-      {/* </ImageBackground> */}
+  
     </View>
   );
 }
@@ -149,4 +174,19 @@ const styles = StyleSheet.create({
   iconBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', elevation: 2 },
   tileLabel: { fontSize: 16, fontWeight: '700', color: '#1A237E' },
   tileMeta: { fontSize: 12, color: '#E8697C', fontWeight: '600' },
+  signOutTile: {
+    backgroundColor: "rgba(255,82,82,0.06)",
+    borderColor: "rgba(255,82,82,0.14)",
+  },
+  signOutIconBox: {
+    backgroundColor: "rgba(255,82,82,0.1)",
+  },
+  signOutLabel: {
+    color: "#FF5252",
+  },
+  signOutMeta: {
+    fontSize: 12,
+    color: "#C86A6A",
+    fontWeight: "600",
+  },
 });

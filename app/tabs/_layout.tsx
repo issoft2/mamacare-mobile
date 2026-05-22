@@ -135,7 +135,7 @@ export default function TabsLayout() {
         // Scrollable content will always end above the tab bar
         // without touching a single ScrollView or FlatList.
         sceneStyle: {
-          paddingBottom: 0,
+          paddingBottom: isDesktop ? 0 : tabBarHeight,
           paddingTop: isDesktop ? 0 : mobileHeaderHeight,
           marginLeft: isDesktop ? SIDEBAR_WIDTH : 0,
         },
@@ -239,6 +239,43 @@ function ResponsiveTabBar({
     );
   });
 
+  const quickItems = state.routes.map((route: any, index: number) => {
+    const focused = state.index === index;
+    const options = descriptors[route.key]?.options ?? {};
+    const label = options.title ?? route.name;
+    const color = focused ? ROSE : "#9AA2B4";
+
+    const onPress = () => {
+      const event = navigation.emit({
+        type: "tabPress",
+        target: route.key,
+        canPreventDefault: true,
+      });
+
+      if (!focused && !event.defaultPrevented) {
+        navigation.navigate(route.name);
+      }
+    };
+
+    return (
+      <TouchableOpacity
+        key={route.key}
+        onPress={onPress}
+        style={styles.quickNavItem}
+        activeOpacity={0.82}
+      >
+        <TabIcon name={route.name} color={color} focused={focused} />
+        <Text
+          style={[styles.quickNavLabel, focused && styles.activeLabel]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+        >
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  });
+
   if (isDesktop) {
     return (
       <View style={styles.sidebar}>
@@ -324,13 +361,7 @@ function ResponsiveTabBar({
               <Text style={styles.installHint}>Open MumCare like a mobile app</Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity
-            style={styles.signOutButton}
-            onPress={() => signOut()}
-            activeOpacity={0.84}
-          >
-            <Text style={styles.signOutText}>Sign out</Text>
-          </TouchableOpacity>
+        
           <Text style={styles.sidebarFootnote}>Secure care, wherever you sign in.</Text>
         </View>
       </View>
@@ -394,8 +425,6 @@ function ResponsiveTabBar({
               </TouchableOpacity>
             </View>
 
-            <View style={styles.drawerNav}>{items}</View>
-
             <View style={styles.drawerSubNav}>
               <TouchableOpacity
                 style={styles.drawerItem}
@@ -453,6 +482,25 @@ function ResponsiveTabBar({
                   Data & Privacy
                 </Text>
               </TouchableOpacity>
+              
+            </View>
+                <View style={styles.drawerNav}>
+              {items}
+              <TouchableOpacity
+                style={styles.drawerItem}
+                onPress={() => {
+                  setDrawerOpen(false);
+                  void signOut();
+                }}
+                activeOpacity={0.82}
+              >
+                <View style={styles.sidebarExtraIcon}>
+                  <Ionicons name="log-out-outline" size={21} color="#FF5252" />
+                </View>
+                <Text style={[styles.drawerLabel, styles.drawerDangerLabel]}>
+                  Sign out
+                </Text>
+              </TouchableOpacity>
             </View>
 
             <View style={styles.drawerFooter}>
@@ -469,20 +517,22 @@ function ResponsiveTabBar({
                   <Text style={styles.installHint}>Open MumCare like a mobile app</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity
-                style={styles.signOutButton}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  void signOut();
-                }}
-                activeOpacity={0.84}
-              >
-                <Text style={styles.signOutText}>Sign out</Text>
-              </TouchableOpacity>
             </View>
           </View>
         </View>
       )}
+
+      <View
+        style={[
+          styles.quickNav,
+          {
+            height: tabBarHeight,
+            paddingBottom: bottomInset > 0 ? bottomInset : 8,
+          },
+        ]}
+      >
+        {quickItems}
+      </View>
     </View>
   );
 }
@@ -561,7 +611,7 @@ const styles = StyleSheet.create({
     height: "100%",
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 18,
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     shadowColor: "#1A2E4A",
     shadowOpacity: 0.18,
     shadowRadius: 28,
@@ -602,22 +652,70 @@ const styles = StyleSheet.create({
   },
 
   drawerFooter: {
+    marginTop: "auto",
     gap: 12,
   },
 
   drawerItem: {
     minHeight: 48,
     borderRadius: 14,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
   },
 
   drawerLabel: {
+    flex: 1,
     color: "#7B8498",
     fontSize: 15,
     fontWeight: "700",
+    lineHeight: 20,
+    ...Platform.select({
+      android: {
+        includeFontPadding: false,
+      },
+    }),
+  },
+
+  drawerDangerLabel: {
+    color: "#FF5252",
+  },
+
+  quickNav: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "#EEF1F6",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingTop: 6,
+    paddingHorizontal: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 16,
+  },
+
+  quickNavItem: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  quickNavLabel: {
+    width: "100%",
+    textAlign: "center",
+    color: "#9AA2B4",
+    fontSize: 10,
+    fontWeight: "700",
+    marginTop: 1,
+    paddingHorizontal: 1,
   },
 
   sidebar: {
