@@ -8,6 +8,7 @@ import {
   Image,
   Modal,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -46,6 +47,16 @@ export default function WelcomeScreen() {
   }, []);
   const showInstallBanner =
     isMobileWeb && !install.isInstalled && !installBannerDismissed;
+  const handleInstallBannerPress = () => {
+    if (install.canPrompt) {
+      void install.promptInstall();
+      return;
+    }
+
+    if (isAppleMobileBrowser) {
+      setInstallGuideOpen(true);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -69,7 +80,10 @@ export default function WelcomeScreen() {
 
       <SafeAreaView style={styles.safeArea}>
         {showInstallBanner && (
-          <View style={styles.installBannerFloating}>
+          <Pressable
+            style={styles.installBannerFloating}
+            onPress={handleInstallBannerPress}
+          >
             <View style={styles.installIcon}>
               <Ionicons name="phone-portrait-outline" size={20} color="#E8697C" />
             </View>
@@ -79,26 +93,22 @@ export default function WelcomeScreen() {
                 {install.canPrompt
                   ? "Add it to your home screen for quick access."
                   : isAppleMobileBrowser
-                    ? "Use Share, then Add to Home Screen."
+                    ? "Tap here for iPhone install steps."
                     : "Add it from your browser menu when available."}
               </Text>
             </View>
             {install.canPrompt ? (
-              <TouchableOpacity
+              <View
                 style={styles.installAction}
-                onPress={install.promptInstall}
-                activeOpacity={0.86}
               >
                 <Text style={styles.installActionText}>Install</Text>
-              </TouchableOpacity>
+              </View>
             ) : isAppleMobileBrowser ? (
-              <TouchableOpacity
+              <View
                 style={styles.installAction}
-                onPress={() => setInstallGuideOpen(true)}
-                activeOpacity={0.86}
               >
                 <Text style={styles.installActionText}>How</Text>
-              </TouchableOpacity>
+              </View>
             ) : (
               <TouchableOpacity
                 style={styles.installDismiss}
@@ -108,7 +118,7 @@ export default function WelcomeScreen() {
                 <Ionicons name="close" size={18} color="#7B8498" />
               </TouchableOpacity>
             )}
-          </View>
+          </Pressable>
         )}
 
         <View style={[styles.content, isWide && styles.contentWide]}>
