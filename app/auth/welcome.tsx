@@ -15,10 +15,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, spacing, typography, shadows } from "@mumcare/ui";
 import { HeartIcon } from "../../components/HeartIcon";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { getTimeBasedGreeting, getDailyMessage } from "../../lib/greetings";
+import { usePwaInstallPrompt } from "../../lib/usePwaInstallPrompt";
 
 const WELCOME_BG = require("../../assets/welcome-bg.png");
 
@@ -26,10 +28,22 @@ export default function WelcomeScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 900;
+  const install = usePwaInstallPrompt();
+  const [installBannerDismissed, setInstallBannerDismissed] = useState(false);
   
   // Memoize greeting and message to prevent shift on re-renders
   const greeting = useMemo(() => getTimeBasedGreeting(), []);
   const dailyMessage = useMemo(() => getDailyMessage(), []);
+  const isMobileWeb = Platform.OS === "web" && width < 760;
+  const isAppleMobileBrowser = useMemo(() => {
+    if (typeof navigator === "undefined") {
+      return false;
+    }
+
+    return /iphone|ipad|ipod/i.test(navigator.userAgent);
+  }, []);
+  const showInstallBanner =
+    isMobileWeb && !install.isInstalled && !installBannerDismissed;
 
   return (
     <View style={styles.container}>
@@ -72,6 +86,41 @@ export default function WelcomeScreen() {
 
           {/* Lower Action Section */}
           <View style={styles.footer}>
+            {showInstallBanner && (
+              <View style={styles.installBanner}>
+                <View style={styles.installIcon}>
+                  <Ionicons name="phone-portrait-outline" size={20} color="#E8697C" />
+                </View>
+                <View style={styles.installCopy}>
+                  <Text style={styles.installTitle}>Install MumCare</Text>
+                  <Text style={styles.installHint}>
+                    {install.canPrompt
+                      ? "Add it to your home screen for quick access."
+                      : isAppleMobileBrowser
+                        ? "Use Share, then Add to Home Screen."
+                        : "Add it from your browser menu when available."}
+                  </Text>
+                </View>
+                {install.canPrompt ? (
+                  <TouchableOpacity
+                    style={styles.installAction}
+                    onPress={install.promptInstall}
+                    activeOpacity={0.86}
+                  >
+                    <Text style={styles.installActionText}>Install</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.installDismiss}
+                    onPress={() => setInstallBannerDismissed(true)}
+                    activeOpacity={0.86}
+                  >
+                    <Ionicons name="close" size={18} color="#7B8498" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+
             <Text style={styles.tagline}>
               Your personalized companion for a healthy, supported pregnancy.
             </Text>
@@ -186,6 +235,62 @@ const styles = StyleSheet.create({
   // Footer
   footer: {
     paddingBottom: 18,
+  },
+  installBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    borderWidth: 1,
+    borderColor: "rgba(232,105,124,0.18)",
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 18,
+    ...shadows.sm,
+  },
+  installIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    backgroundColor: "rgba(232,105,124,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  installCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  installTitle: {
+    color: colors.navy[700],
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  installHint: {
+    color: colors.navy[500],
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  installAction: {
+    minHeight: 36,
+    borderRadius: 12,
+    paddingHorizontal: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.rose[500],
+  },
+  installActionText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  installDismiss: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F6F7FB",
   },
   tagline: {
     fontSize: 15,
