@@ -93,7 +93,7 @@ export default function WelcomeScreen() {
                 {install.canPrompt
                   ? "Add it to your home screen for quick access."
                   : isAppleMobileBrowser
-                    ? "Tap here for iPhone install steps."
+                    ? "Open in normal Safari, then Add to Home Screen."
                     : "Add it from your browser menu when available."}
               </Text>
             </View>
@@ -193,27 +193,28 @@ export default function WelcomeScreen() {
             <Text style={styles.guideTitle}>Install MumCare on iPhone</Text>
             <Text style={styles.guideText}>
               iPhone does not let websites open the install menu directly.
-              Close this guide, then use Safari&apos;s real Share button in the
-              browser toolbar.
+              Use normal Safari, then open Safari&apos;s Share menu from the browser
+              toolbar.
             </Text>
 
             <View style={styles.guideSteps}>
               <View style={styles.guideStep}>
                 <Text style={styles.guideStepNumber}>1</Text>
                 <Text style={styles.guideStepText}>
-                  If Safari says Private, switch to normal browsing.
+                  Tap Safari&apos;s tabs button, then tap Private or the tab group
+                  name.
                 </Text>
               </View>
               <View style={styles.guideStep}>
                 <Text style={styles.guideStepNumber}>2</Text>
                 <Text style={styles.guideStepText}>
-                  Tap Safari&apos;s Share button in the browser toolbar.
+                  Choose Start Page or your regular tabs to leave Private mode.
                 </Text>
               </View>
               <View style={styles.guideStep}>
                 <Text style={styles.guideStepNumber}>3</Text>
                 <Text style={styles.guideStepText}>
-                  Choose Add to Home Screen from the menu.
+                  Reopen MumCare, tap Share, then Add to Home Screen.
                 </Text>
               </View>
             </View>
