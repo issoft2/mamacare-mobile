@@ -125,23 +125,25 @@ export default function WelcomeScreen() {
             
           {/* Upper Hero Section */}
           <View style={[styles.hero, isWide && styles.heroWide]}>
-            <View style={styles.brandWrapper}>
+            <View style={[styles.brandWrapper, isWide && styles.brandWrapperWide]}>
               <View style={styles.iconCircle}>
                 <HeartIcon size={48} color={colors.rose[500]} />
               </View>
               <Text style={styles.logoText}>mumcare</Text>
             </View>
 
-            <View style={styles.messageStack}>
+            <View style={[styles.messageStack, isWide && styles.messageStackWide]}>
               <Text style={styles.timeGreeting}>{greeting}, mama</Text>
-              <Text style={styles.dailyQuote}>"{dailyMessage}"</Text>
+              <Text style={[styles.dailyQuote, isWide && styles.dailyQuoteWide]}>
+                "{dailyMessage}"
+              </Text>
               <View style={styles.accentLine} />
             </View>
           </View>
 
           {/* Lower Action Section */}
-          <View style={styles.footer}>
-            <Text style={styles.tagline}>
+          <View style={[styles.footer, isWide && styles.footerWide]}>
+            <Text style={[styles.tagline, isWide && styles.taglineWide]}>
               Your personalized companion for a healthy, supported pregnancy.
             </Text>
               
@@ -154,7 +156,7 @@ export default function WelcomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.loginBtn}
+              style={[styles.loginBtn, isWide && styles.loginBtnWide]}
               onPress={() => router.push("/auth/login")}
             >
               <Text style={styles.loginBtnText}>
@@ -259,9 +261,11 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   contentWide: {
-    maxWidth: 560,
-    marginLeft: 48,
+    maxWidth: 520,
+    marginLeft: 76,
     marginRight: "auto",
+    paddingTop: 36,
+    paddingBottom: 40,
   },
   
   // Hero
@@ -273,9 +277,12 @@ const styles = StyleSheet.create({
     minHeight: 360,
   },
   heroWide: {
-    minHeight: 420,
+    minHeight: 390,
+    alignItems: "flex-start",
+    justifyContent: "center",
   },
   brandWrapper: { alignItems: 'center', marginBottom: 28 },
+  brandWrapperWide: { alignItems: "flex-start" },
   iconCircle: {
     width: 86,
     height: 86,
@@ -293,6 +300,7 @@ const styles = StyleSheet.create({
   },
   
   messageStack: { alignItems: 'center', gap: 12 },
+  messageStackWide: { alignItems: "flex-start" },
   timeGreeting: {
     fontSize: 13,
     color: colors.navy[400],
@@ -308,6 +316,10 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
   },
+  dailyQuoteWide: {
+    textAlign: "left",
+    maxWidth: 500,
+  },
   accentLine: {
     width: 40,
     height: 3,
@@ -319,6 +331,9 @@ const styles = StyleSheet.create({
   // Footer
   footer: {
     paddingBottom: 18,
+  },
+  footerWide: {
+    maxWidth: 500,
   },
   installBanner: {
     flexDirection: "row",
@@ -500,6 +515,9 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     lineHeight: 22,
   },
+  taglineWide: {
+    textAlign: "left",
+  },
   mainBtn: {
     backgroundColor: colors.rose[500],
     paddingVertical: 16,
@@ -516,6 +534,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingVertical: 10,
     alignItems: 'center',
+  },
+  loginBtnWide: {
+    alignItems: "flex-start",
   },
   loginBtnText: {
     color: colors.navy[600],

@@ -16,6 +16,7 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -588,9 +589,8 @@ export default function ChatConversationScreen() {
               </View>
             ) : null}
             <View style={styles.composer}>
-              <TouchableOpacity
+              <Pressable
                 style={styles.inputSurface}
-                activeOpacity={0.92}
                 onPress={() => inputRef.current?.focus()}
               >
                 <TextInput
@@ -650,7 +650,7 @@ export default function ChatConversationScreen() {
                 </LinearGradient>
               </TouchableOpacity>
               </View>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -797,6 +797,7 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
+    minWidth: 0,
     minHeight: 38,
     maxHeight: 92,
     color: "#1A237E",
