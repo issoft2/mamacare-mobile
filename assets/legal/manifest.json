@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "1.0",
+  "lastUpdated": "2026-05-26",
+  "documents": {
+    "privacy": {
+      "active": {
+        "ng": { "language": "en", "version": "v1.0", "path": "privacy/ng/en/v1.0.md" },
+        "uk": { "language": "en", "version": "v1.0", "path": "privacy/uk/en/v1.0.md" }
+      },
+      "versions": [
+        { "region": "ng", "language": "en", "version": "v1.0", "path": "privacy/ng/en/v1.0.md", "status": "active" },
+        { "region": "uk", "language": "en", "version": "v1.0", "path": "privacy/uk/en/v1.0.md", "status": "active" }
+      ]
+    },
+    "terms": {
+      "active": {
+        "ng": { "language": "en", "version": "v1.0", "path": "terms/ng/en/v1.0.md" },
+        "uk": { "language": "en", "version": "v1.0", "path": "terms/uk/en/v1.0.md" }
+      },
+      "versions": [
+        { "region": "ng", "language": "en", "version": "v1.0", "path": "terms/ng/en/v1.0.md", "status": "active" },
+        { "region": "uk", "language": "en", "version": "v1.0", "path": "terms/uk/en/v1.0.md", "status": "active" }
+      ]
+    }
+  }
+}

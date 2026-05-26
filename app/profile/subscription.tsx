@@ -21,6 +21,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSubscription, useUsage } from "@mumcare/api";
 import { colors, shadows } from "@mumcare/ui";
 import { ctaButtonStyles, ctaGradientColors } from "@/components/styles/ctaButton";
+import { getActiveLegalDocument, getActiveLegalRoute } from "@/lib/legal";
 
 const WHATSAPP_NUMBER = "2349059691747";
 const WHATSAPP_GREEN = "#25D366";
@@ -30,6 +31,8 @@ export default function SubscriptionScreen() {
   const { user } = useUser();
   const { isLoading } = useSubscription();
   const { data: usage } = useUsage();
+  const activePrivacy = getActiveLegalDocument("privacy");
+  const activeTerms = getActiveLegalDocument("terms");
 
   const userEmail = user?.primaryEmailAddress?.emailAddress ?? "";
 
@@ -172,6 +175,25 @@ export default function SubscriptionScreen() {
         <Text style={styles.footerNote}>
           Secure payments powered by Flutterwave. You stay in control of your plan at every step.
         </Text>
+        <View style={styles.legalLinksRow}>
+          <TouchableOpacity
+            onPress={() => router.push(getActiveLegalRoute("privacy") as any)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.legalLinkText}>
+              Privacy ({activePrivacy.region.toUpperCase()} {activePrivacy.version})
+            </Text>
+          </TouchableOpacity>
+          <Text style={styles.legalDot}>•</Text>
+          <TouchableOpacity
+            onPress={() => router.push(getActiveLegalRoute("terms") as any)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.legalLinkText}>
+              Terms ({activeTerms.region.toUpperCase()} {activeTerms.version})
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
       </LinearGradient>
     </View>
@@ -250,5 +272,19 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   footerNote: { textAlign: 'center', fontSize: 12, color: colors.navy[300], marginTop: 20, lineHeight: 18 },
+  legalLinksRow: {
+    marginTop: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  legalLinkText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: colors.navy[500],
+    textDecorationLine: "underline",
+  },
+  legalDot: { fontSize: 12, color: colors.navy[300] },
   lockedCard: { opacity: 0.9 }
 });
