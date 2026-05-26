@@ -21,16 +21,23 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { apiRequest } from "@mumcare/api";
 import { colors, spacing, typography, shadows } from "@mumcare/ui";
+import { getActiveLegalDocument, getActiveLegalRoute } from "@/lib/legal";
 
 export default function PrivacyScreen() {
   const { signOut } = useAuth();
   const router = useRouter();
+  const activePrivacy = getActiveLegalDocument("privacy");
+  const activeTerms = getActiveLegalDocument("terms");
   
   const [consents, setConsents] = useState({
     essential_health: true,
     ai_guidance: true,
     care_team_sharing: true,
     research: true,
+    marketing: false,
+    system_improvement: false,
+    anon_commercial: false,
+    model_training: false,
   });
 
   const [loadingState, setLoadingState] = useState<{tier: string | null, action: 'export' | 'delete' | null}>({
@@ -120,6 +127,38 @@ export default function PrivacyScreen() {
               onToggle={() => toggleConsent('care_team_sharing')}
               loading={loadingState.tier === 'care_team_sharing'}
             />
+            <View style={styles.divider} />
+            <ConsentRow
+              title="Marketing (optional)"
+              desc={<Text>Receive updates, offers, and health tips. <Text style={{color: colors.rose[500], textDecorationLine: 'underline'}} onPress={() => router.push(getActiveLegalRoute('privacy') as any)}>Learn more</Text></Text>}
+              value={consents.marketing}
+              onToggle={() => toggleConsent('marketing')}
+              loading={loadingState.tier === 'marketing'}
+            />
+            <View style={styles.divider} />
+            <ConsentRow
+              title="System Improvement (optional)"
+              desc={<Text>Help us improve features and experience. <Text style={{color: colors.rose[500], textDecorationLine: 'underline'}} onPress={() => router.push(getActiveLegalRoute('privacy') as any)}>Learn more</Text></Text>}
+              value={consents.system_improvement}
+              onToggle={() => toggleConsent('system_improvement')}
+              loading={loadingState.tier === 'system_improvement'}
+            />
+            <View style={styles.divider} />
+            <ConsentRow
+              title="Anonymous Commercialization (optional)"
+              desc={<Text>Allow use of anonymized data for research or commercial purposes. <Text style={{color: colors.rose[500], textDecorationLine: 'underline'}} onPress={() => router.push(getActiveLegalRoute('privacy') as any)}>Learn more</Text></Text>}
+              value={consents.anon_commercial}
+              onToggle={() => toggleConsent('anon_commercial')}
+              loading={loadingState.tier === 'anon_commercial'}
+            />
+            <View style={styles.divider} />
+            <ConsentRow
+              title="Model Training (optional)"
+              desc={<Text>Allow your data to help train and improve AI models. <Text style={{color: colors.rose[500], textDecorationLine: 'underline'}} onPress={() => router.push(getActiveLegalRoute('privacy') as any)}>Learn more</Text></Text>}
+              value={consents.model_training}
+              onToggle={() => toggleConsent('model_training')}
+              loading={loadingState.tier === 'model_training'}
+            />
           </View>
         </View>
 
@@ -127,6 +166,20 @@ export default function PrivacyScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Your Rights</Text>
           <View style={styles.groupCard}>
+            <ActionRow
+              icon="document-text-outline"
+              title={`Privacy Policy (${activePrivacy.region.toUpperCase()} ${activePrivacy.version})`}
+              desc="View the active policy version applied to your account region."
+              onPress={() => router.push(getActiveLegalRoute("privacy") as any)}
+            />
+            <View style={styles.divider} />
+            <ActionRow
+              icon="reader-outline"
+              title={`Terms of Service (${activeTerms.region.toUpperCase()} ${activeTerms.version})`}
+              desc="View the active terms version for your region."
+              onPress={() => router.push(getActiveLegalRoute("terms") as any)}
+            />
+            <View style={styles.divider} />
             <ActionRow 
               icon="download-outline" 
               title="Request Data Export" 
