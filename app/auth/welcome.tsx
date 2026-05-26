@@ -6,7 +6,6 @@
 import { Stack, useRouter } from "expo-router";
 import {
   Image,
-  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -18,8 +17,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, spacing, typography, shadows } from "@mumcare/ui";
+import { colors, shadows } from "@mumcare/ui";
 import { HeartIcon } from "../../components/HeartIcon";
+import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { useMemo, useState } from "react";
 import { getTimeBasedGreeting, getDailyMessage } from "../../lib/greetings";
 import { usePwaInstallPrompt } from "../../lib/usePwaInstallPrompt";
@@ -32,7 +32,6 @@ export default function WelcomeScreen() {
   const isWide = Platform.OS === "web" && width >= 900;
   const install = usePwaInstallPrompt();
   const [installBannerDismissed, setInstallBannerDismissed] = useState(false);
-  const [installGuideOpen, setInstallGuideOpen] = useState(false);
   
   // Memoize greeting and message to prevent shift on re-renders
   const greeting = useMemo(() => getTimeBasedGreeting(), []);
@@ -50,11 +49,6 @@ export default function WelcomeScreen() {
   const handleInstallBannerPress = () => {
     if (install.canPrompt) {
       void install.promptInstall();
-      return;
-    }
-
-    if (isAppleMobileBrowser) {
-      setInstallGuideOpen(true);
     }
   };
 
@@ -148,11 +142,19 @@ export default function WelcomeScreen() {
             </Text>
               
             <TouchableOpacity
-              style={styles.mainBtn}
+              style={ctaButtonStyles.button}
               onPress={() => router.push("/auth/register")}
               activeOpacity={0.9}
             >
-              <Text style={styles.mainBtnText}>Begin your journey</Text>
+              <LinearGradient
+                colors={ctaGradientColors}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={ctaButtonStyles.gradient}
+              >
+                <Text style={ctaButtonStyles.text}>Begin your journey</Text>
+                <Ionicons name="arrow-forward" size={20} color="#FFF" />
+              </LinearGradient>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -167,70 +169,6 @@ export default function WelcomeScreen() {
 
         </View>
       </SafeAreaView>
-
-      <Modal
-        visible={installGuideOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setInstallGuideOpen(false)}
-      >
-        <View style={styles.guideOverlay}>
-          <View style={styles.guideCard}>
-            <View style={styles.guideHeader}>
-              <View style={styles.guideBrowserHint}>
-                <Ionicons name="share-outline" size={22} color="#E8697C" />
-                <Text style={styles.guideBrowserHintText}>
-                  Safari toolbar
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={styles.guideClose}
-                onPress={() => setInstallGuideOpen(false)}
-                activeOpacity={0.86}
-              >
-                <Ionicons name="close" size={20} color="#7B8498" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.guideTitle}>Install MumCare on iPhone</Text>
-            <Text style={styles.guideText}>
-              iPhone does not let websites open the install menu directly.
-              Use normal Safari, then open Safari&apos;s Share menu from the browser
-              toolbar.
-            </Text>
-
-            <View style={styles.guideSteps}>
-              <View style={styles.guideStep}>
-                <Text style={styles.guideStepNumber}>1</Text>
-                <Text style={styles.guideStepText}>
-                  Tap Safari&apos;s tabs button, then tap Private or the tab group
-                  name.
-                </Text>
-              </View>
-              <View style={styles.guideStep}>
-                <Text style={styles.guideStepNumber}>2</Text>
-                <Text style={styles.guideStepText}>
-                  Choose Start Page or your regular tabs to leave Private mode.
-                </Text>
-              </View>
-              <View style={styles.guideStep}>
-                <Text style={styles.guideStepNumber}>3</Text>
-                <Text style={styles.guideStepText}>
-                  Reopen MumCare, tap Share, then Add to Home Screen.
-                </Text>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={styles.guideButton}
-              onPress={() => setInstallGuideOpen(false)}
-              activeOpacity={0.9}
-            >
-              <Text style={styles.guideButtonText}>Close guide</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -335,18 +273,6 @@ const styles = StyleSheet.create({
   footerWide: {
     maxWidth: 500,
   },
-  installBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: "rgba(255,255,255,0.9)",
-    borderWidth: 1,
-    borderColor: "rgba(232,105,124,0.18)",
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 18,
-    ...shadows.sm,
-  },
   installBannerFloating: {
     position: "absolute",
     top: 10,
@@ -407,107 +333,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#F6F7FB",
   },
-  guideOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(13,22,42,0.36)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 22,
-  },
-  guideCard: {
-    width: "100%",
-    maxWidth: 420,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    padding: 20,
-    ...shadows.lg,
-  },
-  guideHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  guideIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: "rgba(232,105,124,0.12)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  guideBrowserHint: {
-    minHeight: 44,
-    borderRadius: 14,
-    backgroundColor: "rgba(232,105,124,0.12)",
-    paddingHorizontal: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  guideBrowserHintText: {
-    color: colors.rose[500],
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  guideClose: {
-    width: 38,
-    height: 38,
-    borderRadius: 13,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#F6F7FB",
-  },
-  guideTitle: {
-    color: colors.navy[700],
-    fontSize: 20,
-    fontWeight: "800",
-    marginBottom: 8,
-  },
-  guideText: {
-    color: colors.navy[500],
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  guideSteps: {
-    gap: 10,
-    marginTop: 18,
-    marginBottom: 22,
-  },
-  guideStep: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  guideStepNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "rgba(232,105,124,0.12)",
-    color: colors.rose[500],
-    textAlign: "center",
-    lineHeight: 28,
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  guideStepText: {
-    flex: 1,
-    color: colors.navy[600],
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  guideButton: {
-    minHeight: 48,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.rose[500],
-  },
-  guideButtonText: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "800",
-  },
   tagline: {
     fontSize: 15,
     color: colors.navy[500],
@@ -517,18 +342,6 @@ const styles = StyleSheet.create({
   },
   taglineWide: {
     textAlign: "left",
-  },
-  mainBtn: {
-    backgroundColor: colors.rose[500],
-    paddingVertical: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-    ...shadows.md,
-  },
-  mainBtnText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: '700',
   },
   loginBtn: {
     marginTop: 20,

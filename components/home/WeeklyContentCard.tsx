@@ -38,6 +38,7 @@ import {
   apiRequest,
   type WeeklyContent,
 } from "@mumcare/api";
+import { ctaButtonStyles, ctaGradientColors } from "../styles/ctaButton";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -208,8 +209,10 @@ export function WeeklyContentCard() {
         {/* ── Top row ─────────────────────────────────────────── */}
         <View style={styles.topRow}>
           <View style={styles.weekBadge}>
+              
             <Text style={styles.weekBadgeNumber}>{current_week}</Text>
             <Text style={styles.weekBadgeLabel}>weeks</Text>
+            
           </View>
           <View style={styles.topRight}>
             <Text style={styles.trimesterLabel}>
@@ -255,28 +258,36 @@ export function WeeklyContentCard() {
         ) : null}
 
         {/* ── Chat CTA ────────────────────────────────────────── */}
-        <View style={styles.chatPrompt}>
+        <View style={ctaButtonStyles.button}>
+          <LinearGradient
+                          colors={ctaGradientColors}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          style={ctaButtonStyles.gradient}
+                        >
+
           {opening ? (
             <>
               <ActivityIndicator size="small" color="#FFF" />
-              <Text style={styles.chatPromptTitle}>Opening your weekly chat…</Text>
+              <Text style={ctaButtonStyles.text}>Opening your weekly chat…</Text>
             </>
-          ) : (
+          ) : ( 
             <>
               <View style={styles.chatPromptIcon}>
                 <Ionicons name="chatbubble-ellipses-outline" size={18} color="#FFF" />
               </View>
               <View style={styles.chatPromptCopy}>
-                <Text style={styles.chatPromptTitle}>
+                <Text style={ctaButtonStyles.text}>
                   Chat with MumCare about week {current_week}
                 </Text>
-                <Text style={styles.chatPromptText}>
+                <Text style={ctaButtonStyles.text}>
                   Tap for a warm breakdown of what to expect.
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#FFF" />
             </>
           )}
+          </LinearGradient>
         </View>
       </LinearGradient>
     </TouchableOpacity>
@@ -341,7 +352,6 @@ const styles = StyleSheet.create({
   topRow: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 14 },
   weekBadge: {
     width: 54, height: 54, borderRadius: 27,
-    backgroundColor: colors.rose[500],
     justifyContent: "center", alignItems: "center",
     ...Platform.select({
       ios: {
@@ -352,6 +362,7 @@ const styles = StyleSheet.create({
       },
       android: { elevation: 4 },
     }),
+    backgroundColor: "#E8697C", // Adding solid background color
   },
   weekBadgeNumber: { fontSize: 20, fontWeight: "800", color: "#FFF", lineHeight: 22 },
   weekBadgeLabel: {

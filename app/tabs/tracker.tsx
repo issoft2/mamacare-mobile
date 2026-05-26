@@ -70,8 +70,11 @@ export default function TrackerScreen() {
                     style={[styles.progressFill, { width: `${hydrationProgress}%` }]} 
                   />
                 </View>
-                <TouchableOpacity style={styles.widgetBtn} onPress={() => logWater.mutateAsync({ glasses_count: glassesCount + 1 })}>
-                  <Text style={styles.widgetBtnText}>+ Add a Glass</Text>
+                <TouchableOpacity 
+                  style={[styles.widgetBtn, { backgroundColor: '#E8697C' }]}
+                  onPress={() => logWater.mutateAsync({ glasses_count: glassesCount + 1 })}
+                >
+                  <Text style={[styles.widgetBtnText, { color: '#FFF' }]}>Add a Glass</Text>
                 </TouchableOpacity>
               </View>
 

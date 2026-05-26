@@ -7,6 +7,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View, Vibration } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { ctaButtonStyles, ctaGradientColors } from "../../../components/styles/ctaButton";
 import { Ionicons } from '@expo/vector-icons';
 import { useEndKickSession, useLogKick } from "@mumcare/api";
 
@@ -64,9 +65,9 @@ export default function KickCounterScreen() {
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.kickBtn} onPress={handleKick} activeOpacity={0.8}>
-          <LinearGradient colors={["#E8697C", "#FFA07A"]} style={styles.kickGradient}>
-            <Text style={styles.kickBtnText}>Record a Kick</Text>
+        <TouchableOpacity style={[ctaButtonStyles.button, styles.kickBtn]} onPress={handleKick} activeOpacity={0.8}>
+          <LinearGradient colors={ctaGradientColors} style={ctaButtonStyles.gradient}>
+            <Text style={ctaButtonStyles.text}>Record a Kick</Text>
           </LinearGradient>
         </TouchableOpacity>
 
@@ -98,9 +99,7 @@ const styles = StyleSheet.create({
   countLabel: { fontSize: 14, fontWeight: '700', color: 'rgba(255,255,255,0.8)', letterSpacing: 2 },
   infoBox: { paddingHorizontal: 40 },
   guidance: { color: '#BDBDBD', textAlign: 'center', lineHeight: 22, fontSize: 15 },
-  kickBtn: { width: '100%', borderRadius: 25, overflow: 'hidden', elevation: 10 },
-  kickGradient: { paddingVertical: 20, alignItems: 'center' },
-  kickBtnText: { color: '#FFF', fontSize: 20, fontWeight: '800' },
+  kickBtn: { width: '100%', marginTop: 20 },
   endBtn: { padding: 10 },
   endBtnText: { color: '#6B7BB8', fontWeight: '600' },
   alert: { flexDirection: 'row', backgroundColor: '#D32F2F', padding: 15, borderRadius: 15, alignItems: 'center', gap: 10, width: '100%' },

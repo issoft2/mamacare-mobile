@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { Ionicons } from "@expo/vector-icons";
 import { useProfile, useSubmitSymptom } from "@mumcare/api";
 import { colors } from "@mumcare/ui";
@@ -201,21 +202,21 @@ export default function NewSymptomScreen() {
 
             {/* Submit */}
             <TouchableOpacity
-              style={[styles.submitBtn, submitSymptom.isPending && { opacity: 0.75 }]}
+              style={[ctaButtonStyles.button, styles.submitBtn, submitSymptom.isPending && { opacity: 0.75 }]}
               onPress={handleSubmit}
               disabled={submitSymptom.isPending}
               activeOpacity={0.87}
             >
               <LinearGradient
-                colors={["#E8697C", "#FFA07A"]}
+                colors={ctaGradientColors}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={styles.submitGradient}
+                style={ctaButtonStyles.gradient}
               >
                 {submitSymptom.isPending ? (
                   <ActivityIndicator color="#FFF" />
                 ) : (
-                  <Text style={styles.submitText}>Save Journal Entry</Text>
+                  <Text style={ctaButtonStyles.text}>Save Journal Entry</Text>
                 )}
               </LinearGradient>
             </TouchableOpacity>
@@ -331,14 +332,7 @@ const styles = StyleSheet.create({
   // Submit
   submitBtn: {
     marginTop: 28,
-    borderRadius: 20,
-    overflow: "hidden",
   },
-  submitGradient: {
-    padding: 18,
-    alignItems: "center",
-  },
-  submitText: { color: "#FFF", fontWeight: "700", fontSize: 16 },
 
   // Cancel
   cancel: { marginTop: 16, alignItems: "center" },

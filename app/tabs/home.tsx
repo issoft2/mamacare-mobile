@@ -41,6 +41,7 @@ import { colors } from "@mumcare/ui";
 import { getTimeBasedGreeting } from "../../lib/greetings";
 import { WeeklyContentCard } from "@/components/home/WeeklyContentCard";
 import type { Severity, UrgencyTier } from "@mumcare/types";
+import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
