@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { ctaButtonStyles, ctaGradientColors } from "../../../components/styles/ctaButton";
 import { useAddCareTeamMember } from "@mumcare/api";
 import type { CareTeamMember } from "@mumcare/types";
 
@@ -167,15 +168,15 @@ export default function AddCareTeamMemberScreen() {
 
       <View style={styles.footer}>
         <TouchableOpacity 
-          style={[styles.mainBtn, (!form.fullName || !form.role) && step === 1 && styles.disabledBtn]} 
+          style={[ctaButtonStyles.button, styles.mainBtn, (!form.fullName || !form.role) && step === 1 && styles.disabledBtn]} 
           onPress={nextStep}
           disabled={(!form.fullName || !form.role) && step === 1}
         >
-          <LinearGradient colors={["#1A237E", "#3949AB"]} style={styles.btnGradient}>
+          <LinearGradient colors={ctaGradientColors} style={ctaButtonStyles.gradient}>
             {addMember.isPending ? (
               <ActivityIndicator color="#FFF" />
             ) : (
-              <Text style={styles.btnText}>{step === 3 ? "Complete Setup" : "Continue"}</Text>
+              <Text style={ctaButtonStyles.text}>{step === 3 ? "Complete Setup" : "Continue"}</Text>
             )}
           </LinearGradient>
         </TouchableOpacity>
@@ -222,8 +223,6 @@ const styles = StyleSheet.create({
   toggleSub: { fontSize: 12, color: '#757575' },
   footer: { padding: 25, paddingBottom: 40 },
   mainBtn: { borderRadius: 20, overflow: 'hidden', elevation: 5 },
-  btnGradient: { padding: 18, alignItems: 'center' },
-  btnText: { color: '#FFF', fontWeight: '800', fontSize: 16 },
   disabledBtn: { opacity: 0.5 },
   successScreen: { flex: 1, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', padding: 40 },
   confettiContainer: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#FFF5F5', alignItems: 'center', justifyContent: 'center', marginBottom: 30 },

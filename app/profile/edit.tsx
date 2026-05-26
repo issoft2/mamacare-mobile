@@ -17,6 +17,7 @@ import {
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { Ionicons } from '@expo/vector-icons';
 import { ApiRequestError, useCreateProfile, useProfile, useUpdateProfile } from "@mumcare/api";
 
@@ -240,16 +241,16 @@ export default function EditProfileScreen() {
               </View>
 
               <TouchableOpacity
-                style={[styles.submitBtn, isSaving && styles.submitBtnDisabled]}
+                style={[ctaButtonStyles.button, styles.submitBtn, isSaving && styles.submitBtnDisabled]}
                 onPress={handleSave}
                 disabled={isSaving}
               >
-                <LinearGradient colors={["#E8697C", "#FFA07A"]} start={{x:0, y:0}} end={{x:1, y:0}} style={styles.submitGradient}>
+                <LinearGradient colors={ctaGradientColors} start={{x:0, y:0}} end={{x:1, y:0}} style={ctaButtonStyles.gradient}>
                   {isSaving ? (
                     <ActivityIndicator color="#FFF" />
                   ) : (
                     <>
-                      <Text style={styles.submitText}>Save Changes</Text>
+                      <Text style={ctaButtonStyles.text}>Save Changes</Text>
                       <Ionicons name="checkmark-circle-outline" size={20} color="#FFF" />
                     </>
                   )}
@@ -331,8 +332,6 @@ const styles = StyleSheet.create({
   },
   input: { flex: 1, minWidth: 0, paddingVertical: 14, fontSize: 16, color: '#1A237E' },
   fieldHint: { color: "#8A93A6", fontSize: 12, lineHeight: 17, marginTop: 7, marginLeft: 4 },
-  submitBtn: { marginTop: 30, borderRadius: 20, overflow: 'hidden' },
+  submitBtn: { marginTop: 30 },
   submitBtnDisabled: { opacity: 0.72 },
-  submitGradient: { minHeight: 56, padding: 18, alignItems: 'center', justifyContent: "center", flexDirection: "row", gap: 8 },
-  submitText: { color: '#FFF', fontWeight: '800', fontSize: 16 }
 });

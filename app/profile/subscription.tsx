@@ -5,12 +5,10 @@
 
 import { useUser } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
-import { useMemo } from "react";
 import {
   ActivityIndicator,
   Alert,
   Linking,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,11 +16,11 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import * as Localization from "expo-localization";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { useSubscription, useUsage } from "@mumcare/api";
-import { colors, spacing, typography, shadows } from "@mumcare/ui";
+import { colors, shadows } from "@mumcare/ui";
+import { ctaButtonStyles, ctaGradientColors } from "@/components/styles/ctaButton";
 
 const WHATSAPP_NUMBER = "2349059691747";
 const WHATSAPP_GREEN = "#25D366";
@@ -30,7 +28,7 @@ const WHATSAPP_GREEN = "#25D366";
 export default function SubscriptionScreen() {
   const router = useRouter();
   const { user } = useUser();
-  const { data: subscription, isLoading } = useSubscription();
+  const { isLoading } = useSubscription();
   const { data: usage } = useUsage();
 
   const userEmail = user?.primaryEmailAddress?.emailAddress ?? "";
@@ -52,18 +50,23 @@ export default function SubscriptionScreen() {
 
   return (
     <View style={styles.container}>
+      <LinearGradient colors={["#FFF8F4", "#F8FAFF"]} style={styles.bgOverlay}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backCircle}>
           <Ionicons name="chevron-back" size={24} color={colors.navy[700]} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Membership</Text>
+        <View style={styles.headerCopy}>
+          <Text style={styles.headerEyebrow}>MEMBERSHIP</Text>
+          <Text style={styles.headerTitle}>Plans & Access</Text>
+          <Text style={styles.headerSubtext}>Choose the support level that feels right for your journey.</Text>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.heroSection}>
-          <Text style={styles.title}>Your Health, Simplified.</Text>
+          <Text style={styles.title}>Your Health, Simplified</Text>
           <Text style={styles.subtitle}>
-            We're rolling out our premium features slowly to ensure the highest quality of care.
+            We are rolling out premium features with care so every upgrade feels reliable, helpful, and human.
           </Text>
         </View>
 
@@ -87,6 +90,7 @@ export default function SubscriptionScreen() {
               <Text style={styles.usageSub}>Daily Messages</Text>
             </View>
           </View>
+          <Text style={styles.statusFootnote}>Your free plan is active and fully available while new plans are prepared.</Text>
         </View>
 
         {/* Plan Comparison */}
@@ -111,11 +115,19 @@ export default function SubscriptionScreen() {
             </View>
 
             <TouchableOpacity 
-              style={styles.waButton} 
+              style={[ctaButtonStyles.button, styles.waButtonShell]}
               onPress={() => openWhatsApp("Standard")}
+              activeOpacity={0.88}
             >
-              <Ionicons name="logo-whatsapp" size={20} color={colors.white} />
-              <Text style={styles.waButtonText}>Join the Waitlist</Text>
+              <LinearGradient
+                colors={ctaGradientColors}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={ctaButtonStyles.gradient}
+              >
+                <Ionicons name="logo-whatsapp" size={20} color={colors.white} />
+                <Text style={ctaButtonStyles.text}>Inquire for Access</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
 
@@ -125,7 +137,7 @@ export default function SubscriptionScreen() {
             style={[styles.planCard, styles.lockedCard, styles.premiumCard]}
           >
             <View style={[styles.planBadge, { backgroundColor: colors.rose[500] }]}>
-              <Text style={[styles.planBadgeText, { color: colors.white }]}>PREMIUM</Text>
+              <Text style={[styles.planBadgeText, { color: colors.white }]}>coming soon</Text>
             </View>
             <Text style={styles.planName}>Premium Care</Text>
             <Text style={styles.planPrice}>₦-- <Text style={styles.period}>/ month</Text></Text>
@@ -140,31 +152,42 @@ export default function SubscriptionScreen() {
             </View>
 
             <TouchableOpacity 
-              style={[styles.waButton, { backgroundColor: colors.navy[700] }]} 
+              style={[ctaButtonStyles.button, styles.waButtonShell]} 
               onPress={() => openWhatsApp("Premium")}
+              activeOpacity={0.88}
             >
-              <Text style={styles.waButtonText}>Inquire for Early Access</Text>
+              <LinearGradient
+                colors={ctaGradientColors}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={ctaButtonStyles.gradient}
+              >
+                <Ionicons name="logo-whatsapp" size={20} color={colors.white} />
+                <Text style={ctaButtonStyles.text}>Inquire for Access</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </LinearGradient>
         </View>
 
         <Text style={styles.footerNote}>
-          Secure payments powered by Flutterwave.
+          Secure payments powered by Flutterwave. You stay in control of your plan at every step.
         </Text>
       </ScrollView>
+      </LinearGradient>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFF8F4' },
+  bgOverlay: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { 
     flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingTop: 60, 
+    alignItems: 'flex-start', 
+    paddingTop: 58, 
     paddingHorizontal: 20,
-    marginBottom: 20 
+    marginBottom: 18,
   },
   backCircle: { 
     width: 40, 
@@ -173,15 +196,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white, 
     justifyContent: 'center', 
     alignItems: 'center',
+    marginRight: 14,
     ...shadows.sm 
   },
-  headerTitle: { flex: 1, textAlign: 'center', marginRight: 40, fontSize: 18, fontWeight: '700', color: colors.navy[700] },
+  headerCopy: { flex: 1 },
+  headerEyebrow: { fontSize: 11, fontWeight: '800', color: colors.rose[500], letterSpacing: 1.2, marginBottom: 4 },
+  headerTitle: { fontSize: 24, fontWeight: '800', color: colors.navy[700] },
+  headerSubtext: { marginTop: 6, fontSize: 13, lineHeight: 19, color: colors.navy[400] },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
-  heroSection: { marginBottom: 30 },
-  title: { fontSize: 28, fontWeight: '800', color: colors.navy[700], marginBottom: 10 },
-  subtitle: { fontSize: 16, color: colors.navy[400], lineHeight: 22 },
+  heroSection: { marginBottom: 24 },
+  title: { fontSize: 28, fontWeight: '800', color: colors.navy[700], marginBottom: 8 },
+  subtitle: { fontSize: 15, color: colors.navy[400], lineHeight: 22 },
   statusCard: { 
-    backgroundColor: colors.white, 
+    backgroundColor: 'rgba(255,255,255,0.92)', 
     borderRadius: 24, 
     padding: 20, 
     marginBottom: 30,
@@ -198,15 +225,17 @@ const styles = StyleSheet.create({
   usageVal: { fontSize: 24, fontWeight: '800', color: colors.navy[700] },
   usageSub: { fontSize: 12, color: colors.navy[400], marginTop: 4 },
   divider: { width: 1, height: 30, backgroundColor: colors.gray[100] },
+  statusFootnote: { marginTop: 14, textAlign: 'center', fontSize: 12, color: colors.navy[300], lineHeight: 18 },
   planSection: { marginBottom: 20 },
   sectionTitle: { fontSize: 20, fontWeight: '700', color: colors.navy[700], marginBottom: 15 },
   planCard: { 
-    backgroundColor: colors.white, 
+    backgroundColor: 'rgba(255,255,255,0.93)', 
     borderRadius: 24, 
     padding: 24, 
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: colors.gray[100]
+    borderColor: colors.gray[100],
+    ...shadows.sm,
   },
   premiumCard: { borderColor: colors.rose[200] },
   planBadge: { alignSelf: 'flex-start', backgroundColor: colors.gray[100], paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, marginBottom: 12 },
@@ -217,16 +246,9 @@ const styles = StyleSheet.create({
   featureList: { gap: 12, marginBottom: 25 },
   featureRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   featureText: { fontSize: 14, color: colors.navy[500] },
-  waButton: { 
-    flexDirection: 'row', 
-    backgroundColor: WHATSAPP_GREEN, 
-    padding: 16, 
-    borderRadius: 16, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    gap: 10 
+  waButtonShell: {
+    marginTop: 2,
   },
-  waButtonText: { color: colors.white, fontWeight: '700', fontSize: 16 },
-  footerNote: { textAlign: 'center', fontSize: 12, color: colors.navy[300], marginTop: 20 },
+  footerNote: { textAlign: 'center', fontSize: 12, color: colors.navy[300], marginTop: 20, lineHeight: 18 },
   lockedCard: { opacity: 0.9 }
 });

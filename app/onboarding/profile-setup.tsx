@@ -9,6 +9,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOp
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from '@expo/vector-icons';
 import { ApiRequestError, useCreateProfile, useProfile, useUpdateProfile} from "@mumcare/api";
+import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 
 export default function ProfileSetupScreen() {
   const router = useRouter();
@@ -169,16 +170,16 @@ export default function ProfileSetupScreen() {
               </View>
 
               <TouchableOpacity
-                style={[styles.submitBtn, isSaving && styles.submitBtnDisabled]}
+                style={[ctaButtonStyles.button, styles.submitBtn, isSaving && styles.submitBtnDisabled]}
                 onPress={handleSave}
                 disabled={isSaving}
               >
-                <LinearGradient colors={["#E8697C", "#FFA07A"]} start={{x:0, y:0}} end={{x:1, y:0}} style={styles.submitGradient}>
+                <LinearGradient colors={ctaGradientColors} start={{x:0, y:0}} end={{x:1, y:0}} style={ctaButtonStyles.gradient}>
                   {isSaving ? (
                     <ActivityIndicator color="#FFF" />
                   ) : (
                     <>
-                      <Text style={styles.submitText}>Continue to My Dashboard</Text>
+                      <Text style={ctaButtonStyles.text}>Continue to My Dashboard</Text>
                       <Ionicons name="arrow-forward" size={20} color="#FFF" />
                     </>
                   )}
@@ -212,8 +213,6 @@ const styles = StyleSheet.create({
   input: { flex: 1, backgroundColor: '#FFF', borderRadius: 15, padding: 16, fontSize: 16, color: '#1A237E', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
   inputWithIcon: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderRadius: 15, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
   inputIcon: { marginLeft: 15 },
-  submitBtn: { marginTop: 20, borderRadius: 20, overflow: 'hidden', elevation: 8, shadowColor: '#E8697C', shadowOpacity: 0.3 },
+  submitBtn: { marginTop: 20 },
   submitBtnDisabled: { opacity: 0.72 },
-  submitGradient: { padding: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
-  submitText: { color: '#FFF', fontWeight: '800', fontSize: 16 }
 });

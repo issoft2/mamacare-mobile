@@ -36,6 +36,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { colors, spacing, shadows } from "@mumcare/ui";
+import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { SocialSignInButtons } from "@/components/auth/SocialSignInButtons";
 import { getErrorMessage, isClerkSessionExistsError } from "@/lib/errors";
 import { resetClerkForSignIn } from "@/lib/resetClerkForSignIn";
@@ -184,16 +185,23 @@ export default function RegisterScreen() {
               </View>
 
               <TouchableOpacity
-                style={[styles.mainBtn, loading && { opacity: 0.75 }]}
+                style={[ctaButtonStyles.button, loading && { opacity: 0.75 }]}
                 onPress={handleVerify}
                 disabled={loading}
                 activeOpacity={0.87}
               >
-                {loading ? (
-                  <ActivityIndicator color="#FFF" />
-                ) : (
-                  <Text style={styles.mainBtnText}>Confirm my email</Text>
-                )}
+                <LinearGradient
+                  colors={ctaGradientColors}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={ctaButtonStyles.gradient}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <Text style={ctaButtonStyles.text}>Confirm my email</Text>
+                  )}
+                </LinearGradient>
               </TouchableOpacity>
 
               {/* Resend hint */}
@@ -329,16 +337,23 @@ export default function RegisterScreen() {
 
             {/* CTA */}
             <TouchableOpacity
-              style={[styles.mainBtn, loading && { opacity: 0.75 }]}
+              style={[ctaButtonStyles.button, loading && { opacity: 0.75 }]}
               onPress={handleRegister}
               disabled={loading}
               activeOpacity={0.87}
             >
-              {loading ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={styles.mainBtnText}>Begin my journey</Text>
-              )}
+              <LinearGradient
+                colors={ctaGradientColors}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={ctaButtonStyles.gradient}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <Text style={ctaButtonStyles.text}>Begin my journey</Text>
+                )}
+              </LinearGradient>
             </TouchableOpacity>
 
             {/* Social sign-in */}
@@ -555,22 +570,6 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     marginTop: 6,
     marginLeft: 4,
-  },
-
-  // ── CTA ─────────────────────────────────────────────────────
-  mainBtn: {
-    backgroundColor: colors.rose[500],
-    borderRadius: 20,
-    paddingVertical: 18,
-    alignItems: "center",
-    marginBottom: 8,
-    ...shadows.md,
-  },
-  mainBtnText: {
-    color: "#FFF",
-    fontSize: 17,
-    fontWeight: "700",
-    letterSpacing: 0.3,
   },
 
   // ── Footer ──────────────────────────────────────────────────

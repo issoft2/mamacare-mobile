@@ -20,6 +20,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useProfile, useUpdateProfile } from "@mumcare/api";
+import { ctaButtonStyles, ctaGradientColors } from "@/components/styles/ctaButton";
 
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -169,8 +170,18 @@ export default function MedicalProfileScreen() {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.doneBtn} onPress={() => router.back()}>
-          <Text style={styles.doneBtnText}>Finish</Text>
+        <TouchableOpacity 
+        style={ctaButtonStyles.button}
+        onPress={() => router.back()}
+        >
+           <LinearGradient
+              colors={ctaGradientColors}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={ctaButtonStyles.gradient}
+            >
+          <Text style={ctaButtonStyles.text}>Finish</Text>
+        </LinearGradient>
         </TouchableOpacity>
       </ScrollView>
     </View>

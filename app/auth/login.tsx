@@ -41,6 +41,8 @@ import { getErrorMessage } from "@/lib/errors";
 import { goHomeAfterClerkSetActive } from "@/lib/goHomeAfterClerkSetActive";
 import { resetClerkForSignIn } from "@/lib/resetClerkForSignIn";
 import { getTimeBasedGreeting, getDailyMessage } from "../../lib/greetings";
+import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
+
 
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -208,16 +210,23 @@ export default function LoginScreen() {
 
             {/* Sign In CTA */}
             <TouchableOpacity
-              style={[styles.mainBtn, loading && { opacity: 0.75 }]}
+              style={ctaButtonStyles.button}
               onPress={handleLogin}
               disabled={loading}
               activeOpacity={0.87}
             >
-              {loading ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={styles.mainBtnText}>Sign In</Text>
-              )}
+              <LinearGradient
+                colors={ctaGradientColors}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={ctaButtonStyles.gradient}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <Text style={ctaButtonStyles.text}>Sign In</Text>
+                )}
+              </LinearGradient>
             </TouchableOpacity>
 
             {/* Social sign-in */}

@@ -5,8 +5,9 @@
 
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { useLogMood } from "@mumcare/api";
 import type { Mood } from "@mumcare/types";
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +20,13 @@ const MOODS: { value: Mood; emoji: string; label: string }[] = [
   { value: "low", emoji: "😔", label: "Low" },
 ];
 
+function getMoodAffirmation(value: Mood): string {
+  if (value === "happy") return "Beautiful energy today. Keep leaning into what makes you feel safe and joyful.";
+  if (value === "neutral") return "Steady days matter too. Gentle routines help keep your mind and body grounded.";
+  if (value === "anxious") return "You are not alone. Slow breaths and small pauses can help your nervous system soften.";
+  return "Low days happen. Be extra kind to yourself and reach out if you need more support today.";
+}
+
 export default function MoodLogScreen() {
   const router = useRouter();
   const logMood = useLogMood();
@@ -27,17 +35,22 @@ export default function MoodLogScreen() {
 
   return (
     <View style={styles.screen}>
-        <LinearGradient colors={["rgba(255,255,255,0.8)", "rgba(255,245,245,0.6)"]} style={styles.bgOverlay}>
+        <LinearGradient colors={["#FFF8F4", "#F8FAFF"]} style={styles.bgOverlay}>
           <ScrollView contentContainerStyle={styles.content}>
         
             <View style={styles.header}>
               <TouchableOpacity onPress={() => router.push("/tabs/tracker")} style={styles.backBtn}>
                    <Ionicons name="chevron-back" size={24} color="#1A237E" />
-                </TouchableOpacity>
-              <Text style={styles.title}>Emotional Check-in</Text>
+              </TouchableOpacity>
+              <View style={styles.headerCopy}>
+                <Text style={styles.eyebrow}>EMOTIONAL CARE</Text>
+                <Text style={styles.title}>Emotional Check-in</Text>
+                <Text style={styles.subtitle}>Capture how you feel today so MumCare can support you with warmth and better guidance.</Text>
+              </View>
             </View>
 
             <View style={styles.glassCard}>
+              <Text style={styles.inputLabel}>How are you feeling?</Text>
               <View style={styles.moodGrid}>
                 {MOODS.map(m => (
                   <TouchableOpacity
@@ -51,11 +64,10 @@ export default function MoodLogScreen() {
                 ))}
               </View>
 
-              {(mood === "anxious" || mood === "low") && (
-                <View style={styles.supportBanner}>
-                   <Text style={styles.supportText}>💙 You're not alone. It's okay to feel this way. Take a deep breath.</Text>
-                </View>
-              )}
+              <View style={styles.supportBanner}>
+                <Ionicons name="heart" size={14} color="#6B7BB8" />
+                <Text style={styles.supportText}>{getMoodAffirmation(mood)}</Text>
+              </View>
 
               <Text style={styles.inputLabel}>Additional Thoughts</Text>
               <TextInput
@@ -67,9 +79,21 @@ export default function MoodLogScreen() {
                 multiline
               />
 
-              <TouchableOpacity style={styles.submitBtn} onPress={() => logMood.mutateAsync({ mood, notes })}>
-                <LinearGradient colors={["#E8697C", "#FFA07A"]} start={{x:0, y:0}} end={{x:1, y:0}} style={styles.submitGradient}>
-                  {logMood.isPending ? <ActivityIndicator color="#FFF" /> : <Text style={styles.submitText}>Save Reflection</Text>}
+              <TouchableOpacity
+                style={[ctaButtonStyles.button, styles.submitBtn, logMood.isPending && styles.submitBtnDisabled]}
+                onPress={() => logMood.mutateAsync({ mood, notes })}
+                disabled={logMood.isPending}
+                activeOpacity={0.88}
+              >
+                <LinearGradient colors={ctaGradientColors} start={{x:0, y:0}} end={{x:1, y:0}} style={ctaButtonStyles.gradient}>
+                  {logMood.isPending ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark-circle-outline" size={18} color="#FFF" />
+                      <Text style={ctaButtonStyles.text}>Save Reflection</Text>
+                    </>
+                  )}
                 </LinearGradient>
               </TouchableOpacity>
 
@@ -86,28 +110,80 @@ export default function MoodLogScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  bgImage: { flex: 1 },
   bgOverlay: { flex: 1 },
-  content: { padding: 20, paddingTop: 60 },
-  header: { marginBottom: 30 },
-  title: { fontSize: 26, fontWeight: "700", color: "#1A237E" },
-  subtitle: { fontSize: 16, color: "#757575", marginTop: 4 },
-  glassCard: { backgroundColor: "rgba(255,255,255,0.7)", borderRadius: 30, padding: 20, elevation: 10, shadowOpacity: 0.1 },
+  content: { padding: 20, paddingTop: 56, paddingBottom: 32 },
+  header: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 24 },
+  headerCopy: { flex: 1 },
+  eyebrow: { fontSize: 11, fontWeight: '800', color: '#E8697C', letterSpacing: 1.1, marginBottom: 6 },
+  title: { fontSize: 26, fontWeight: '800', color: '#1A237E' },
+  subtitle: { marginTop: 6, fontSize: 13, lineHeight: 19, color: '#6E7890' },
+  glassCard: {
+    backgroundColor: 'rgba(255,255,255,0.84)',
+    borderRadius: 28,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.74)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6B7BB8',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 18,
+      },
+      android: { elevation: 4 },
+    }),
+  },
   moodGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 20 },
-  moodCard: { width: '48%', backgroundColor: '#FFF', padding: 20, borderRadius: 20, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  moodCard: { width: '48%', backgroundColor: '#FFF', padding: 18, borderRadius: 20, alignItems: 'center', borderWidth: 1.2, borderColor: '#E5E9F5' },
   moodCardActive: { borderColor: '#E8697C', backgroundColor: 'rgba(232, 105, 124, 0.05)' },
   moodEmoji: { fontSize: 40, marginBottom: 8 },
-  moodLabel: { fontSize: 14, color: '#757575', fontWeight: '600' },
+  moodLabel: { fontSize: 14, color: '#757575', fontWeight: '700' },
   moodLabelActive: { color: '#E8697C' },
-  supportBanner: { backgroundColor: 'rgba(74, 144, 226, 0.1)', padding: 15, borderRadius: 15, marginBottom: 20 },
-  supportText: { fontSize: 13, color: '#4A90E2', lineHeight: 18, textAlign: 'center' },
-  inputLabel: { fontSize: 12, fontWeight: '700', color: '#9E9E9E', textTransform: 'uppercase', marginBottom: 10, marginLeft: 5 },
-  input: { backgroundColor: '#FFF', borderRadius: 20, padding: 15, minHeight: 100, textAlignVertical: 'top', fontSize: 15 },
-  submitBtn: { marginTop: 30, borderRadius: 20, overflow: 'hidden' },
-  submitGradient: { padding: 18, alignItems: 'center' },
-  submitText: { color: '#FFF', fontWeight: '700', fontSize: 16 },
+  supportBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: 'rgba(107, 123, 184, 0.09)',
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 20,
+    borderLeftWidth: 3,
+    borderLeftColor: '#6B7BB8',
+  },
+  supportText: { flex: 1, fontSize: 12.5, color: '#3E4C7A', lineHeight: 18 },
+  inputLabel: { fontSize: 11, fontWeight: '800', color: '#E8697C', textTransform: 'uppercase', marginBottom: 10, marginLeft: 5, letterSpacing: 1.1 },
+  input: {
+    backgroundColor: '#FFF',
+    borderRadius: 18,
+    padding: 15,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    fontSize: 15,
+    color: '#1A237E',
+    borderWidth: 1.2,
+    borderColor: '#E5E9F5',
+  },
+  submitBtn: { marginTop: 30 },
+  submitBtnDisabled: { opacity: 0.72 },
   cancel: { marginTop: 20, alignItems: 'center' },
-  cancelText: { color: '#BDBDBD' },
-  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', marginRight: 15, elevation: 3 },
+  cancelText: { color: '#98A2B8', fontWeight: '600' },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#1A2E4A',
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+      },
+      android: { elevation: 3 },
+    }),
+  },
 
 });
