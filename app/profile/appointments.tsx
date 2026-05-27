@@ -4,6 +4,7 @@
 
 import { useRouter } from "expo-router";
 import {
+  ActivityIndicator,
   FlatList,
   StyleSheet,
   Text,
@@ -19,11 +20,15 @@ export default function AppointmentsScreen() {
   const router = useRouter();
   const { data: appointments, isLoading } = useAppointments();
 
+  const upcomingAppointments = (appointments ?? [])
+    .filter((item) => item.status === "scheduled")
+    .filter((item) => new Date(item.scheduled_at) >= new Date())
+    .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
+
   function renderAppointment({ item }: { item: Appointment }) {
     const date = new Date(item.scheduled_at);
-    const isPast = date < new Date();
     return (
-      <View style={[styles.card, isPast && styles.cardPast]}>
+      <View style={styles.card}>
         <View style={styles.cardLeft}>
           <Text style={styles.dateDay}>{date.getDate()}</Text>
           <Text style={styles.dateMonth}>{date.toLocaleString("en-GB", { month: "short" })}</Text>
@@ -61,13 +66,38 @@ export default function AppointmentsScreen() {
         </TouchableOpacity>
         <Text style={styles.title}>Appointments</Text>
       </View>
+
+      <View style={styles.heroCard}>
+        <Text style={styles.heroTitle}>Upcoming Visits</Text>
+        <Text style={styles.heroSub}>Only future appointments are shown here, nearest first.</Text>
+        <TouchableOpacity
+          style={styles.addBtn}
+          onPress={() => router.push("/profile/appointments/new")}
+          accessibilityRole="button"
+          accessibilityLabel="Add appointment"
+          activeOpacity={0.88}
+        >
+          <Ionicons name="add-circle-outline" size={16} color="#FFF" />
+          <Text style={styles.addBtnText}>Add appointment</Text>
+        </TouchableOpacity>
+      </View>
+
+      {isLoading && (
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator color={colors.rose[400]} />
+        </View>
+      )}
+
       <FlatList
-        data={appointments ?? []}
+        data={upcomingAppointments}
         keyExtractor={(item) => item.id}
         renderItem={renderAppointment}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>No appointments scheduled.</Text>
+          <View style={styles.emptyWrap}>
+            <Text style={styles.emptyText}>No upcoming appointments yet.</Text>
+            <Text style={styles.emptySub}>Set your next visit to keep your care plan on track.</Text>
+          </View>
         }
       />
     </View>
@@ -78,8 +108,32 @@ const styles = StyleSheet.create({
   container:   { flex: 1, backgroundColor: colors.gray[50] },
   list:        { padding: spacing[4], gap: spacing[3] },
   title:       { fontSize: typography.fontSize["2xl"], fontWeight: typography.fontWeight.bold, color: colors.navy[700], marginBottom: spacing[4] },
+  heroCard:    {
+    marginHorizontal: spacing[4],
+    marginBottom: spacing[2],
+    backgroundColor: "#FFF6F6",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(232,105,124,0.18)",
+    padding: spacing[4],
+    gap: spacing[2],
+  },
+  heroTitle:   { fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, color: colors.navy[700] },
+  heroSub:     { fontSize: typography.fontSize.sm, color: colors.navy[500] },
+  addBtn: {
+    marginTop: spacing[1],
+    alignSelf: "flex-start",
+    backgroundColor: colors.rose[500],
+    borderRadius: 999,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[1],
+  },
+  addBtnText: { color: "#FFF", fontWeight: typography.fontWeight.bold, fontSize: typography.fontSize.sm },
+  loadingWrap: { paddingVertical: spacing[3] },
   card:        { backgroundColor: colors.white, borderRadius: 16, padding: spacing[4], flexDirection: "row", gap: spacing[4], ...shadows.sm },
-  cardPast:    { opacity: 0.6 },
   cardLeft:    { alignItems: "center", justifyContent: "center", width: 48 },
   dateDay:     { fontSize: typography.fontSize["2xl"], fontWeight: typography.fontWeight.bold, color: colors.rose[500] },
   dateMonth:   { fontSize: typography.fontSize.xs, color: colors.gray[500], textTransform: "uppercase" },
@@ -90,5 +144,7 @@ const styles = StyleSheet.create({
   statusBadge: { alignSelf: "flex-start", backgroundColor: colors.gray[100], borderRadius: 6, paddingHorizontal: spacing[2], paddingVertical: 2, marginTop: spacing[1] },
   statusCompleted: { backgroundColor: colors.sage[100] },
   statusText:  { fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.bold, color: colors.gray[600] },
-  emptyText:   { textAlign: "center", color: colors.gray[400], marginTop: spacing[12] },
+  emptyWrap: { alignItems: "center", marginTop: spacing[12], paddingHorizontal: spacing[5] },
+  emptyText:   { textAlign: "center", color: colors.gray[500], fontWeight: typography.fontWeight.semibold },
+  emptySub: { textAlign: "center", color: colors.gray[400], marginTop: spacing[1] },
 });

@@ -6,6 +6,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "./client";
 import type {
+  FolicAcidLog,
   HydrationLog,
   KickSession,
   MoodLog,
@@ -18,6 +19,7 @@ import type {
 export const trackerKeys = {
   kicks: () => ["tracker", "kicks"] as const,
   hydration: () => ["tracker", "hydration"] as const,
+  folicAcid: () => ["tracker", "folic-acid"] as const,
   sleep: () => ["tracker", "sleep"] as const,
   mood: () => ["tracker", "mood"] as const,
 };
@@ -72,12 +74,31 @@ export function useHydrationLogs() {
 export function useLogHydration() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { glasses_count: number; target_glasses?: number }) =>
+    mutationFn: (data: { glasses_count: number; target_glasses?: number; log_date?: string }) =>
       apiRequest<HydrationLog>("/tracker/hydration", {
         method: "POST",
         body: JSON.stringify(data),
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: trackerKeys.hydration() }),
+  });
+}
+
+export function useFolicAcidLogs() {
+  return useQuery({
+    queryKey: trackerKeys.folicAcid(),
+    queryFn: () => apiRequest<FolicAcidLog[]>("/tracker/folic-acid"),
+  });
+}
+
+export function useLogFolicAcid() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { taken: boolean; log_date?: string }) =>
+      apiRequest<FolicAcidLog>("/tracker/folic-acid", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: trackerKeys.folicAcid() }),
   });
 }
 
@@ -91,7 +112,7 @@ export function useSleepLogs() {
 export function useLogSleep() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { duration_band: SleepDurationBand; quality: SleepQuality; notes?: string }) =>
+    mutationFn: (data: { duration_band: SleepDurationBand; quality: SleepQuality; notes?: string; log_date?: string }) =>
       apiRequest<SleepLog>("/tracker/sleep", {
         method: "POST",
         body: JSON.stringify(data),
@@ -110,7 +131,7 @@ export function useMoodLogs() {
 export function useLogMood() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { mood: Mood; notes?: string }) =>
+    mutationFn: (data: { mood: Mood; notes?: string; log_date?: string }) =>
       apiRequest<MoodLog>("/tracker/mood", {
         method: "POST",
         body: JSON.stringify(data),

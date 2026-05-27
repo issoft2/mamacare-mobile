@@ -76,3 +76,20 @@ export function useAppointments() {
     queryFn: () => apiRequest<Appointment[]>("/profile/appointments"),
   });
 }
+
+export function useCreateAppointment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      appointment_type: string;
+      scheduled_at: string;
+      location?: string | null;
+      care_team_member_id?: string | null;
+    }) =>
+      apiRequest<Appointment>("/profile/appointments", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: profileKeys.appointments() }),
+  });
+}

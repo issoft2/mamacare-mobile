@@ -289,3 +289,34 @@ const styles = StyleSheet.create({
   iconCircle: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#F4F7FF', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
   footerNote: { textAlign: 'center', fontSize: 12, color: colors.navy[200], lineHeight: 18, paddingHorizontal: 20 }
 });
+
+const enhancedStyles = StyleSheet.create({
+  consentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+    backgroundColor: "#FFF",
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  consentTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#1A237E",
+  },
+  consentDesc: {
+    fontSize: 12,
+    color: "#757575",
+    marginTop: 4,
+  },
+  learnMore: {
+    color: "#E8697C",
+    textDecorationLine: "underline",
+  },
+});

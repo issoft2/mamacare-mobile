@@ -1,5 +1,6 @@
 import * as Localization from "expo-localization";
 import { LEGAL_CONTENT_BY_PATH } from "@/lib/legalContent";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type LegalDocType = "privacy" | "terms";
 type LegalRegion = "ng" | "uk";
@@ -61,4 +62,35 @@ export function getActiveLegalContent(docType: LegalDocType, region?: LegalRegio
     LEGAL_CONTENT_BY_PATH[doc.path] ??
     "This legal document could not be loaded. Please contact support@mumcare.com."
   );
+}
+
+export async function checkConsentVersion(): Promise<boolean> {
+  // Simulate API call to check consent version
+  const storedVersion: string = "v1.0"; // Replace with actual stored version logic
+  const activeVersion: string = "v1.1"; // Replace with actual active version logic
+  return storedVersion !== activeVersion;
+}
+
+export async function cacheConsentChanges(consents: Record<string, boolean>): Promise<void> {
+  try {
+    const cachedConsents = JSON.stringify(consents);
+    await AsyncStorage.setItem("cachedConsents", cachedConsents);
+  } catch (error) {
+    console.error("Failed to cache consents:", error);
+  }
+}
+
+export async function syncCachedConsents(): Promise<void> {
+  try {
+    const cachedConsents = await AsyncStorage.getItem("cachedConsents");
+    if (cachedConsents) {
+      const consents = JSON.parse(cachedConsents);
+      // Simulate API call to sync consents
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      console.log("Synced consents:", consents);
+      await AsyncStorage.removeItem("cachedConsents");
+    }
+  } catch (error) {
+    console.error("Failed to sync cached consents:", error);
+  }
 }

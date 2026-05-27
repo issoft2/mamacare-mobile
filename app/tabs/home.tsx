@@ -14,7 +14,7 @@
 import { useUser } from "@clerk/clerk-expo";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Platform,
   ScrollView,
@@ -28,19 +28,23 @@ import Svg, { Circle, Path } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import {
   useAppointments,
+  useFolicAcidLogs,
   useHydrationLogs,
+  useKickSessions,
+  useLogFolicAcid,
   useMoodLogs,
   useProfile,
   useSleepLogs,
   useSymptomPatterns,
   useSymptomLogs,
-  useLogHydration
+  useLogHydration,
+  useLogMood,
 } from "@mumcare/api";
 
 import { colors } from "@mumcare/ui";
 import { getTimeBasedGreeting } from "../../lib/greetings";
 import { WeeklyContentCard } from "@/components/home/WeeklyContentCard";
-import type { Severity, UrgencyTier } from "@mumcare/types";
+import type { Mood, Severity, UrgencyTier } from "@mumcare/types";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -58,11 +62,28 @@ const FEELINGS: { key: Feeling; label: string; emoji: string }[] = [
   { key: "hopeful", label: "Hopeful", emoji: "😊" },
 ];
 
+const FEELING_TO_MOOD: Record<Feeling, Mood> = {
+  steady: "neutral",
+  tired: "low",
+  anxious: "anxious",
+  hopeful: "happy",
+};
+
+const MOOD_TO_FEELING: Record<Mood, Feeling> = {
+  neutral: "steady",
+  low: "tired",
+  anxious: "anxious",
+  happy: "hopeful",
+};
+
 const CARE_CARD_COLORS = {
   water:    { icon: colors.rose[400],  bg: "rgba(232,105,124,0.10)" },
+  folic:    { icon: "#6B7BB8",         bg: "rgba(107,123,184,0.12)" },
   mood:     { icon: "#B07CC6",         bg: "rgba(176,124,198,0.10)" },
   symptoms: { icon: colors.rose[300],  bg: "rgba(232,105,124,0.08)" },
 };
+
+const KICK_COUNTER_MIN_WEEK = 16;
 
 // ── Severity colour coding ────────────────────────────────────────────────────
 
@@ -136,6 +157,32 @@ function formatAppointmentDate(iso: string): string {
     day: "numeric",
     month: "short",
   });
+}
+
+function formatKickDuration(totalMinutes: number): string {
+  if (totalMinutes <= 0) return "No duration";
+  if (totalMinutes < 60) return `${totalMinutes}m today`;
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (minutes === 0) return `${hours}h today`;
+  return `${hours}h ${minutes}m today`;
+}
+
+function getLocalDateKey(value: Date): string {
+  const yyyy = value.getFullYear();
+  const mm = `${value.getMonth() + 1}`.padStart(2, "0");
+  const dd = `${value.getDate()}`.padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function getDateKeyFromRaw(value: string | undefined): string | null {
+  if (!value) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return getLocalDateKey(date);
 }
 
 // ── CareIcon ──────────────────────────────────────────────────────────────────
@@ -234,27 +281,127 @@ export default function HomeScreen() {
   const isWide = Platform.OS === "web" && width >= 980;
   const [feeling, setFeeling] = useState<Feeling | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [folicTakenLocal, setFolicTakenLocal] = useState(false);
 
   const { data: profile }      = useProfile();
   // const { data: patterns }     = useSymptomPatterns();
   const { data: symptomLogs }  = useSymptomLogs(10, 0);
   const { data: hydration }    = useHydrationLogs();
+  const { data: folicAcidLogs } = useFolicAcidLogs();
+  const { data: kickSessions } = useKickSessions();
+
+
   const { data: mood }         = useMoodLogs();
   const { data: sleep }        = useSleepLogs();
   const { data: appointments } = useAppointments();
 
   const firstName = profile?.first_name ?? user?.firstName ?? "mama";
-
+  const todayDateKey = getLocalDateKey(new Date());
 
   // Hydration
-  const todayHydration    = hydration?.[0];
-  const glassesCount      = todayHydration?.glasses_count  ?? 0;
-  const targetGlasses     = todayHydration?.target_glasses ?? 8;
-  const hydrationProgress = Math.min(100, (glassesCount / targetGlasses) * 100);
+  const todayHydrationLog = useMemo(
+    () =>
+      hydration?.find((entry) => {
+        const dateKey = getDateKeyFromRaw(entry.log_date) ?? getDateKeyFromRaw(entry.created_at);
+        return dateKey === todayDateKey;
+      }),
+    [hydration, todayDateKey]
+  );
+  const glassesCount = todayHydrationLog?.glasses_count ?? 0;
+  const targetGlasses = todayHydrationLog?.target_glasses ?? 8;
+  const hydrationProgress = targetGlasses > 0 ? Math.min(100, (glassesCount / targetGlasses) * 100) : 0;
   const logWater = useLogHydration();
+  const logFolicAcid = useLogFolicAcid();
+  const logMood = useLogMood();
+
+  const handleHydrationTap = async () => {
+    if (logWater.isPending) return;
+    try {
+      await logWater.mutateAsync({
+        glasses_count: glassesCount + 1,
+        target_glasses: targetGlasses > 0 ? targetGlasses : 8,
+        log_date: todayDateKey,
+      });
+    } catch (error) {
+      console.error("Failed to update hydration from home:", error);
+    }
+  };
+
+  // Folic acid (today only)
+  const todayFolicAcidLog = useMemo(
+    () =>
+      folicAcidLogs?.find((entry) => {
+        const dateKey = getDateKeyFromRaw(entry.log_date) ?? getDateKeyFromRaw(entry.created_at);
+        return dateKey === todayDateKey;
+      }),
+    [folicAcidLogs, todayDateKey]
+  );
+
+  const folicTakenToday = todayFolicAcidLog?.taken === true || folicTakenLocal;
+
+  const handleFolicAcidTap = async () => {
+    if (folicTakenToday || logFolicAcid.isPending) return;
+
+    // Optimistic local update so card never feels broken if API is temporarily unavailable.
+    setFolicTakenLocal(true);
+
+    try {
+      await logFolicAcid.mutateAsync({
+        taken: true,
+        log_date: todayDateKey,
+      });
+    } catch {
+      // Keep UI stable; server sync will retry on next interaction/session.
+    }
+  };
+
+  const todayMoodLog = useMemo(
+    () =>
+      mood?.find((entry) => {
+        const dateKey = getDateKeyFromRaw(entry.log_date) ?? getDateKeyFromRaw(entry.created_at);
+        return dateKey === todayDateKey;
+      }),
+    [mood, todayDateKey]
+  );
+
+  const persistedFeeling = useMemo(
+    () => (todayMoodLog?.mood ? MOOD_TO_FEELING[todayMoodLog.mood] : null),
+    [todayMoodLog]
+  );
+
+  useEffect(() => {
+    if (!feeling && persistedFeeling) {
+      setFeeling(persistedFeeling);
+    }
+  }, [feeling, persistedFeeling]);
+
+  const activeFeeling = feeling ?? persistedFeeling;
+  const activeMood: Mood | null = activeFeeling ? FEELING_TO_MOOD[activeFeeling] : (todayMoodLog?.mood ?? null);
+
+  const handleFeelingSelect = async (nextFeeling: Feeling) => {
+    if (logMood.isPending) return;
+
+    const previousFeeling = activeFeeling;
+    setFeeling(nextFeeling);
+
+    try {
+      await logMood.mutateAsync({ mood: FEELING_TO_MOOD[nextFeeling], log_date: todayDateKey });
+    } catch (error) {
+      console.error("Failed to update mood from home:", error);
+      setFeeling(previousFeeling ?? null);
+    }
+  };
   
   // Sleep
-  const sleepBand    = sleep?.[0]?.duration_band;
+  const todaySleepLog = useMemo(
+    () =>
+      sleep?.find((entry) => {
+        const dateKey = getDateKeyFromRaw(entry.log_date) ?? getDateKeyFromRaw(entry.created_at);
+        return dateKey === todayDateKey;
+      }),
+    [sleep, todayDateKey]
+  );
+  const sleepBand = todaySleepLog?.duration_band;
   const sleepQuality = useMemo(() => getSleepQuality(sleepBand), [sleepBand]);
 
   // Symptoms — today's logs
@@ -280,17 +427,48 @@ export default function HomeScreen() {
 
   // Next appointment
   const nextAppointment = useMemo(
-    () =>
+    () => {
+      const now = new Date();
+      return (
       appointments
         ?.filter((i) => i.status === "scheduled")
+        .filter((i) => new Date(i.scheduled_at) >= now)
         .sort(
           (a, b) =>
             new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
-        )[0],
+        )[0]
+      );
+    },
     [appointments]
   );
 
   const showBanner = !bannerDismissed && !!nextAppointment;
+  const gestationalWeek = profile?.gestational_week ?? 0;
+  const canUseKickCounter = gestationalWeek >= KICK_COUNTER_MIN_WEEK;
+
+  const todayKickSessions = useMemo(
+    () =>
+      kickSessions?.filter((session) => {
+        const dateKey = getDateKeyFromRaw(session.started_at) ?? getDateKeyFromRaw(session.created_at);
+        return dateKey === todayDateKey;
+      }) ?? [],
+    [kickSessions, todayDateKey]
+  );
+
+  const todayKickCount = useMemo(
+    () => todayKickSessions.reduce((sum, session) => sum + session.kick_count, 0),
+    [todayKickSessions]
+  );
+
+  const todayKickDurationMinutes = useMemo(
+    () => todayKickSessions.reduce((sum, session) => sum + (session.duration_minutes ?? 0), 0),
+    [todayKickSessions]
+  );
+
+  const activeKickSession = useMemo(
+    () => todayKickSessions.find((session) => !session.ended_at) ?? kickSessions?.find((session) => !session.ended_at),
+    [todayKickSessions, kickSessions]
+  );
 
   const greeting = useMemo(() => getTimeBasedGreeting(), []);
 
@@ -334,13 +512,14 @@ export default function HomeScreen() {
               {FEELINGS.map((f) => (
                 <TouchableOpacity
                   key={f.key}
-                  onPress={() => setFeeling(f.key)}
+                    onPress={() => handleFeelingSelect(f.key)}
+                    disabled={logMood.isPending}
                   style={[styles.feelingCol, isWide && styles.feelingColWide]}
                 >
                   <View
                     style={[
                       styles.moodCircle,
-                      feeling === f.key && styles.moodCircleActive,
+                        activeFeeling === f.key && styles.moodCircleActive,
                     ]}
                   >
                     <Text style={styles.moodEmoji}>{f.emoji}</Text>
@@ -348,7 +527,7 @@ export default function HomeScreen() {
                   <Text
                     style={[
                       styles.moodLabel,
-                      feeling === f.key && styles.moodLabelActive,
+                        activeFeeling === f.key && styles.moodLabelActive,
                     ]}
                   >
                     {f.label}
@@ -364,7 +543,14 @@ export default function HomeScreen() {
             <View style={styles.careGrid}>
 
               {/* Hydration */}
-                <View style={[styles.careCard, isWide && styles.careCardWide]} >
+                <TouchableOpacity
+                  style={[styles.careCard, isWide && styles.careCardWide]}
+                  onPress={handleHydrationTap}
+                  activeOpacity={0.85}
+                  disabled={logWater.isPending}
+                  accessibilityRole="button"
+                  accessibilityLabel="Hydration card"
+                >
                   <View style={[styles.iconBox, { backgroundColor: CARE_CARD_COLORS.water.bg }]}>
                     <CareIcon name="water" color={CARE_CARD_COLORS.water.icon} size={20} />
                   </View>
@@ -375,33 +561,52 @@ export default function HomeScreen() {
                   <View style={styles.miniTrack}>
                     <View style={[styles.miniFill, { width: `${hydrationProgress}%`, backgroundColor: CARE_CARD_COLORS.water.icon }]} />
                   </View>
-                  <TouchableOpacity style={styles.widgetBtn} onPress={() => logWater.mutateAsync({ glasses_count: glassesCount + 1 })}>
-                          <Text style={styles.widgetBtnText}>+ Add a Glass</Text>
-                  </TouchableOpacity>
-                </View>
+                  <View style={styles.cardHintRow}>
+                    <Ionicons name="add-circle-outline" size={12} color={colors.navy[300]} />
+                    <Text style={styles.cardHintText}>Tap to add a glass</Text>
+                  </View>
+                </TouchableOpacity>
 
 
               {/* Mood */}
-              
-                <View style={[styles.careCard, isWide && styles.careCardWide]}>
-                  <TouchableOpacity onPress={() => router.push("/tracker/mood" as any)}>
+              <TouchableOpacity
+                style={[styles.careCard, isWide && styles.careCardWide]}
+                onPress={() =>
+                  router.push(
+                    activeMood
+                      ? (`/tracker/mood?mood=${activeMood}` as any)
+                      : ("/tracker/mood" as any)
+                  )
+                }
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel="Mood card"
+              >
                   <View style={[styles.iconBox, { backgroundColor: CARE_CARD_COLORS.mood.bg }]}>
                     <CareIcon name="mood" color={CARE_CARD_COLORS.mood.icon} size={20} />
                   </View>
                   <Text style={styles.careCardLabel}>Mood</Text>
                   <Text style={styles.careCardVal} numberOfLines={1} adjustsFontSizeToFit>
-                    {capitaliseMood(mood?.[0]?.mood)}
+                    {capitaliseMood(todayMoodLog?.mood)}
                   </Text>
                   <View style={styles.miniTrackPlaceholder} />
-                  </TouchableOpacity>
-              </View>
+                  <View style={styles.cardHintRow}>
+                    <Ionicons name="pencil-outline" size={12} color={colors.navy[300]} />
+                    <Text style={styles.cardHintText}>Tap to update mood</Text>
+                  </View>
+              </TouchableOpacity>
 
               
 
               {/* Rest — dynamic colour coding */}
 
-                <View style={[styles.careCard, isWide && styles.careCardWide]}>
-                  <TouchableOpacity onPress={() => router.push("/tracker/sleep" as any)}>
+                <TouchableOpacity
+                  style={[styles.careCard, isWide && styles.careCardWide]}
+                  onPress={() => router.push("/tracker/sleep" as any)}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel="Rest card"
+                >
 
                     <View style={[styles.iconBox, { backgroundColor: sleepQuality.bgColor }]}>
                       <CareIcon name="sleep" color={sleepQuality.color} size={20} />
@@ -420,15 +625,52 @@ export default function HomeScreen() {
                         <View style={[styles.miniFill, { width: `${sleepQuality.progress}%`, backgroundColor: sleepQuality.color }]} />
                       </View>
                     )}
-                  </TouchableOpacity>
+                    <View style={styles.cardHintRow}>
+                      <Ionicons name="moon-outline" size={12} color={colors.navy[300]} />
+                      <Text style={styles.cardHintText}>Tap to log rest</Text>
+                    </View>
+                </TouchableOpacity>
+
+              {/* Folic Acid */}
+              <TouchableOpacity
+                style={[styles.careCard, isWide && styles.careCardWide]}
+                onPress={handleFolicAcidTap}
+                activeOpacity={0.85}
+                disabled={folicTakenToday || logFolicAcid.isPending}
+                accessibilityRole="button"
+                accessibilityLabel="Folic acid card"
+              >
+                <View style={[styles.iconBox, { backgroundColor: CARE_CARD_COLORS.folic.bg }]}> 
+                  <Ionicons name="medkit-outline" size={18} color={CARE_CARD_COLORS.folic.icon} />
                 </View>
-              
+                <Text style={styles.careCardLabel}>Folic Acid</Text>
+                <Text style={styles.careCardVal} numberOfLines={1} adjustsFontSizeToFit>
+                  {folicTakenToday ? "1/1" : "0/1"}
+                </Text>
+                <Text style={styles.careCardSubtle} numberOfLines={1} adjustsFontSizeToFit>
+                  {folicTakenToday ? "Taken today" : "Not logged today"}
+                </Text>
+                <View style={styles.miniTrackPlaceholder} />
+                <View style={styles.cardHintRow}>
+                  <Ionicons
+                    name={folicTakenToday ? "checkmark-circle-outline" : "add-circle-outline"}
+                    size={12}
+                    color={colors.navy[300]}
+                  />
+                  <Text style={styles.cardHintText}>
+                    {folicTakenToday ? "Already logged" : "Tap to log intake"}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
 
               {/* Symptoms — replaces Next Visit */}
               <TouchableOpacity
                 style={[styles.careCard, isWide && styles.careCardWide]}
                 onPress={() => router.push("/tabs/symptoms")}
                 activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel="Symptoms card"
               >
                 <View style={[
                   styles.iconBox,
@@ -457,6 +699,77 @@ export default function HomeScreen() {
                 ) : (
                   <View style={styles.miniTrackPlaceholder} />
                 )}
+                <View style={styles.cardHintRow}>
+                  <Ionicons name="list-outline" size={12} color={colors.navy[300]} />
+                  <Text style={styles.cardHintText}>Tap to view symptoms</Text>
+                </View>
+              </TouchableOpacity>
+
+              {/* Kick Counter */}
+              <TouchableOpacity
+                style={[
+                  styles.careCard,
+                  isWide && styles.careCardWide,
+                  !canUseKickCounter && styles.careCardDisabled,
+                ]}
+                onPress={() =>
+                  canUseKickCounter
+                    ? activeKickSession
+                      ? router.push(`/tracker/kick/${activeKickSession.id}` as any)
+                      : router.push("/tabs/tracker")
+                    : undefined
+                }
+                activeOpacity={0.85}
+                disabled={!canUseKickCounter}
+                accessibilityRole="button"
+                accessibilityLabel="Kick Counter card"
+              >
+                <View style={[styles.iconBox, { backgroundColor: "rgba(232,105,124,0.10)" }]}>
+                  <Ionicons name="heart" size={18} color={colors.rose[400]} />
+                </View>
+                <Text style={styles.careCardLabel}>Kick Counter</Text>
+                <Text style={styles.careCardVal} numberOfLines={1} adjustsFontSizeToFit>
+                  {canUseKickCounter ? `${todayKickCount} kicks` : `Starts at week ${KICK_COUNTER_MIN_WEEK}`}
+                </Text>
+                <Text style={styles.careCardSubtle} numberOfLines={1} adjustsFontSizeToFit>
+                  {canUseKickCounter ? formatKickDuration(todayKickDurationMinutes) : `Current week ${gestationalWeek}`}
+                </Text>
+                <View style={styles.miniTrackPlaceholder} />
+                <View style={styles.cardHintRow}>
+                  <Ionicons
+                    name={canUseKickCounter ? "timer-outline" : "lock-closed-outline"}
+                    size={12}
+                    color={colors.navy[300]}
+                  />
+                  <Text style={styles.cardHintText}>
+                    {canUseKickCounter ? "Tap to open counter" : "Counter unlocks from week 16"}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              {/* Appointment */}
+              <TouchableOpacity
+                style={[styles.careCard, isWide && styles.careCardWide]}
+                onPress={() => router.push("/profile/appointments")}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel="Appointment card"
+              >
+                <View style={[styles.iconBox, { backgroundColor: "rgba(232,105,124,0.10)" }]}>
+                  <Ionicons name="calendar-outline" size={18} color={colors.rose[400]} />
+                </View>
+                <Text style={styles.careCardLabel}>Appointment</Text>
+                <Text style={styles.careCardVal} numberOfLines={1} adjustsFontSizeToFit>
+                  {nextAppointment ? "Upcoming visit" : "No upcoming visit"}
+                </Text>
+                <Text style={styles.careCardSubtle} numberOfLines={1} adjustsFontSizeToFit>
+                  {nextAppointment ? formatAppointmentDate(nextAppointment.scheduled_at) : "Schedule your next check-up"}
+                </Text>
+                <View style={styles.miniTrackPlaceholder} />
+                <View style={styles.cardHintRow}>
+                  <Ionicons name="open-outline" size={12} color={colors.navy[300]} />
+                  <Text style={styles.cardHintText}>Tap to manage appointments</Text>
+                </View>
               </TouchableOpacity>
 
             </View>
@@ -596,7 +909,7 @@ const styles = StyleSheet.create({
   },
   careCard: {
     width: CARD_WIDTH,
-    height: 140,
+    minHeight: 140,
     backgroundColor: "#FFFBF7",
     borderRadius: 20,
     padding: 14,
@@ -620,12 +933,26 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   careCardLabel: {
-    fontSize: 11, color: "#9E9E9E",
-    fontWeight: "600", textTransform: "uppercase",
-    letterSpacing: 0.5, marginBottom: 3,
+    fontSize: 12,
+    color: "#4A5B85",
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   careCardVal: {
-    fontSize: 15, fontWeight: "700", color: "#1A237E",
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#16204F",
+  },
+  careCardSubtle: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#4A5B85",
+  },
+  careCardDisabled: {
+    opacity: 0.65,
   },
 
   // Quality / severity badge
@@ -637,7 +964,9 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   qualityBadgeText: {
-    fontSize: 11, fontWeight: "700", letterSpacing: 0.3,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 0.3,
   },
 
   // Urgent red dot on symptoms icon
@@ -661,6 +990,22 @@ const styles = StyleSheet.create({
   },
   miniFill: { height: "100%", borderRadius: 3 },
   miniTrackPlaceholder: { height: 5, marginTop: "auto" },
+  cardHintRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 7,
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(26,35,126,0.08)",
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  cardHintText: {
+    fontSize: 11,
+    color: "#22305E",
+    fontWeight: "700",
+  },
   widgetBtn: { backgroundColor: 'rgba(255,255,255,0.8)', paddingVertical: 5, borderRadius: 15, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
   widgetBtnText: { fontWeight: "700", color: "#1A237E" },
 

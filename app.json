@@ -4,11 +4,11 @@
     "slug": "MumCare-assistant",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/mumcaresplash.png",
+    "icon": "./assets/mumcarelogo.png",
     "scheme": "mumcare",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/mumcaresplash.png",
+      "image": "./assets/mumcarelogo.png",
       "resizeMode": "contain",
       "backgroundColor": "#1A2E4A"
     },
@@ -27,7 +27,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/mumcaresplash.png",
+      "favicon": "./assets/mumcarelogo.png",
       "name": "MumCare Assistant",
       "shortName": "MumCare",
       "themeColor": "#1A2E4A",
