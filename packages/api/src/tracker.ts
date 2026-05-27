@@ -6,6 +6,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "./client";
 import type {
+  FolicAcidLog,
   HydrationLog,
   KickSession,
   MoodLog,
@@ -18,6 +19,7 @@ import type {
 export const trackerKeys = {
   kicks: () => ["tracker", "kicks"] as const,
   hydration: () => ["tracker", "hydration"] as const,
+  folicAcid: () => ["tracker", "folic-acid"] as const,
   sleep: () => ["tracker", "sleep"] as const,
   mood: () => ["tracker", "mood"] as const,
 };
@@ -78,6 +80,25 @@ export function useLogHydration() {
         body: JSON.stringify(data),
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: trackerKeys.hydration() }),
+  });
+}
+
+export function useFolicAcidLogs() {
+  return useQuery({
+    queryKey: trackerKeys.folicAcid(),
+    queryFn: () => apiRequest<FolicAcidLog[]>("/tracker/folic-acid"),
+  });
+}
+
+export function useLogFolicAcid() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { taken: boolean; log_date?: string }) =>
+      apiRequest<FolicAcidLog>("/tracker/folic-acid", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: trackerKeys.folicAcid() }),
   });
 }
 

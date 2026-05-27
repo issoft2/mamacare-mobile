@@ -4,6 +4,7 @@
  */
 
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
   Platform,
   ScrollView,
@@ -17,7 +18,9 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from '@expo/vector-icons';
 import {
+  useFolicAcidLogs,
   useHydrationLogs, useKickSessions,
+  useLogFolicAcid,
   useLogHydration, useMoodLogs,
   useSleepLogs, useStartKickSession,
   useProfile
@@ -48,11 +51,14 @@ export default function TrackerScreen() {
   const { data: profile } = useProfile();
   const { data: kicks } = useKickSessions();
   const { data: hydration } = useHydrationLogs();
+  const { data: folicAcidLogs } = useFolicAcidLogs();
   const { data: sleep } = useSleepLogs();
   const { data: mood } = useMoodLogs();
 
   const startKick = useStartKickSession();
   const logWater = useLogHydration();
+  const logFolicAcid = useLogFolicAcid();
+  const [folicTakenLocal, setFolicTakenLocal] = useState(false);
   const todayDateKey = getLocalDateKey(new Date());
   const gestationalWeek = profile?.gestational_week ?? 0;
   const canUseKickCounter = gestationalWeek >= KICK_COUNTER_MIN_WEEK;
@@ -64,6 +70,12 @@ export default function TrackerScreen() {
   const glassesCount = todayHydration?.glasses_count ?? 0;
   const targetGlasses = todayHydration?.target_glasses ?? 8;
   const activeKick = kicks?.find(k => !k.ended_at);
+
+  const todayFolicAcidLog = folicAcidLogs?.find((entry) => {
+    const dateKey = getDateKeyFromRaw(entry.log_date) ?? getDateKeyFromRaw(entry.created_at);
+    return dateKey === todayDateKey;
+  });
+  const folicTakenToday = todayFolicAcidLog?.taken === true || folicTakenLocal;
 
   const hydrationProgress = Math.min(100, (glassesCount / targetGlasses) * 100);
 
@@ -105,6 +117,38 @@ export default function TrackerScreen() {
                   }
                 >
                   <Text style={[styles.widgetBtnText, { color: '#FFF' }]}>Add a Glass</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Folic Acid Widget */}
+              <View style={[styles.glassCard, isWide && styles.glassCardWide]}>
+                <View style={styles.cardHeader}>
+                  <View style={[styles.iconCircle, { backgroundColor: 'rgba(107, 123, 184, 0.12)' }]}>
+                    <Ionicons name="medkit-outline" size={20} color="#6B7BB8" />
+                  </View>
+                  <Text style={styles.cardTitle}>Folic Acid</Text>
+                </View>
+                <Text style={styles.cardValue}>{folicTakenToday ? "1/1" : "0/1"} <Text style={styles.unit}>today</Text></Text>
+                <TouchableOpacity
+                  style={[
+                    styles.widgetBtn,
+                    { backgroundColor: '#E8697C' },
+                    (folicTakenToday || logFolicAcid.isPending) && styles.widgetBtnDisabled,
+                  ]}
+                  disabled={folicTakenToday || logFolicAcid.isPending}
+                  onPress={async () => {
+                    if (folicTakenToday || logFolicAcid.isPending) return;
+                    setFolicTakenLocal(true);
+                    try {
+                      await logFolicAcid.mutateAsync({ taken: true, log_date: todayDateKey });
+                    } catch {
+                      // Keep local optimistic state to avoid a broken-feeling tap flow.
+                    }
+                  }}
+                >
+                  <Text style={[styles.widgetBtnText, { color: '#FFF' }]}>
+                    {folicTakenToday ? "Already logged" : "Log intake"}
+                  </Text>
                 </TouchableOpacity>
               </View>
 

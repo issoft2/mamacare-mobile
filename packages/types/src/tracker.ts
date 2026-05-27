@@ -49,3 +49,11 @@ export interface MoodLog {
   streak_alert_sent: boolean;
   created_at: ISODateString;
 }
+
+export interface FolicAcidLog {
+  id: UUID;
+  user_id: UUID;
+  log_date: ISODateString;
+  taken: boolean;
+  created_at: ISODateString;
+}

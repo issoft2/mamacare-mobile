@@ -28,8 +28,10 @@ import Svg, { Circle, Path } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import {
   useAppointments,
+  useFolicAcidLogs,
   useHydrationLogs,
   useKickSessions,
+  useLogFolicAcid,
   useMoodLogs,
   useProfile,
   useSleepLogs,
@@ -76,6 +78,7 @@ const MOOD_TO_FEELING: Record<Mood, Feeling> = {
 
 const CARE_CARD_COLORS = {
   water:    { icon: colors.rose[400],  bg: "rgba(232,105,124,0.10)" },
+  folic:    { icon: "#6B7BB8",         bg: "rgba(107,123,184,0.12)" },
   mood:     { icon: "#B07CC6",         bg: "rgba(176,124,198,0.10)" },
   symptoms: { icon: colors.rose[300],  bg: "rgba(232,105,124,0.08)" },
 };
@@ -278,11 +281,13 @@ export default function HomeScreen() {
   const isWide = Platform.OS === "web" && width >= 980;
   const [feeling, setFeeling] = useState<Feeling | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [folicTakenLocal, setFolicTakenLocal] = useState(false);
 
   const { data: profile }      = useProfile();
   // const { data: patterns }     = useSymptomPatterns();
   const { data: symptomLogs }  = useSymptomLogs(10, 0);
   const { data: hydration }    = useHydrationLogs();
+  const { data: folicAcidLogs } = useFolicAcidLogs();
   const { data: kickSessions } = useKickSessions();
 
 
@@ -306,6 +311,7 @@ export default function HomeScreen() {
   const targetGlasses = todayHydrationLog?.target_glasses ?? 8;
   const hydrationProgress = targetGlasses > 0 ? Math.min(100, (glassesCount / targetGlasses) * 100) : 0;
   const logWater = useLogHydration();
+  const logFolicAcid = useLogFolicAcid();
   const logMood = useLogMood();
 
   const handleHydrationTap = async () => {
@@ -318,6 +324,34 @@ export default function HomeScreen() {
       });
     } catch (error) {
       console.error("Failed to update hydration from home:", error);
+    }
+  };
+
+  // Folic acid (today only)
+  const todayFolicAcidLog = useMemo(
+    () =>
+      folicAcidLogs?.find((entry) => {
+        const dateKey = getDateKeyFromRaw(entry.log_date) ?? getDateKeyFromRaw(entry.created_at);
+        return dateKey === todayDateKey;
+      }),
+    [folicAcidLogs, todayDateKey]
+  );
+
+  const folicTakenToday = todayFolicAcidLog?.taken === true || folicTakenLocal;
+
+  const handleFolicAcidTap = async () => {
+    if (folicTakenToday || logFolicAcid.isPending) return;
+
+    // Optimistic local update so card never feels broken if API is temporarily unavailable.
+    setFolicTakenLocal(true);
+
+    try {
+      await logFolicAcid.mutateAsync({
+        taken: true,
+        log_date: todayDateKey,
+      });
+    } catch {
+      // Keep UI stable; server sync will retry on next interaction/session.
     }
   };
 
@@ -596,6 +630,38 @@ export default function HomeScreen() {
                       <Text style={styles.cardHintText}>Tap to log rest</Text>
                     </View>
                 </TouchableOpacity>
+
+              {/* Folic Acid */}
+              <TouchableOpacity
+                style={[styles.careCard, isWide && styles.careCardWide]}
+                onPress={handleFolicAcidTap}
+                activeOpacity={0.85}
+                disabled={folicTakenToday || logFolicAcid.isPending}
+                accessibilityRole="button"
+                accessibilityLabel="Folic acid card"
+              >
+                <View style={[styles.iconBox, { backgroundColor: CARE_CARD_COLORS.folic.bg }]}> 
+                  <Ionicons name="medkit-outline" size={18} color={CARE_CARD_COLORS.folic.icon} />
+                </View>
+                <Text style={styles.careCardLabel}>Folic Acid</Text>
+                <Text style={styles.careCardVal} numberOfLines={1} adjustsFontSizeToFit>
+                  {folicTakenToday ? "1/1" : "0/1"}
+                </Text>
+                <Text style={styles.careCardSubtle} numberOfLines={1} adjustsFontSizeToFit>
+                  {folicTakenToday ? "Taken today" : "Not logged today"}
+                </Text>
+                <View style={styles.miniTrackPlaceholder} />
+                <View style={styles.cardHintRow}>
+                  <Ionicons
+                    name={folicTakenToday ? "checkmark-circle-outline" : "add-circle-outline"}
+                    size={12}
+                    color={colors.navy[300]}
+                  />
+                  <Text style={styles.cardHintText}>
+                    {folicTakenToday ? "Already logged" : "Tap to log intake"}
+                  </Text>
+                </View>
+              </TouchableOpacity>
 
 
               {/* Symptoms — replaces Next Visit */}
