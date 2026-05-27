@@ -31,9 +31,17 @@ function getSleepAffirmation(quality: SleepQuality): string {
   return "Tough nights happen. Be kind to yourself today and rest whenever you can.";
 }
 
+function getLocalDateKey(value: Date): string {
+  const yyyy = value.getFullYear();
+  const mm = `${value.getMonth() + 1}`.padStart(2, "0");
+  const dd = `${value.getDate()}`.padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export default function SleepLogScreen() {
   const router = useRouter();
   const logSleep = useLogSleep();
+  const todayDateKey = getLocalDateKey(new Date());
   const [band, setBand] = useState<SleepDurationBand>("6_8h");
   const [quality, setQuality] = useState<SleepQuality>("good");
   const [notes, setNotes] = useState("");
@@ -99,7 +107,7 @@ export default function SleepLogScreen() {
 
               <TouchableOpacity
                 style={[ctaButtonStyles.button, styles.submitBtn, logSleep.isPending && styles.submitBtnDisabled]}
-                onPress={() => logSleep.mutateAsync({ duration_band: band, quality, notes })}
+                onPress={() => logSleep.mutateAsync({ duration_band: band, quality, notes, log_date: todayDateKey })}
                 disabled={logSleep.isPending}
                 activeOpacity={0.88}
               >

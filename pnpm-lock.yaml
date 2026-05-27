@@ -26,6 +26,9 @@ importers:
       '@mumcare/ui':
         specifier: workspace:*
         version: link:packages/ui
+      '@react-native-async-storage/async-storage':
+        specifier: ^3.1.0
+        version: 3.1.0(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@6.0.6))(react@19.1.0)
       '@react-native-community/datetimepicker':
         specifier: 8.4.4
         version: 8.4.4(expo@54.0.34)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@6.0.6))(react@19.1.0)
@@ -1473,6 +1476,12 @@ packages:
     resolution: {integrity: sha512-W4/vbwUOYOjco0x3toB8QCr7EjIP6nE9G7o8PMguvvjYT5Awg09lyV4enACRx4s++PPulBiBSjL0KTFx2u0Z/g==}
     peerDependencies:
       react-native: ^0.0.0-0 || >=0.60 <1.0
+
+  '@react-native-async-storage/async-storage@3.1.0':
+    resolution: {integrity: sha512-ENwbn3kj/dOapdR3GVgfX5x9f9/rxHnsqol1bUkt26lrv0aAq6UoXnTlv7y2dT7RH0AShh9B1+KAPDVjJXnk0w==}
+    peerDependencies:
+      react: '*'
+      react-native: '*'
 
   '@react-native-community/datetimepicker@8.4.4':
     resolution: {integrity: sha512-bc4ZixEHxZC9/qf5gbdYvIJiLZ5CLmEsC3j+Yhe1D1KC/3QhaIfGDVdUcid0PdlSoGOSEq4VlB93AWyetEyBSQ==}
@@ -2924,6 +2933,9 @@ packages:
 
   idb-keyval@6.2.1:
     resolution: {integrity: sha512-8Sb3veuYCyrZL+VBt9LJfZjLUPWVvqn8tG28VqYNFCo43KHcKuq+b4EiXGeuaLAQWL2YmyDgMp2aSpH9JHsEQg==}
+
+  idb@8.0.3:
+    resolution: {integrity: sha512-LtwtVyVYO5BqRvcsKuB2iUMnHwPVByPCXFXOpuU96IZPPoPN6xjOGxZQ74pgSVVLQWtUOYgyeL4GE98BY5D3wg==}
 
   ieee754@1.2.1:
     resolution: {integrity: sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA==}
@@ -6158,6 +6170,12 @@ snapshots:
       react-native: 0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@6.0.6)
     optional: true
 
+  '@react-native-async-storage/async-storage@3.1.0(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@6.0.6))(react@19.1.0)':
+    dependencies:
+      idb: 8.0.3
+      react: 19.1.0
+      react-native: 0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@6.0.6)
+
   '@react-native-community/datetimepicker@8.4.4(expo@54.0.34)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@6.0.6))(react@19.1.0)':
     dependencies:
       invariant: 2.2.4
@@ -7835,6 +7853,8 @@ snapshots:
   hyphenate-style-name@1.1.0: {}
 
   idb-keyval@6.2.1: {}
+
+  idb@8.0.3: {}
 
   ieee754@1.2.1: {}
 

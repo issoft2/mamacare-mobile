@@ -3,22 +3,42 @@
  * Refined Emotional Check-in
  */
 
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
-import { useLogMood } from "@mumcare/api";
+import { useLogMood, useMoodLogs } from "@mumcare/api";
 import type { Mood } from "@mumcare/types";
 import { Ionicons } from '@expo/vector-icons';
 
 
 const MOODS: { value: Mood; emoji: string; label: string }[] = [
-  { value: "happy", emoji: "😊", label: "Happy" },
+  { value: "happy", emoji: "😊", label: "Hopeful" },
   { value: "neutral", emoji: "😐", label: "Steady" },
   { value: "anxious", emoji: "😰", label: "Anxious" },
-  { value: "low", emoji: "😔", label: "Low" },
+  { value: "low", emoji: "😔", label: "Tired" },
 ];
+
+function isMood(value: unknown): value is Mood {
+  return value === "happy" || value === "neutral" || value === "anxious" || value === "low";
+}
+
+function getLocalDateKey(value: Date): string {
+  const yyyy = value.getFullYear();
+  const mm = `${value.getMonth() + 1}`.padStart(2, "0");
+  const dd = `${value.getDate()}`.padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function getDateKeyFromRaw(value: string | undefined): string | null {
+  if (!value) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return getLocalDateKey(date);
+}
 
 function getMoodAffirmation(value: Mood): string {
   if (value === "happy") return "Beautiful energy today. Keep leaning into what makes you feel safe and joyful.";
@@ -29,9 +49,35 @@ function getMoodAffirmation(value: Mood): string {
 
 export default function MoodLogScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ mood?: string }>();
+  const { data: moodLogs } = useMoodLogs();
   const logMood = useLogMood();
   const [mood, setMood] = useState<Mood>("neutral");
   const [notes, setNotes] = useState("");
+  const [isMoodChosenManually, setIsMoodChosenManually] = useState(false);
+  const todayDateKey = getLocalDateKey(new Date());
+
+  useEffect(() => {
+    if (isMoodChosenManually) return;
+
+    const routeMood = params.mood;
+    if (isMood(routeMood)) {
+      setMood(routeMood);
+      return;
+    }
+
+    const latestMood = moodLogs?.find((entry) => {
+      const dateKey = getDateKeyFromRaw(entry.log_date) ?? getDateKeyFromRaw(entry.created_at);
+      return dateKey === todayDateKey;
+    })?.mood;
+
+    if (latestMood) {
+      setMood(latestMood);
+      return;
+    }
+
+    setMood("neutral");
+  }, [isMoodChosenManually, moodLogs, params.mood, todayDateKey]);
 
   return (
     <View style={styles.screen}>
@@ -56,7 +102,10 @@ export default function MoodLogScreen() {
                   <TouchableOpacity
                     key={m.value}
                     style={[styles.moodCard, mood === m.value && styles.moodCardActive]}
-                    onPress={() => setMood(m.value)}
+                    onPress={() => {
+                      setIsMoodChosenManually(true);
+                      setMood(m.value);
+                    }}
                   >
                     <Text style={styles.moodEmoji}>{m.emoji}</Text>
                     <Text style={[styles.moodLabel, mood === m.value && styles.moodLabelActive]}>{m.label}</Text>
@@ -81,7 +130,7 @@ export default function MoodLogScreen() {
 
               <TouchableOpacity
                 style={[ctaButtonStyles.button, styles.submitBtn, logMood.isPending && styles.submitBtnDisabled]}
-                onPress={() => logMood.mutateAsync({ mood, notes })}
+                onPress={() => logMood.mutateAsync({ mood, notes, log_date: todayDateKey })}
                 disabled={logMood.isPending}
                 activeOpacity={0.88}
               >

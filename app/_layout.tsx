@@ -20,6 +20,7 @@ import { configureApiBaseUrl, configureApiClient } from "@mumcare/api";
 
 import { API_BASE_URL, EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY } from "@/lib/env";
 import { registerServiceWorker } from "@/lib/registerServiceWorker";
+import { checkConsentVersion } from "@/lib/legal";
 
 /** Must run before any fetch from @mumcare/api — see configureApiBaseUrl in packages/api. */
 configureApiBaseUrl(API_BASE_URL);
@@ -178,6 +179,22 @@ function AuthGuard() {
   return <Slot />;
 }
 
+function AppReconsentCheck() {
+  const router = useRouter();
+
+  useEffect(() => {
+    async function verifyConsents() {
+      const isOutdated = await checkConsentVersion();
+      if (isOutdated) {
+        router.push("/legal/reconsent");
+      }
+    }
+    verifyConsents();
+  }, [router]);
+
+  return null;
+}
+
 export default function RootLayout() {
   useEffect(() => {
     registerServiceWorker();
@@ -198,6 +215,7 @@ export default function RootLayout() {
       tokenCache={tokenCache}
     >
       <QueryClientProvider client={queryClient}>
+        <AppReconsentCheck />
         {content}
       </QueryClientProvider>
     </ClerkProvider>
