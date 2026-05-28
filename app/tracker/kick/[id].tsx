@@ -38,7 +38,7 @@ export default function KickCounterScreen() {
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={["#1A237E", "#0D1137"]} style={styles.container}>
+      <LinearGradient colors={["#6A4039", "#3E2723"]} style={styles.container}>
         
         <View style={styles.topSection}>
           <Text style={styles.timerLabel}>ELAPSED TIME</Text>
@@ -48,7 +48,7 @@ export default function KickCounterScreen() {
         <View style={styles.counterContainer}>
           <View style={styles.glowRing}>
              <LinearGradient 
-              colors={count >= 10 ? ["#88B0A8", "#4facfe"] : ["#E8697C", "#FFA07A"]} 
+              colors={count >= 10 ? ["#88B0A8", "#6B7BB8"] : ["#C97B6E", "#E7A693"]} 
               style={styles.countCircle}
             >
               <Text style={styles.countNumber}>{count}</Text>
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   timerValue: { color: '#FFF', fontSize: 42, fontWeight: '300', letterSpacing: 5 },
   counterContainer: { alignItems: 'center', justifyContent: 'center' },
   glowRing: { padding: 15, borderRadius: 120, backgroundColor: 'rgba(255,255,255,0.05)' },
-  countCircle: { width: 180, height: 180, borderRadius: 90, alignItems: 'center', justifyContent: 'center', elevation: 20, shadowColor: '#E8697C', shadowOpacity: 0.5, shadowRadius: 20 },
+  countCircle: { width: 180, height: 180, borderRadius: 90, alignItems: 'center', justifyContent: 'center', elevation: 20, shadowColor: '#C97B6E', shadowOpacity: 0.5, shadowRadius: 20 },
   countNumber: { fontSize: 72, fontWeight: '900', color: '#FFF' },
   countLabel: { fontSize: 14, fontWeight: '700', color: 'rgba(255,255,255,0.8)', letterSpacing: 2 },
   infoBox: { paddingHorizontal: 40 },

@@ -41,7 +41,7 @@ export default function SymptomDetailScreen() {
   return (
     <View style={styles.screen}>
       {/* <ImageBackground source={require("@/assets/welcome-bg.png")} style={styles.bgImage}> */}
-        <LinearGradient colors={["rgba(255,255,255,0.7)", "rgba(255,245,245,0.4)"]} style={styles.bgOverlay}>
+        <LinearGradient colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)"]} style={styles.bgOverlay}>
           
           <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
             
@@ -123,23 +123,23 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   
   inlineBack: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  backArrow: { fontSize: 32, color: "#E8697C", marginRight: 8, lineHeight: 32 },
+  backArrow: { fontSize: 32, color: "#C97B6E", marginRight: 8, lineHeight: 32 },
   backLabel: { color: "#757575", fontWeight: "600" },
 
   glassCard: {
-    backgroundColor: "rgba(255,255,255,0.75)",
+    backgroundColor: "rgba(255,255,255,0.82)",
     borderRadius: 32,
     padding: 24,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.6)",
+    borderColor: "rgba(140,90,82,0.14)",
     elevation: 10,
-    shadowColor: "#000",
+    shadowColor: "#C97B6E",
     shadowOpacity: 0.08,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 10 },
   },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  weekLabel: { fontSize: 24, fontWeight: "800", color: "#1A237E" },
+  weekLabel: { fontSize: 24, fontWeight: "800", color: "#4D3B39" },
   dateLabel: { fontSize: 14, color: "#9E9E9E", marginTop: 4 },
   
   severityBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1 },
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: "rgba(0,0,0,0.05)", marginVertical: 20 },
   
   section: { marginBottom: 24 },
-  sectionTitle: { fontSize: 12, fontWeight: "700", color: "#3949AB", letterSpacing: 1.2, marginBottom: 16 },
+  sectionTitle: { fontSize: 12, fontWeight: "700", color: "#8E5A54", letterSpacing: 1.2, marginBottom: 16 },
   
   symptomWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   symptomTag: { 
@@ -167,13 +167,13 @@ const styles = StyleSheet.create({
   notesBox: { backgroundColor: "rgba(255,255,255,0.4)", borderRadius: 16, padding: 16, borderStyle: 'dashed', borderWidth: 1, borderColor: '#BDBDBD' },
   notesText: { fontSize: 15, color: "#616161", lineHeight: 22 },
   
-  urgencyActionCard: { marginTop: 10, padding: 20, borderRadius: 20, borderWidth: 1, borderColor: "rgba(232,105,124,0.2)" },
-  urgencyLabel: { fontSize: 10, fontWeight: "800", color: "#E8697C", letterSpacing: 1, marginBottom: 8 },
+  urgencyActionCard: { marginTop: 10, padding: 20, borderRadius: 20, borderWidth: 1, borderColor: "rgba(201,123,110,0.2)" },
+  urgencyLabel: { fontSize: 10, fontWeight: "800", color: "#8E5A54", letterSpacing: 1, marginBottom: 8 },
   urgencyValue: { fontSize: 15, color: "#424242", marginBottom: 12 },
   actionLink: { alignSelf: 'flex-start' },
-  actionLinkText: { color: "#E8697C", fontWeight: "700", fontSize: 15 },
+  actionLinkText: { color: "#8E5A54", fontWeight: "700", fontSize: 15 },
   
   errorText: { color: "#9E9E9E", marginBottom: 20 },
-  backButton: { backgroundColor: "#E8697C", paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
+  backButton: { backgroundColor: "#C97B6E", paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
   backButtonText: { color: "#FFF", fontWeight: "700" }
 });

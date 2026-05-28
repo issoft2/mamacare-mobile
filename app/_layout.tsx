@@ -180,17 +180,44 @@ function AuthGuard() {
 }
 
 function AppReconsentCheck() {
+  const { isLoaded, isSignedIn, userId, sessionId } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
+    if (!isLoaded) {
+      return;
+    }
+
+    const hasSession = Boolean(
+      isSignedIn ||
+        (userId != null && userId !== "") ||
+        (sessionId != null && sessionId !== "")
+    );
+
+    if (!hasSession) {
+      return;
+    }
+
+    if (pathname === "/legal/reconsent") {
+      return;
+    }
+
+    let cancelled = false;
+
     async function verifyConsents() {
       const isOutdated = await checkConsentVersion();
-      if (isOutdated) {
-        router.push("/legal/reconsent");
+      if (!cancelled && isOutdated) {
+        router.replace("/legal/reconsent");
       }
     }
+
     verifyConsents();
-  }, [router]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, isSignedIn, userId, sessionId, pathname, router]);
 
   return null;
 }

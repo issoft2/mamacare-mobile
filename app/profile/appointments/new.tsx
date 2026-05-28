@@ -99,11 +99,11 @@ export default function AddAppointmentScreen() {
       style={styles.screen}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <LinearGradient colors={["#FFF8F4", "#F8FAFF"]} style={styles.bgOverlay}>
+      <LinearGradient colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)"]} style={styles.bgOverlay}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.headerRow}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-              <Ionicons name="arrow-back" size={22} color="#1A237E" />
+              <Ionicons name="arrow-back" size={22} color="#6D4A45" />
             </TouchableOpacity>
             <View style={styles.headerCopy}>
               <Text style={styles.eyebrow}>CARE PLANNING</Text>
@@ -200,8 +200,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   headerCopy: { flex: 1 },
-  eyebrow: { fontSize: 11, fontWeight: "800", color: "#E8697C", letterSpacing: 1.1, marginBottom: 6 },
-  title: { fontSize: 26, fontWeight: "800", color: "#1A237E" },
+  eyebrow: { fontSize: 11, fontWeight: "800", color: "#8E5A54", letterSpacing: 1.1, marginBottom: 6 },
+  title: { fontSize: 26, fontWeight: "800", color: "#4D3B39" },
   subtitle: { marginTop: 6, fontSize: 13, lineHeight: 19, color: "#6E7890" },
   formCard: {
     backgroundColor: "rgba(255,255,255,0.88)",
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#1A237E",
+    color: "#6D4A45",
     textTransform: "uppercase",
     letterSpacing: 1,
     marginTop: 10,
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E5E9F5",
   },
-  typeChipActive: { borderColor: "#E8697C", backgroundColor: "rgba(232,105,124,0.08)" },
+  typeChipActive: { borderColor: "#C97B6E", backgroundColor: "rgba(201,123,110,0.10)" },
   typeChipText: { fontSize: 12, color: "#4B5563", fontWeight: "700" },
   typeChipTextActive: { color: "#B4233A" },
   input: {
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: "#1A237E",
+    color: "#4D3B39",
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.08)",
   },

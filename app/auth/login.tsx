@@ -21,6 +21,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Image,
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
@@ -47,6 +48,7 @@ import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaB
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const WELCOME_BG = require("../../assets/welcome-bg.png");
+const APP_LOGO = require("../../assets/mumlogo.png");
 const CREAM = "#FFFBF7";
 const CARD_RADIUS = 32;
 
@@ -129,12 +131,11 @@ export default function LoginScreen() {
               <Ionicons name="chevron-back" size={22} color={colors.navy[700]} />
             </TouchableOpacity>
 
-            {/* Heart badge + brand name */}
+            {/* Brand logo */}
             <View style={styles.brandRow}>
-              <View style={styles.heartBadge}>
-                <Ionicons name="heart" size={18} color={colors.rose[400]} />
+              <View style={styles.logoPlate}>
+                <Image source={APP_LOGO} style={styles.logoMark} resizeMode="cover" />
               </View>
-              <Text style={styles.brandName}></Text>
             </View>
 
             {/* Warm welcome-back message */}
@@ -147,9 +148,6 @@ export default function LoginScreen() {
 
           {/* ── Form card — floats up from the hero ──────────────── */}
           <View style={styles.card}>
-
-            <View style={styles.cardHandle} />
-
             <Text style={styles.cardTitle}>Sign in</Text>
             <Text style={styles.cardSubtitle}>
           
@@ -272,22 +270,32 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.75)",
+    backgroundColor: "rgba(255,251,247,0.92)",
+    borderWidth: 1,
+    borderColor: "rgba(140, 90, 82, 0.18)",
     justifyContent: "center",
     alignItems: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#6A4039",
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.16,
+        shadowRadius: 6,
+      },
+      android: { elevation: 3 },
+    }),
   },
 
   brandRow: {
-    flexDirection: "row",
     alignItems: "center",
-    gap: 8,
     alignSelf: "center",
   },
-  heartBadge: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "rgba(255,255,255,0.9)",
+  logoPlate: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    overflow: "hidden",
+    backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
     ...Platform.select({
@@ -300,15 +308,28 @@ const styles = StyleSheet.create({
       android: { elevation: 4 },
     }),
   },
-  brandName: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: colors.rose[600],
-    letterSpacing: -0.3,
+  logoMark: {
+    width: "100%",
+    height: "100%",
   },
 
   heroText: {
     alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.52)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.55)",
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#875851",
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.14,
+        shadowRadius: 10,
+      },
+      android: { elevation: 2 },
+    }),
   },
   heroGreeting: {
     fontSize: 11,
@@ -381,8 +402,8 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 11,
-    fontWeight: "700",
-    color: colors.rose[400],
+    fontWeight: "800",
+    color: "#8E5A54",
     letterSpacing: 1.2,
     textTransform: "uppercase",
     marginBottom: 8,
@@ -456,19 +477,24 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-    timeGreeting: {
-      fontSize: 16,
-      color: colors.navy[400],
-      textTransform: 'uppercase',
-      letterSpacing: 2,
-      fontWeight: '600'
-    },
-    dailyQuote: {
-      fontSize: 22,
-      color: colors.navy[700],
-      textAlign: 'center',
-      lineHeight: 32,
-      fontStyle: 'italic',
-      fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    },
+  timeGreeting: {
+    fontSize: 13,
+    color: "#7F4E47",
+    textTransform: "uppercase",
+    letterSpacing: 1.8,
+    fontWeight: "800",
+    marginBottom: 8,
+  },
+  dailyQuote: {
+    fontSize: 21,
+    color: "#4D3B39",
+    textAlign: "center",
+    lineHeight: 30,
+    fontStyle: "italic",
+    fontWeight: "600",
+    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    textShadowColor: "rgba(255,255,255,0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
 });

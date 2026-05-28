@@ -18,13 +18,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, shadows } from "@mumcare/ui";
-import { HeartIcon } from "../../components/HeartIcon";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { useMemo, useState } from "react";
 import { getTimeBasedGreeting, getDailyMessage } from "../../lib/greetings";
 import { usePwaInstallPrompt } from "../../lib/usePwaInstallPrompt";
 
 const WELCOME_BG = require("../../assets/welcome-bg.png");
+const APP_LOGO = require("../../assets/mumlogo.png");
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -120,10 +120,9 @@ export default function WelcomeScreen() {
           {/* Upper Hero Section */}
           <View style={[styles.hero, isWide && styles.heroWide]}>
             <View style={[styles.brandWrapper, isWide && styles.brandWrapperWide]}>
-              <View style={styles.iconCircle}>
-                <HeartIcon size={48} color={colors.rose[500]} />
+              <View style={styles.logoPlate}>
+                <Image source={APP_LOGO} style={styles.logoMark} resizeMode="cover" />
               </View>
-              <Text style={styles.logoText}>mumcare</Text>
             </View>
 
             <View style={[styles.messageStack, isWide && styles.messageStackWide]}>
@@ -220,16 +219,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   brandWrapper: { alignItems: 'center', marginBottom: 28 },
-  brandWrapperWide: { alignItems: "flex-start" },
-  iconCircle: {
-    width: 86,
-    height: 86,
-    borderRadius: 43,
-    backgroundColor: '#FFF',
+  brandWrapperWide: { alignItems: "center" },
+  logoPlate: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     ...shadows.md,
     marginBottom: 16,
+  },
+  logoMark: {
+    width: '100%',
+    height: '100%',
   },
   logoText: {
     fontSize: 28,
@@ -237,22 +241,44 @@ const styles = StyleSheet.create({
     color: colors.navy[700],
   },
   
-  messageStack: { alignItems: 'center', gap: 12 },
+  messageStack: {
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "rgba(255,255,255,0.52)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.55)",
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#875851",
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.14,
+        shadowRadius: 10,
+      },
+      android: { elevation: 2 },
+    }),
+  },
   messageStackWide: { alignItems: "flex-start" },
   timeGreeting: {
     fontSize: 13,
-    color: colors.navy[400],
+    color: "#7F4E47",
     textTransform: 'uppercase',
     letterSpacing: 1.8,
-    fontWeight: '600'
+    fontWeight: '800'
   },
   dailyQuote: {
     fontSize: 21,
-    color: colors.navy[700],
+    color: "#4D3B39",
     textAlign: 'center',
     lineHeight: 30,
     fontStyle: 'italic',
+    fontWeight: "600",
     fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    textShadowColor: "rgba(255,255,255,0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   dailyQuoteWide: {
     textAlign: "left",

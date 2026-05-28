@@ -60,14 +60,14 @@ export default function MedicalProfileScreen() {
     }
   }
 
-  if (isLoading) return <View style={styles.centered}><ActivityIndicator color="#E8697C" /></View>;
+  if (isLoading) return <View style={styles.centered}><ActivityIndicator color="#C97B6E" /></View>;
 
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.push("/tabs/profile")} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color="#1A237E" />
+            <Ionicons name="arrow-back" size={24} color="#6D4A45" />
           </TouchableOpacity>
           <Text style={styles.title}>Medical Details</Text>
         </View>
@@ -82,7 +82,7 @@ export default function MedicalProfileScreen() {
           </View>
           <View style={styles.track}>
             <LinearGradient 
-              colors={["#E8697C", "#FFA07A"]} 
+              colors={["#C97B6E", "#E7A693"]} 
               start={{x:0, y:0}} end={{x:1, y:0}} 
               style={[styles.fill, { width: `${progress}%` }]} 
             />
@@ -116,7 +116,7 @@ export default function MedicalProfileScreen() {
             <Text style={styles.label}>Last Menstrual Period</Text>
             <TouchableOpacity style={styles.dateInput} onPress={() => setShowDatePicker(true)}>
               <Text style={styles.dateValue}>{form.lmpDate || "Select Date"}</Text>
-              <Ionicons name="calendar" size={20} color="#E8697C" />
+              <Ionicons name="calendar" size={20} color="#8E5A54" />
             </TouchableOpacity>
             {showDatePicker && (
               <DateTimePicker
@@ -194,28 +194,28 @@ const styles = StyleSheet.create({
   content: { padding: 25, paddingTop: 60 },
   header: { flexDirection: 'row', alignItems: 'center', marginBottom: 25 },
   backBtn: { marginRight: 15 },
-  title: { fontSize: 24, fontWeight: "800", color: "#1A237E" },
+  title: { fontSize: 24, fontWeight: "800", color: "#4D3B39" },
   progressCard: { backgroundColor: '#FFF', padding: 20, borderRadius: 25, elevation: 3, marginBottom: 25 },
   progressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  progressTitle: { fontWeight: '700', color: '#1A237E' },
-  progressPercent: { color: '#E8697C', fontWeight: '800' },
+  progressTitle: { fontWeight: '700', color: '#4D3B39' },
+  progressPercent: { color: '#8E5A54', fontWeight: '800' },
   track: { height: 8, backgroundColor: '#F0F0F0', borderRadius: 4, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: 4 },
   autoSaveText: { fontSize: 11, color: '#BDBDBD', marginTop: 10, fontStyle: 'italic' },
   section: { marginBottom: 25 },
-  label: { fontSize: 12, fontWeight: '800', color: '#1A237E', textTransform: 'uppercase', marginBottom: 10, marginLeft: 4 },
+  label: { fontSize: 12, fontWeight: '800', color: '#6D4A45', textTransform: 'uppercase', marginBottom: 10, marginLeft: 4 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E0E0E0' },
-  chipActive: { backgroundColor: '#E8697C', borderColor: '#E8697C' },
+  chipActive: { backgroundColor: '#C97B6E', borderColor: '#C97B6E' },
   chipText: { fontWeight: '600', color: '#757575' },
   chipTextActive: { color: '#FFF' },
   glassCard: { backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 25, padding: 20 },
   field: { marginBottom: 20 },
   dateInput: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFF', padding: 15, borderRadius: 15 },
-  dateValue: { fontSize: 16, color: '#1A237E' },
+  dateValue: { fontSize: 16, color: '#4D3B39' },
   row: { flexDirection: 'row', gap: 12, marginBottom: 20 },
   half: { flex: 1 },
-  input: { backgroundColor: '#FFF', borderRadius: 15, padding: 14, fontSize: 16, color: '#1A237E' },
+  input: { backgroundColor: '#FFF', borderRadius: 15, padding: 14, fontSize: 16, color: '#4D3B39' },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
   doneBtn: { marginTop: 20, backgroundColor: '#1A237E', padding: 18, borderRadius: 20, alignItems: 'center' },
   doneBtnText: { color: '#FFF', fontWeight: '700', fontSize: 16 }

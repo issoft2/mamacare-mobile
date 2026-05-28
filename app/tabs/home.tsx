@@ -27,6 +27,7 @@ import {
 import Svg, { Circle, Path } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import {
+  apiRequest,
   useAppointments,
   useFolicAcidLogs,
   useHydrationLogs,
@@ -40,10 +41,12 @@ import {
   useLogHydration,
   useLogMood,
 } from "@mumcare/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { colors } from "@mumcare/ui";
 import { getTimeBasedGreeting } from "../../lib/greetings";
 import { WeeklyContentCard } from "@/components/home/WeeklyContentCard";
+import { calculateGestationalWeek } from "@/lib/gestationalWeek";
 import type { Mood, Severity, UrgencyTier } from "@mumcare/types";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 
@@ -79,11 +82,12 @@ const MOOD_TO_FEELING: Record<Mood, Feeling> = {
 const CARE_CARD_COLORS = {
   water:    { icon: colors.rose[400],  bg: "rgba(232,105,124,0.10)" },
   folic:    { icon: "#6B7BB8",         bg: "rgba(107,123,184,0.12)" },
-  mood:     { icon: "#B07CC6",         bg: "rgba(176,124,198,0.10)" },
+  mood:     { icon: "#8E5A54",         bg: "rgba(142,90,84,0.12)" },
   symptoms: { icon: colors.rose[300],  bg: "rgba(232,105,124,0.08)" },
 };
 
 const KICK_COUNTER_MIN_WEEK = 16;
+const PREFS_CACHE_KEY = "notificationPreferences";
 
 // ── Severity colour coding ────────────────────────────────────────────────────
 
@@ -281,6 +285,7 @@ export default function HomeScreen() {
   const isWide = Platform.OS === "web" && width >= 980;
   const [feeling, setFeeling] = useState<Feeling | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [appointmentRemindersEnabled, setAppointmentRemindersEnabled] = useState(true);
   const [folicTakenLocal, setFolicTakenLocal] = useState(false);
 
   const { data: profile }      = useProfile();
@@ -294,6 +299,45 @@ export default function HomeScreen() {
   const { data: mood }         = useMoodLogs();
   const { data: sleep }        = useSleepLogs();
   const { data: appointments } = useAppointments();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const userScopedKey = user?.id
+        ? `${PREFS_CACHE_KEY}:${user.id}`
+        : PREFS_CACHE_KEY;
+
+      try {
+        const raw = await AsyncStorage.getItem(userScopedKey);
+        if (raw) {
+          const parsed = JSON.parse(raw) as { appointment_reminders?: boolean };
+          if (!cancelled && typeof parsed.appointment_reminders === "boolean") {
+            setAppointmentRemindersEnabled(parsed.appointment_reminders);
+          }
+        }
+      } catch {
+        // Ignore local cache errors and continue with server source.
+      }
+
+      try {
+        const prefs = await apiRequest<{ appointment_reminders?: boolean }>(
+          "/notifications/preferences",
+          { method: "GET" }
+        );
+
+        if (!cancelled && typeof prefs.appointment_reminders === "boolean") {
+          setAppointmentRemindersEnabled(prefs.appointment_reminders);
+        }
+      } catch {
+        // Keep current preference fallback.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const firstName = profile?.first_name ?? user?.firstName ?? "mama";
   const todayDateKey = getLocalDateKey(new Date());
@@ -442,8 +486,17 @@ export default function HomeScreen() {
     [appointments]
   );
 
-  const showBanner = !bannerDismissed && !!nextAppointment;
-  const gestationalWeek = profile?.gestational_week ?? 0;
+  const showBanner =
+    !bannerDismissed && !!nextAppointment && appointmentRemindersEnabled;
+  const gestationalWeek = useMemo(
+    () =>
+      calculateGestationalWeek({
+        estimatedDueDate: profile?.estimated_due_date,
+        lmpDate: profile?.lmp_date,
+        fallbackWeek: profile?.gestational_week,
+      }) ?? 0,
+    [profile?.estimated_due_date, profile?.lmp_date, profile?.gestational_week]
+  );
   const canUseKickCounter = gestationalWeek >= KICK_COUNTER_MIN_WEEK;
 
   const todayKickSessions = useMemo(
@@ -475,7 +528,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.screen}>
       <LinearGradient
-        colors={["rgba(255,255,255,0.7)", "rgba(255,245,245,0.4)"]}
+        colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)"]}
         style={styles.bgOverlay}
       >
         {/* ── Next Visit Banner ─────────────────────────────────── */}
@@ -809,9 +862,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(232,105,124,0.18)",
+    borderColor: "rgba(140,90,82,0.18)",
     elevation: 3,
-    shadowColor: "#E8697C",
+    shadowColor: "#C97B6E",
     shadowOpacity: 0.1,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
@@ -835,7 +888,7 @@ const styles = StyleSheet.create({
   bannerTitle: {
     fontSize: 12,
     fontWeight: "600",
-    color: colors.navy[400],
+    color: "#8E5A54",
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 2,
@@ -843,7 +896,7 @@ const styles = StyleSheet.create({
   bannerDate: {
     fontSize: 15,
     fontWeight: "700",
-    color: colors.navy[700],
+    color: "#4D3B39",
   },
   bannerActions: {
     flexDirection: "row",
@@ -855,8 +908,27 @@ const styles = StyleSheet.create({
   },
 
   // ── Hero ────────────────────────────────────────────────────
-  heroHeader:   { marginBottom: 20, marginTop: 8 },
-  greetingText: { fontSize: 28, fontWeight: "700", color: "#1A237E" },
+  heroHeader: {
+    marginBottom: 20,
+    marginTop: 8,
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(255,255,255,0.52)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.55)",
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#875851",
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.14,
+        shadowRadius: 10,
+      },
+      android: { elevation: 2 },
+    }),
+  },
+  greetingText: { fontSize: 28, fontWeight: "700", color: "#4D3B39" },
   sparkle:      { fontSize: 20 },
   weekRow: {
     flexDirection: "row",
@@ -877,7 +949,7 @@ const styles = StyleSheet.create({
   section: { marginTop: 28 },
   sectionTitle: {
     fontSize: 20, fontWeight: "700",
-    color: "#1A237E", marginBottom: 14,
+    color: "#4D3B39", marginBottom: 14,
   },
 
   // ── Feeling row ─────────────────────────────────────────────
@@ -898,8 +970,8 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.1 }],
   },
   moodEmoji:       { fontSize: 24 },
-  moodLabel:       { fontSize: 12, marginTop: 8, color: "#9E9E9E" },
-  moodLabelActive: { color: "#E8697C", fontWeight: "700" },
+  moodLabel:       { fontSize: 12, marginTop: 8, color: "#8B7B76" },
+  moodLabelActive: { color: "#8E5A54", fontWeight: "700" },
 
   // ── Care grid ───────────────────────────────────────────────
   careGrid: {
@@ -910,15 +982,15 @@ const styles = StyleSheet.create({
   careCard: {
     width: CARD_WIDTH,
     minHeight: 140,
-    backgroundColor: "#FFFBF7",
+    backgroundColor: "#FFFDF9",
     borderRadius: 20,
     padding: 14,
     flexDirection: "column",
     justifyContent: "flex-start",
     borderWidth: 1,
-    borderColor: "rgba(232,105,124,0.10)",
+    borderColor: "rgba(140,90,82,0.14)",
     elevation: 3,
-    shadowColor: "#E8697C",
+    shadowColor: "#C97B6E",
     shadowOpacity: 0.06,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
@@ -934,7 +1006,7 @@ const styles = StyleSheet.create({
   },
   careCardLabel: {
     fontSize: 12,
-    color: "#4A5B85",
+    color: "#7B5A53",
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -943,13 +1015,13 @@ const styles = StyleSheet.create({
   careCardVal: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#16204F",
+    color: "#4D3B39",
   },
   careCardSubtle: {
     marginTop: 2,
     fontSize: 12,
     fontWeight: "700",
-    color: "#4A5B85",
+    color: "#6D5A55",
   },
   careCardDisabled: {
     opacity: 0.65,
@@ -983,7 +1055,7 @@ const styles = StyleSheet.create({
   // Progress bar
   miniTrack: {
     height: 5,
-    backgroundColor: "rgba(0,0,0,0.06)",
+    backgroundColor: "rgba(140,90,82,0.14)",
     borderRadius: 3,
     overflow: "hidden",
     marginTop: "auto",
@@ -996,18 +1068,18 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 7,
     alignSelf: "flex-start",
-    backgroundColor: "rgba(26,35,126,0.08)",
+    backgroundColor: "rgba(140,90,82,0.12)",
     borderRadius: 999,
     paddingHorizontal: 7,
     paddingVertical: 3,
   },
   cardHintText: {
     fontSize: 11,
-    color: "#22305E",
+    color: "#6D4A45",
     fontWeight: "700",
   },
   widgetBtn: { backgroundColor: 'rgba(255,255,255,0.8)', paddingVertical: 5, borderRadius: 15, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
-  widgetBtnText: { fontWeight: "700", color: "#1A237E" },
+  widgetBtnText: { fontWeight: "700", color: "#4D3B39" },
 
 
 });

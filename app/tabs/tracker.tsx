@@ -25,6 +25,7 @@ import {
   useSleepLogs, useStartKickSession,
   useProfile
 } from "@mumcare/api";
+import { ctaGradientColors } from "../../components/styles/ctaButton";
 
 const KICK_COUNTER_MIN_WEEK = 16;
 
@@ -81,7 +82,7 @@ export default function TrackerScreen() {
 
   return (
     <View style={styles.screen}>
-        <LinearGradient colors={["rgba(255,255,255,0.7)", "rgba(255,245,245,0.4)"]} style={styles.bgOverlay}>
+        <LinearGradient colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)"]} style={styles.bgOverlay}>
           
           <ScrollView
             contentContainerStyle={[styles.content, isWide && styles.contentWide]}
@@ -93,21 +94,21 @@ export default function TrackerScreen() {
               {/* Hydration Widget */}
               <View style={[styles.glassCard, isWide && styles.glassCardWide]}>
                 <View style={styles.cardHeader}>
-                  <View style={[styles.iconCircle, { backgroundColor: 'rgba(74, 144, 226, 0.1)' }]}>
-                    <Ionicons name="water" size={20} color="#4A90E2" />
+                  <View style={[styles.iconCircle, { backgroundColor: 'rgba(107, 123, 184, 0.12)' }]}>
+                    <Ionicons name="water" size={20} color="#6B7BB8" />
                   </View>
                   <Text style={styles.cardTitle}>Hydration</Text>
                 </View>
                 <Text style={styles.cardValue}>{glassesCount} <Text style={styles.unit}>/ {targetGlasses} glasses</Text></Text>
                 <View style={styles.progressTrack}>
                   <LinearGradient 
-                    colors={["#4facfe", "#00f2fe"]} 
+                    colors={ctaGradientColors} 
                     start={{x:0, y:0}} end={{x:1, y:0}} 
                     style={[styles.progressFill, { width: `${hydrationProgress}%` }]} 
                   />
                 </View>
                 <TouchableOpacity 
-                  style={[styles.widgetBtn, { backgroundColor: '#E8697C' }]}
+                  style={[styles.widgetBtn, { backgroundColor: '#C97B6E' }]}
                   onPress={() =>
                     logWater.mutateAsync({
                       glasses_count: glassesCount + 1,
@@ -132,7 +133,7 @@ export default function TrackerScreen() {
                 <TouchableOpacity
                   style={[
                     styles.widgetBtn,
-                    { backgroundColor: '#E8697C' },
+                    { backgroundColor: '#C97B6E' },
                     (folicTakenToday || logFolicAcid.isPending) && styles.widgetBtnDisabled,
                   ]}
                   disabled={folicTakenToday || logFolicAcid.isPending}
@@ -164,7 +165,7 @@ export default function TrackerScreen() {
                 <TouchableOpacity 
                   style={[
                     styles.widgetBtn,
-                    { backgroundColor: '#E8697C' },
+                    { backgroundColor: '#C97B6E' },
                     !canUseKickCounter && styles.widgetBtnDisabled,
                   ]}
                   disabled={!canUseKickCounter}
@@ -217,33 +218,36 @@ const styles = StyleSheet.create({
   bgOverlay: { flex: 1 },
   content: { padding: 20, paddingTop: 60, paddingBottom: 32 },
   contentWide: { width: "100%", maxWidth: 1180, alignSelf: "center", padding: 32 },
-  screenTitle: { fontSize: 28, fontWeight: "700", color: "#1A237E", marginBottom: 25 },
+  screenTitle: { fontSize: 28, fontWeight: "700", color: "#4D3B39", marginBottom: 25 },
   dashboardGrid: { gap: 15 },
   dashboardGridWide: { flexDirection: "row", flexWrap: "wrap", alignItems: "stretch" },
   glassCard: {
-    backgroundColor: "rgba(255,255,255,0.75)",
+    backgroundColor: "rgba(255,255,255,0.82)",
     borderRadius: 24,
     padding: 20,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.5)",
+    borderColor: "rgba(140,90,82,0.14)",
     elevation: 4,
-    shadowOpacity: 0.05
+    shadowColor: "#C97B6E",
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 3 },
   },
   glassCardWide: { width: "48.5%", minWidth: 320 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
   iconCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  cardTitle: { fontSize: 14, fontWeight: "700", color: "#757575", textTransform: 'uppercase', letterSpacing: 1 },
-  cardValue: { fontSize: 28, fontWeight: "800", color: "#1A237E", marginBottom: 15 },
+  cardTitle: { fontSize: 14, fontWeight: "700", color: "#7B6A66", textTransform: 'uppercase', letterSpacing: 1 },
+  cardValue: { fontSize: 28, fontWeight: "800", color: "#4D3B39", marginBottom: 15 },
   unit: { fontSize: 16, fontWeight: "400", color: "#9E9E9E" },
   progressTrack: { height: 8, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 4, marginBottom: 20, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 4 },
   widgetBtn: { backgroundColor: 'rgba(255,255,255,0.8)', paddingVertical: 12, borderRadius: 15, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
   widgetBtnDisabled: { opacity: 0.6 },
-  widgetBtnText: { fontWeight: "700", color: "#1A237E" },
+  widgetBtnText: { fontWeight: "700", color: "#4D3B39" },
   row: { flexDirection: 'row', gap: 15 },
   rowWide: { width: "48.5%", minWidth: 320 },
-  halfCard: { flex: 1, backgroundColor: "rgba(255,255,255,0.75)", borderRadius: 24, padding: 15, borderWidth: 1, borderColor: "rgba(255,255,255,0.5)" },
+  halfCard: { flex: 1, backgroundColor: "rgba(255,255,255,0.82)", borderRadius: 24, padding: 15, borderWidth: 1, borderColor: "rgba(140,90,82,0.14)" },
   halfTitle: { fontSize: 12, fontWeight: "700", color: "#9E9E9E", marginTop: 10 },
-  halfValue: { fontSize: 16, fontWeight: "700", color: "#1A237E", marginTop: 2, textTransform: 'capitalize' }
+  halfValue: { fontSize: 16, fontWeight: "700", color: "#4D3B39", marginTop: 2, textTransform: 'capitalize' }
 });

@@ -91,7 +91,7 @@ export default function CareTeamScreen() {
             disabled={!item.phone}
             activeOpacity={0.86}
           >
-            <Ionicons name="call" size={17} color={item.phone ? "#1A237E" : "#BDBDBD"} />
+            <Ionicons name="call" size={17} color={item.phone ? "#6D4A45" : "#BDBDBD"} />
             <Text style={[styles.actionBtnText, !item.phone && styles.disabledText]}>Call</Text>
           </TouchableOpacity>
 
@@ -103,7 +103,7 @@ export default function CareTeamScreen() {
             disabled={!item.email}
             activeOpacity={0.86}
           >
-            <Ionicons name="mail" size={17} color={item.email ? "#1A237E" : "#BDBDBD"} />
+            <Ionicons name="mail" size={17} color={item.email ? "#6D4A45" : "#BDBDBD"} />
             <Text style={[styles.actionBtnText, !item.email && styles.disabledText]}>Email</Text>
           </TouchableOpacity>
         </View>
@@ -113,10 +113,10 @@ export default function CareTeamScreen() {
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={["#FFF8F4", "#F8FAFF"]} style={styles.bgOverlay}>
+      <LinearGradient colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)"]} style={styles.bgOverlay}>
         <View style={styles.headerNav}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.86}>
-            <Ionicons name="chevron-back" size={24} color="#1A237E" />
+            <Ionicons name="chevron-back" size={24} color="#6D4A45" />
           </TouchableOpacity>
           <View style={styles.headerCopy}>
             <Text style={styles.headerEyebrow}>CARE CIRCLE</Text>
@@ -132,7 +132,7 @@ export default function CareTeamScreen() {
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             isLoading ? (
-              <ActivityIndicator color="#E8697C" style={{ marginTop: 40 }} />
+              <ActivityIndicator color="#C97B6E" style={{ marginTop: 40 }} />
             ) : (
               <View style={styles.emptyContainer}>
                 <View style={styles.emptyIconCircle}>
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     marginRight: 14,
     ...Platform.select({
       ios: {
-        shadowColor: "#1A2E4A",
+        shadowColor: "#6A4039",
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.1,
         shadowRadius: 12,
@@ -199,11 +199,11 @@ const styles = StyleSheet.create({
   headerEyebrow: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#E8697C",
+    color: "#8E5A54",
     letterSpacing: 1.2,
     marginBottom: 4,
   },
-  headerTitle: { fontSize: 24, fontWeight: "800", color: "#1A237E" },
+  headerTitle: { fontSize: 24, fontWeight: "800", color: "#4D3B39" },
   headerSubtext: {
     fontSize: 13,
     lineHeight: 19,
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.7)",
     ...Platform.select({
       ios: {
-        shadowColor: "#E8697C",
+        shadowColor: "#C97B6E",
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.1,
         shadowRadius: 20,
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   primaryTag: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   primaryText: { fontSize: 10, fontWeight: "800", color: "#FFF", letterSpacing: 0.4 },
   body: { marginBottom: 14 },
-  name: { fontSize: 18, fontWeight: "700", color: "#1A237E", marginBottom: 5 },
+  name: { fontSize: 18, fontWeight: "700", color: "#4D3B39", marginBottom: 5 },
   practiceRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   practiceText: { fontSize: 14, color: "#667085" },
   actionRow: {
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     gap: 8,
     minHeight: 34,
   },
-  actionBtnText: { fontWeight: "700", color: "#1A237E", fontSize: 14 },
+  actionBtnText: { fontWeight: "700", color: "#6D4A45", fontSize: 14 },
   actionDivider: { width: 1, height: 20, backgroundColor: "#EEF1F7" },
   disabledBtn: { opacity: 0.45 },
   disabledText: { color: "#BDBDBD" },
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
       android: { elevation: 3 },
     }),
   },
-  emptyText: { fontSize: 18, fontWeight: "700", color: "#1A237E", marginBottom: 8 },
+  emptyText: { fontSize: 18, fontWeight: "700", color: "#4D3B39", marginBottom: 8 },
   emptySubtext: { fontSize: 14, color: "#6E7890", textAlign: "center", lineHeight: 21 },
   addBtn: {
     position: "absolute",

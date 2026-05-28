@@ -92,14 +92,14 @@ export default function EditProfileScreen() {
   if (isPending) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#E8697C" />
+        <ActivityIndicator size="large" color="#C97B6E" />
       </View>
     );
   }
 
   return (
     <View style={styles.screen}>
-        <LinearGradient colors={["#FFF8F4", "#FFF2F5", "#F7FAFF"]} style={styles.bgOverlay}>
+        <LinearGradient colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)", "#FFFBF7"]} style={styles.bgOverlay}>
           <ScrollView
             contentContainerStyle={[styles.content, isWide && styles.contentWide]}
             keyboardShouldPersistTaps="handled"
@@ -111,7 +111,7 @@ export default function EditProfileScreen() {
                 style={styles.backBtn}
                 activeOpacity={0.82}
               >
-                <Ionicons name="chevron-back" size={24} color="#1A237E" />
+                <Ionicons name="chevron-back" size={24} color="#6D4A45" />
               </TouchableOpacity>
               <View style={styles.headerCopy}>
                 <Text style={styles.eyebrow}>
@@ -137,7 +137,7 @@ export default function EditProfileScreen() {
             <View style={styles.glassCard}>
               <View style={styles.cardHeader}>
                 <View style={styles.cardIcon}>
-                  <Ionicons name="person-circle-outline" size={24} color="#E8697C" />
+                  <Ionicons name="person-circle-outline" size={24} color="#8E5A54" />
                 </View>
                 <View style={styles.cardHeaderCopy}>
                   <Text style={styles.cardTitle}>About you</Text>
@@ -180,7 +180,7 @@ export default function EditProfileScreen() {
 
               <View style={styles.cardHeader}>
                 <View style={styles.cardIcon}>
-                  <Ionicons name="heart-outline" size={23} color="#E8697C" />
+                  <Ionicons name="heart-outline" size={23} color="#8E5A54" />
                 </View>
                 <View style={styles.cardHeaderCopy}>
                   <Text style={styles.cardTitle}>Pregnancy timeline</Text>
@@ -278,15 +278,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
-    shadowColor: '#1A2E4A',
+    shadowColor: '#6A4039',
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 5 },
     elevation: 3
   },
   headerCopy: { flex: 1 },
-  eyebrow: { fontSize: 11, fontWeight: "800", color: "#E8697C", letterSpacing: 1.2, marginBottom: 7 },
-  title: { fontSize: 28, lineHeight: 34, fontWeight: "800", color: "#1A237E" },
+  eyebrow: { fontSize: 11, fontWeight: "800", color: "#8E5A54", letterSpacing: 1.2, marginBottom: 7 },
+  title: { fontSize: 28, lineHeight: 34, fontWeight: "800", color: "#4D3B39" },
   subtitle: { color: "#667085", fontSize: 14, lineHeight: 20, marginTop: 8 },
   errorBox: { flexDirection: 'row', backgroundColor: '#FCEBEB', padding: 15, borderRadius: 15, marginBottom: 20, alignItems: 'center', gap: 10 },
   errorText: { flex: 1, color: '#A32D2D', fontSize: 13, fontWeight: '600' },
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     padding: 18,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.74)",
-    shadowColor: '#E8697C',
+    shadowColor: '#C97B6E',
     shadowOpacity: 0.12,
     shadowRadius: 22,
     shadowOffset: { width: 0, height: 12 },
@@ -307,18 +307,18 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 15,
-    backgroundColor: "rgba(232,105,124,0.12)",
+    backgroundColor: "rgba(201,123,110,0.14)",
     alignItems: "center",
     justifyContent: "center",
   },
   cardHeaderCopy: { flex: 1 },
-  cardTitle: { color: "#1A237E", fontSize: 18, fontWeight: "800" },
+  cardTitle: { color: "#4D3B39", fontSize: 18, fontWeight: "800" },
   cardHint: { color: "#667085", fontSize: 13, lineHeight: 18, marginTop: 3 },
   sectionDivider: { height: 1, backgroundColor: "rgba(154,162,180,0.18)", marginVertical: 22 },
   row: { flexDirection: 'row', gap: 14 },
   rowStack: { flexDirection: "column" },
   field: { flex: 1, minWidth: 0, marginBottom: 16 },
-  label: { fontSize: 12, fontWeight: '800', color: '#1A237E', textTransform: 'uppercase', marginBottom: 8, marginLeft: 4 },
+  label: { fontSize: 12, fontWeight: '800', color: '#6D4A45', textTransform: 'uppercase', marginBottom: 8, marginLeft: 4 },
   inputShell: {
     minHeight: 54,
     flexDirection: "row",
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(154,162,180,0.18)'
   },
-  input: { flex: 1, minWidth: 0, paddingVertical: 14, fontSize: 16, color: '#1A237E' },
+  input: { flex: 1, minWidth: 0, paddingVertical: 14, fontSize: 16, color: '#4D3B39' },
   fieldHint: { color: "#8A93A6", fontSize: 12, lineHeight: 17, marginTop: 7, marginLeft: 4 },
   submitBtn: { marginTop: 30 },
   submitBtnDisabled: { opacity: 0.72 },

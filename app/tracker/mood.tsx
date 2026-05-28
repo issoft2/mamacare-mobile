@@ -81,12 +81,12 @@ export default function MoodLogScreen() {
 
   return (
     <View style={styles.screen}>
-        <LinearGradient colors={["#FFF8F4", "#F8FAFF"]} style={styles.bgOverlay}>
+        <LinearGradient colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)"]} style={styles.bgOverlay}>
           <ScrollView contentContainerStyle={styles.content}>
         
             <View style={styles.header}>
               <TouchableOpacity onPress={() => router.push("/tabs/tracker")} style={styles.backBtn}>
-                   <Ionicons name="chevron-back" size={24} color="#1A237E" />
+                   <Ionicons name="chevron-back" size={24} color="#6D4A45" />
               </TouchableOpacity>
               <View style={styles.headerCopy}>
                 <Text style={styles.eyebrow}>EMOTIONAL CARE</Text>
@@ -114,7 +114,7 @@ export default function MoodLogScreen() {
               </View>
 
               <View style={styles.supportBanner}>
-                <Ionicons name="heart" size={14} color="#6B7BB8" />
+                <Ionicons name="heart" size={14} color="#8E5A54" />
                 <Text style={styles.supportText}>{getMoodAffirmation(mood)}</Text>
               </View>
 
@@ -163,8 +163,8 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingTop: 56, paddingBottom: 32 },
   header: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 24 },
   headerCopy: { flex: 1 },
-  eyebrow: { fontSize: 11, fontWeight: '800', color: '#E8697C', letterSpacing: 1.1, marginBottom: 6 },
-  title: { fontSize: 26, fontWeight: '800', color: '#1A237E' },
+  eyebrow: { fontSize: 11, fontWeight: '800', color: '#8E5A54', letterSpacing: 1.1, marginBottom: 6 },
+  title: { fontSize: 26, fontWeight: '800', color: '#4D3B39' },
   subtitle: { marginTop: 6, fontSize: 13, lineHeight: 19, color: '#6E7890' },
   glassCard: {
     backgroundColor: 'rgba(255,255,255,0.84)',
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.74)',
     ...Platform.select({
       ios: {
-        shadowColor: '#6B7BB8',
+        shadowColor: '#C97B6E',
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.1,
         shadowRadius: 18,
@@ -183,24 +183,24 @@ const styles = StyleSheet.create({
     }),
   },
   moodGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 20 },
-  moodCard: { width: '48%', backgroundColor: '#FFF', padding: 18, borderRadius: 20, alignItems: 'center', borderWidth: 1.2, borderColor: '#E5E9F5' },
-  moodCardActive: { borderColor: '#E8697C', backgroundColor: 'rgba(232, 105, 124, 0.05)' },
+  moodCard: { width: '48%', backgroundColor: '#FFF', padding: 18, borderRadius: 20, alignItems: 'center', borderWidth: 1.2, borderColor: 'rgba(140,90,82,0.16)' },
+  moodCardActive: { borderColor: '#C97B6E', backgroundColor: 'rgba(201, 123, 110, 0.10)' },
   moodEmoji: { fontSize: 40, marginBottom: 8 },
   moodLabel: { fontSize: 14, color: '#757575', fontWeight: '700' },
-  moodLabelActive: { color: '#E8697C' },
+  moodLabelActive: { color: '#8E5A54' },
   supportBanner: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
-    backgroundColor: 'rgba(107, 123, 184, 0.09)',
+    backgroundColor: 'rgba(201, 123, 110, 0.10)',
     padding: 12,
     borderRadius: 14,
     marginBottom: 20,
     borderLeftWidth: 3,
-    borderLeftColor: '#6B7BB8',
+    borderLeftColor: '#C97B6E',
   },
-  supportText: { flex: 1, fontSize: 12.5, color: '#3E4C7A', lineHeight: 18 },
-  inputLabel: { fontSize: 11, fontWeight: '800', color: '#E8697C', textTransform: 'uppercase', marginBottom: 10, marginLeft: 5, letterSpacing: 1.1 },
+  supportText: { flex: 1, fontSize: 12.5, color: '#6D4A45', lineHeight: 18 },
+  inputLabel: { fontSize: 11, fontWeight: '800', color: '#8E5A54', textTransform: 'uppercase', marginBottom: 10, marginLeft: 5, letterSpacing: 1.1 },
   input: {
     backgroundColor: '#FFF',
     borderRadius: 18,
@@ -208,9 +208,9 @@ const styles = StyleSheet.create({
     minHeight: 100,
     textAlignVertical: 'top',
     fontSize: 15,
-    color: '#1A237E',
+    color: '#4D3B39',
     borderWidth: 1.2,
-    borderColor: '#E5E9F5',
+    borderColor: 'rgba(140,90,82,0.16)',
   },
   submitBtn: { marginTop: 30 },
   submitBtnDisabled: { opacity: 0.72 },
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     marginRight: 14,
     ...Platform.select({
       ios: {
-        shadowColor: '#1A2E4A',
+        shadowColor: '#6A4039',
         shadowOffset: { width: 0, height: 5 },
         shadowOpacity: 0.1,
         shadowRadius: 12,

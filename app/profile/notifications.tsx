@@ -26,6 +26,8 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "@clerk/clerk-expo";
 
 import { apiRequest } from "@mumcare/api";
 import { colors, spacing, typography } from "@mumcare/ui";
@@ -42,6 +44,13 @@ type PrefKey =
   | "message_delivery_alerts";
 
 type Preferences = Record<PrefKey, boolean>;
+type QuietHourKey = "quiet_hours_start" | "quiet_hours_end";
+
+type NotificationSettings = Preferences & {
+  auto_send_without_review: boolean;
+  quiet_hours_start: number | null;
+  quiet_hours_end: number | null;
+};
 
 interface PrefItem {
   key: PrefKey;
@@ -70,8 +79,9 @@ const GROUPS: PrefGroup[] = [
       },
       {
         key: "hydration_reminders",
-        label: "Sips of water",
-        description: "Small reminders to drink throughout the day.",
+        label: "Daily tracker reminders",
+        description:
+          "Gentle prompts for your daily check-ins like hydration, rest, symptoms, and mood.",
       },
     ],
   },
@@ -115,40 +125,233 @@ const GROUPS: PrefGroup[] = [
 const ALL_KEYS: PrefKey[] = GROUPS.flatMap((g) => g.items.map((i) => i.key));
 
 const DEFAULT_PREFS: Preferences = {
-  kick_reminders: true,
-  hydration_reminders: true,
-  appointment_reminders: true,
-  weekly_updates: true,
-  agent_action_alerts: true,
-  message_delivery_alerts: true,
+  kick_reminders: false,
+  hydration_reminders: false,
+  appointment_reminders: false,
+  weekly_updates: false,
+  agent_action_alerts: false,
+  message_delivery_alerts: false,
+};
+
+const DEFAULT_SETTINGS: NotificationSettings = {
+  ...DEFAULT_PREFS,
+  auto_send_without_review: false,
+  quiet_hours_start: null,
+  quiet_hours_end: null,
 };
 
 const CREAM = "#FFF8F4";
+const PREFS_CACHE_KEY = "notificationPreferences";
+const MIN_WEEK_FOR_KICK_REMINDERS = 16;
+let runtimePrefsCache: NotificationSettings | null = null;
+let runtimePrefsCacheKey: string | null = null;
+
+function normalizeSettings(
+  input?: Partial<NotificationSettings> | null
+): NotificationSettings {
+  return {
+    ...DEFAULT_SETTINGS,
+    ...(input ?? {}),
+  };
+}
+
+function pickKnownSettings(
+  input?: Partial<NotificationSettings> | null
+): Partial<NotificationSettings> {
+  if (!input) {
+    return {};
+  }
+
+  const knownBooleanKeys: Array<PrefKey | "auto_send_without_review"> = [
+    ...ALL_KEYS,
+    "auto_send_without_review",
+  ];
+
+  const next: Partial<NotificationSettings> = {};
+
+  knownBooleanKeys.forEach((key) => {
+    const value = input[key];
+    if (typeof value === "boolean") {
+      next[key] = value;
+    }
+  });
+
+  const start = input.quiet_hours_start;
+  if (typeof start === "number" || start === null) {
+    next.quiet_hours_start = start;
+  }
+
+  const end = input.quiet_hours_end;
+  if (typeof end === "number" || end === null) {
+    next.quiet_hours_end = end;
+  }
+
+  return next;
+}
+
+function formatHour(hour: number | null): string {
+  if (hour == null) {
+    return "Not set";
+  }
+
+  const normalized = ((hour % 24) + 24) % 24;
+  const suffix = normalized >= 12 ? "PM" : "AM";
+  const h12 = normalized % 12 === 0 ? 12 : normalized % 12;
+  return `${h12}:00 ${suffix}`;
+}
 
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const { userId } = useAuth();
+  const scopedCacheKey = userId ? `${PREFS_CACHE_KEY}:${userId}` : PREFS_CACHE_KEY;
 
-  const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFS);
+  const [prefs, setPrefs] = useState<NotificationSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [savedKey, setSavedKey] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [gestationalWeek, setGestationalWeek] = useState<number | null>(null);
+
+  function readWebPrefsCache(key: string): NotificationSettings | null {
+    if (Platform.OS !== "web" || typeof window === "undefined") {
+      return null;
+    }
+
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) {
+        return null;
+      }
+      const parsed = JSON.parse(raw) as Partial<NotificationSettings>;
+      return normalizeSettings(parsed);
+    } catch {
+      return null;
+    }
+  }
+
+  function writeWebPrefsCache(key: string, next: NotificationSettings) {
+    if (Platform.OS !== "web" || typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(key, JSON.stringify(next));
+    } catch {
+      // Ignore localStorage failures and rely on AsyncStorage/runtime cache.
+    }
+  }
+
+  async function savePrefsToCache(next: NotificationSettings) {
+    runtimePrefsCache = next;
+    runtimePrefsCacheKey = scopedCacheKey;
+    writeWebPrefsCache(scopedCacheKey, next);
+
+    try {
+      await AsyncStorage.setItem(scopedCacheKey, JSON.stringify(next));
+    } catch {
+      // Non-blocking: remote source of truth is still attempted.
+    }
+  }
+
+  async function loadPrefsFromCache(): Promise<NotificationSettings | null> {
+    if (runtimePrefsCache && runtimePrefsCacheKey === scopedCacheKey) {
+      return runtimePrefsCache;
+    }
+
+    try {
+      const raw = await AsyncStorage.getItem(scopedCacheKey);
+      if (!raw) {
+        // Migrate legacy global cache key for backward compatibility.
+        const legacyRaw = await AsyncStorage.getItem(PREFS_CACHE_KEY);
+        if (legacyRaw) {
+          const legacyParsed = normalizeSettings(
+            JSON.parse(legacyRaw) as Partial<NotificationSettings>
+          );
+          await AsyncStorage.setItem(scopedCacheKey, JSON.stringify(legacyParsed));
+          runtimePrefsCache = legacyParsed;
+          runtimePrefsCacheKey = scopedCacheKey;
+          return legacyParsed;
+        }
+
+        const scopedWeb = readWebPrefsCache(scopedCacheKey);
+        if (scopedWeb) {
+          runtimePrefsCache = scopedWeb;
+          runtimePrefsCacheKey = scopedCacheKey;
+          return scopedWeb;
+        }
+
+        const legacyWeb = readWebPrefsCache(PREFS_CACHE_KEY);
+        if (legacyWeb) {
+          writeWebPrefsCache(scopedCacheKey, legacyWeb);
+          runtimePrefsCache = legacyWeb;
+          runtimePrefsCacheKey = scopedCacheKey;
+          return legacyWeb;
+        }
+
+        return null;
+      }
+
+      const parsed = JSON.parse(raw) as Partial<NotificationSettings>;
+      const next = normalizeSettings(parsed);
+      runtimePrefsCache = next;
+      runtimePrefsCacheKey = scopedCacheKey;
+      return next;
+    } catch {
+      const scopedWeb = readWebPrefsCache(scopedCacheKey);
+      if (scopedWeb) {
+        runtimePrefsCache = scopedWeb;
+        runtimePrefsCacheKey = scopedCacheKey;
+        return scopedWeb;
+      }
+      const legacyWeb = readWebPrefsCache(PREFS_CACHE_KEY);
+      if (legacyWeb) {
+        runtimePrefsCache = legacyWeb;
+        runtimePrefsCacheKey = scopedCacheKey;
+      }
+      return legacyWeb;
+    }
+  }
 
   // Load existing preferences on mount
   useEffect(() => {
     (async () => {
+      const cached = await loadPrefsFromCache();
+      const basePrefs = cached ?? DEFAULT_SETTINGS;
+      setPrefs(basePrefs);
+
       try {
-        const data = await apiRequest<Partial<Preferences>>(
+        const data = await apiRequest<Partial<NotificationSettings>>(
           "/notifications/preferences",
           { method: "GET" }
         );
-        // Merge with defaults so any new key is on by default
-        setPrefs({ ...DEFAULT_PREFS, ...data });
+        const serverPrefs = pickKnownSettings(data);
+        const hasServerPrefs = Object.keys(serverPrefs).length > 0;
+
+        // If we already have local user choices, keep them as the display source of truth.
+        const next = cached
+          ? basePrefs
+          : hasServerPrefs
+            ? normalizeSettings(serverPrefs)
+            : basePrefs;
+
+        setPrefs(next);
+        await savePrefsToCache(next);
       } catch (err) {
         // If the user has never set preferences, the API may 404.
-        // Just keep defaults — first toggle will create them.
+        // Keep cached values when available; otherwise all switches stay off.
+      }
+
+      try {
+        const profile = await apiRequest<{ gestational_week: number }>("/profile", {
+          method: "GET",
+        });
+        if (typeof profile.gestational_week === "number") {
+          setGestationalWeek(profile.gestational_week);
+        }
+      } catch {
+        // Keep week unknown if profile is unavailable.
       } finally {
         setLoading(false);
       }
@@ -156,14 +359,17 @@ export default function NotificationsScreen() {
   }, []);
 
   const allMuted = ALL_KEYS.every((k) => !prefs[k]);
+  const canToggleKickReminder =
+    gestationalWeek != null && gestationalWeek >= MIN_WEEK_FOR_KICK_REMINDERS;
 
-  async function persistChange(updates: Partial<Preferences>) {
+  async function persistChange(next: NotificationSettings) {
     setError("");
     try {
       await apiRequest("/notifications/preferences", {
         method: "PUT",
-        body: JSON.stringify(updates),
+        body: JSON.stringify(next),
       });
+      await savePrefsToCache(next);
       return true;
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Couldn't save right now."));
@@ -175,9 +381,10 @@ export default function NotificationsScreen() {
     const prev = prefs[key];
     const optimistic = { ...prefs, [key]: next };
     setPrefs(optimistic);
+    await savePrefsToCache(optimistic);
     setSavingKey(key);
 
-    const ok = await persistChange({ [key]: next });
+    const ok = await persistChange(optimistic);
 
     setSavingKey(null);
 
@@ -188,18 +395,21 @@ export default function NotificationsScreen() {
       }, 1800);
     } else {
       // Revert the toggle on error
-      setPrefs((cur) => ({ ...cur, [key]: prev }));
+      const reverted = { ...optimistic, [key]: prev };
+      setPrefs(reverted);
+      await savePrefsToCache(reverted);
     }
   }
 
   async function handlePauseAll(pauseAll: boolean) {
-    const next: Preferences = ALL_KEYS.reduce((acc, k) => {
+    const next = ALL_KEYS.reduce((acc, k) => {
       acc[k] = !pauseAll;
       return acc;
-    }, {} as Preferences);
+    }, { ...prefs } as NotificationSettings);
 
     const prev = prefs;
     setPrefs(next);
+    await savePrefsToCache(next);
     setSavingKey("__all__");
 
     const ok = await persistChange(next);
@@ -214,7 +424,91 @@ export default function NotificationsScreen() {
       }, 1800);
     } else {
       setPrefs(prev);
+      await savePrefsToCache(prev);
     }
+  }
+
+  async function handleAutoSendWithoutReview(next: boolean) {
+    const optimistic: NotificationSettings = {
+      ...prefs,
+      auto_send_without_review: next,
+    };
+    setPrefs(optimistic);
+    await savePrefsToCache(optimistic);
+    setSavingKey("auto_send_without_review");
+
+    const ok = await persistChange(optimistic);
+    setSavingKey(null);
+
+    if (ok) {
+      setSavedKey("auto_send_without_review");
+      setTimeout(() => {
+        setSavedKey((current) =>
+          current === "auto_send_without_review" ? null : current
+        );
+      }, 1800);
+      return;
+    }
+
+    const reverted: NotificationSettings = {
+      ...optimistic,
+      auto_send_without_review: prefs.auto_send_without_review,
+    };
+    setPrefs(reverted);
+    await savePrefsToCache(reverted);
+  }
+
+  async function handleAdjustQuietHour(key: QuietHourKey, direction: 1 | -1) {
+    const current = prefs[key] ?? (key === "quiet_hours_start" ? 22 : 7);
+    const nextValue = (current + direction + 24) % 24;
+    const optimistic: NotificationSettings = {
+      ...prefs,
+      [key]: nextValue,
+    };
+
+    setPrefs(optimistic);
+    await savePrefsToCache(optimistic);
+    setSavingKey(key);
+
+    const ok = await persistChange(optimistic);
+    setSavingKey(null);
+
+    if (ok) {
+      setSavedKey(key);
+      setTimeout(() => {
+        setSavedKey((currentKey) => (currentKey === key ? null : currentKey));
+      }, 1800);
+      return;
+    }
+
+    setPrefs(prefs);
+    await savePrefsToCache(prefs);
+  }
+
+  async function handleClearQuietHours() {
+    const optimistic: NotificationSettings = {
+      ...prefs,
+      quiet_hours_start: null,
+      quiet_hours_end: null,
+    };
+
+    setPrefs(optimistic);
+    await savePrefsToCache(optimistic);
+    setSavingKey("quiet_hours");
+
+    const ok = await persistChange(optimistic);
+    setSavingKey(null);
+
+    if (ok) {
+      setSavedKey("quiet_hours");
+      setTimeout(() => {
+        setSavedKey((current) => (current === "quiet_hours" ? null : current));
+      }, 1800);
+      return;
+    }
+
+    setPrefs(prefs);
+    await savePrefsToCache(prefs);
   }
 
   if (loading) {
@@ -316,6 +610,11 @@ export default function NotificationsScreen() {
 
             <View style={styles.groupCard}>
               {group.items.map((item, idx) => (
+                (() => {
+                  const isKickReminder = item.key === "kick_reminders";
+                  const isKickLocked = isKickReminder && !canToggleKickReminder;
+
+                  return (
                 <View
                   key={item.key}
                   style={[
@@ -328,25 +627,138 @@ export default function NotificationsScreen() {
                     <Text style={styles.rowDescription}>
                       {item.description}
                     </Text>
+                    {isKickLocked ? (
+                      <Text style={styles.rowNote}>
+                        {gestationalWeek == null
+                          ? `Available from week ${MIN_WEEK_FOR_KICK_REMINDERS} of pregnancy.`
+                          : `Available from week ${MIN_WEEK_FOR_KICK_REMINDERS}. You are currently week ${gestationalWeek}.`}
+                      </Text>
+                    ) : null}
                   </View>
                   <Switch
-                    value={prefs[item.key] ?? true}
+                    value={isKickLocked ? false : (prefs[item.key] ?? false)}
                     onValueChange={(v) => handleToggle(item.key, v)}
                     trackColor={{
                       false: colors.rose[100],
                       true: colors.rose[400],
                     }}
                     thumbColor={
-                      prefs[item.key] ? colors.rose[500] : colors.white
+                      isKickLocked
+                        ? colors.rose[200]
+                        : prefs[item.key]
+                          ? colors.rose[500]
+                          : colors.white
                     }
                     ios_backgroundColor={colors.rose[100]}
-                    disabled={savingKey === item.key}
+                    disabled={savingKey === item.key || isKickLocked}
                   />
                 </View>
+                  );
+                })()
               ))}
             </View>
           </View>
         ))}
+
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Message safety</Text>
+          <Text style={styles.sectionHint}>
+            Choose whether mumcare should always ask before sending messages.
+          </Text>
+
+          <View style={styles.groupCard}>
+            <View style={styles.row}>
+              <View style={styles.rowText}>
+                <Text style={styles.rowLabel}>Review before sending</Text>
+                <Text style={styles.rowDescription}>
+                  Keep this on if you want to approve messages before they go out.
+                </Text>
+              </View>
+              <Switch
+                value={!prefs.auto_send_without_review}
+                onValueChange={(reviewEnabled) =>
+                  handleAutoSendWithoutReview(!reviewEnabled)
+                }
+                trackColor={{
+                  false: colors.rose[100],
+                  true: colors.rose[400],
+                }}
+                thumbColor={!prefs.auto_send_without_review ? colors.rose[500] : colors.white}
+                ios_backgroundColor={colors.rose[100]}
+                disabled={savingKey === "auto_send_without_review"}
+              />
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Quiet hours</Text>
+          <Text style={styles.sectionHint}>
+            Silence non-urgent notifications during your rest window.
+          </Text>
+          <Text style={styles.quietHourSummary}>
+            {prefs.quiet_hours_start != null && prefs.quiet_hours_end != null
+              ? `Active window: ${formatHour(prefs.quiet_hours_start)} - ${formatHour(prefs.quiet_hours_end)}`
+              : "No quiet hours set yet."}
+          </Text>
+
+          <View style={styles.groupCard}>
+            <View style={styles.quietHourRow}>
+              <Text style={styles.quietHourLabel}>Start</Text>
+              <View style={styles.quietHourControls}>
+                <TouchableOpacity
+                  style={styles.hourButton}
+                  onPress={() => handleAdjustQuietHour("quiet_hours_start", -1)}
+                  activeOpacity={0.84}
+                  disabled={Boolean(savingKey)}
+                >
+                  <Ionicons name="remove" size={18} color="#8E5A54" />
+                </TouchableOpacity>
+                <Text style={styles.hourValue}>{formatHour(prefs.quiet_hours_start)}</Text>
+                <TouchableOpacity
+                  style={styles.hourButton}
+                  onPress={() => handleAdjustQuietHour("quiet_hours_start", 1)}
+                  activeOpacity={0.84}
+                  disabled={Boolean(savingKey)}
+                >
+                  <Ionicons name="add" size={18} color="#8E5A54" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={[styles.quietHourRow, styles.rowDivider]}>
+              <Text style={styles.quietHourLabel}>End</Text>
+              <View style={styles.quietHourControls}>
+                <TouchableOpacity
+                  style={styles.hourButton}
+                  onPress={() => handleAdjustQuietHour("quiet_hours_end", -1)}
+                  activeOpacity={0.84}
+                  disabled={Boolean(savingKey)}
+                >
+                  <Ionicons name="remove" size={18} color="#8E5A54" />
+                </TouchableOpacity>
+                <Text style={styles.hourValue}>{formatHour(prefs.quiet_hours_end)}</Text>
+                <TouchableOpacity
+                  style={styles.hourButton}
+                  onPress={() => handleAdjustQuietHour("quiet_hours_end", 1)}
+                  activeOpacity={0.84}
+                  disabled={Boolean(savingKey)}
+                >
+                  <Ionicons name="add" size={18} color="#8E5A54" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.clearQuietHoursButton}
+              onPress={handleClearQuietHours}
+              activeOpacity={0.86}
+              disabled={Boolean(savingKey)}
+            >
+              <Text style={styles.clearQuietHoursText}>Clear quiet hours</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -527,5 +939,69 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     color: colors.navy[400],
     lineHeight: typography.fontSize.xs * 1.5,
+  },
+  rowNote: {
+    fontSize: typography.fontSize.xs,
+    color: "#8E5A54",
+    marginTop: 6,
+    lineHeight: typography.fontSize.xs * 1.4,
+    fontStyle: "italic",
+  },
+  quietHourRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[4],
+  },
+  quietHourLabel: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.navy[700],
+  },
+  quietHourControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[2],
+  },
+  hourButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.rose[200],
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFF",
+  },
+  hourValue: {
+    minWidth: 68,
+    textAlign: "center",
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    color: "#6D4A45",
+  },
+  clearQuietHoursButton: {
+    marginHorizontal: spacing[4],
+    marginBottom: spacing[4],
+    marginTop: spacing[1],
+    minHeight: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.rose[200],
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFF",
+  },
+  clearQuietHoursText: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    color: "#8E5A54",
+  },
+  quietHourSummary: {
+    fontSize: typography.fontSize.xs,
+    color: "#7B6A66",
+    marginBottom: spacing[3],
+    fontStyle: "italic",
   },
 });
