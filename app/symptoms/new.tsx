@@ -21,6 +21,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useProfile, useSubmitSymptom } from "@mumcare/api";
 import { colors } from "@mumcare/ui";
 import type { Severity } from "@mumcare/types";
+import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
 
 // ── Symptom options ───────────────────────────────────────────────────────────
 
@@ -71,11 +72,11 @@ export default function NewSymptomScreen() {
     }
 
     // Guard — need gestational week from profile
-    const gestationalWeek = profile?.gestational_week;
+    const gestationalWeek = resolveCurrentGestationalWeek(profile);
     if (!gestationalWeek) {
       Alert.alert(
         "Week not set",
-        "Please set your gestational week in your profile before logging symptoms."
+        "Please add your due date or last menstrual period in profile setup before logging symptoms."
       );
       return;
     }

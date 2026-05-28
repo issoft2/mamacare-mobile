@@ -57,3 +57,9 @@ export interface FolicAcidLog {
   taken: boolean;
   created_at: ISODateString;
 }
+
+export interface FolicAcidTodayStatus {
+  log_date: ISODateString;
+  taken: boolean;
+  is_logged_today: boolean;
+}

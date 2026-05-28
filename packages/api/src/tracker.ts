@@ -6,7 +6,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "./client";
 import type {
+  DailyTrackerReminderStatus,
   FolicAcidLog,
+  FolicAcidTodayStatus,
   HydrationLog,
   KickSession,
   MoodLog,
@@ -22,7 +24,20 @@ export const trackerKeys = {
   folicAcid: () => ["tracker", "folic-acid"] as const,
   sleep: () => ["tracker", "sleep"] as const,
   mood: () => ["tracker", "mood"] as const,
+  dailyTrackerReminderStatus: () => ["tracker", "daily-reminder-status"] as const,
 };
+
+export function useDailyTrackerReminderStatus() {
+  return useQuery({
+    queryKey: trackerKeys.dailyTrackerReminderStatus(),
+    queryFn: () =>
+      apiRequest<DailyTrackerReminderStatus>("/notifications/daily-tracker/status", {
+        method: "GET",
+      }),
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+}
 
 export function useKickSessions() {
   return useQuery({
@@ -87,6 +102,13 @@ export function useFolicAcidLogs() {
   return useQuery({
     queryKey: trackerKeys.folicAcid(),
     queryFn: () => apiRequest<FolicAcidLog[]>("/tracker/folic-acid"),
+  });
+}
+
+export function useTodayFolicAcidLog() {
+  return useQuery({
+    queryKey: [...trackerKeys.folicAcid(), 'today'] as const,
+    queryFn: () => apiRequest<FolicAcidTodayStatus | null>('/tracker/folic-acid/today'),
   });
 }
 

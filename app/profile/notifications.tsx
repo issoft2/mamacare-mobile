@@ -32,6 +32,7 @@ import { useAuth } from "@clerk/clerk-expo";
 import { apiRequest } from "@mumcare/api";
 import { colors, spacing, typography } from "@mumcare/ui";
 import { getErrorMessage } from "@/lib/errors";
+import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -81,7 +82,7 @@ const GROUPS: PrefGroup[] = [
         key: "hydration_reminders",
         label: "Daily tracker reminders",
         description:
-          "Gentle prompts for your daily check-ins like hydration, rest, symptoms, and mood.",
+          "Gentle prompts for your daily check-ins like hydration, folic acid intake, rest, symptoms, and mood.",
       },
     ],
   },
@@ -344,11 +345,16 @@ export default function NotificationsScreen() {
       }
 
       try {
-        const profile = await apiRequest<{ gestational_week: number }>("/profile", {
+        const profile = await apiRequest<{
+          gestational_week?: number | null;
+          estimated_due_date?: string | null;
+          lmp_date?: string | null;
+        }>("/profile", {
           method: "GET",
         });
-        if (typeof profile.gestational_week === "number") {
-          setGestationalWeek(profile.gestational_week);
+        const week = resolveCurrentGestationalWeek(profile);
+        if (typeof week === "number") {
+          setGestationalWeek(week);
         }
       } catch {
         // Keep week unknown if profile is unavailable.
