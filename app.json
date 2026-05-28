@@ -8,7 +8,7 @@
     "scheme": "mumcare",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/mumcarelogo.png",
+      "image": "./assets/mumlogo.png",
       "resizeMode": "contain",
       "backgroundColor": "#1A2E4A"
     },

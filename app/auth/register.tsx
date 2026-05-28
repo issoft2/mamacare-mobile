@@ -21,8 +21,10 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Image,
   ImageBackground,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -39,12 +41,14 @@ import { colors, spacing, shadows } from "@mumcare/ui";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { SocialSignInButtons } from "@/components/auth/SocialSignInButtons";
 import { getErrorMessage, isClerkSessionExistsError } from "@/lib/errors";
+import { getActiveLegalContent, getActiveLegalDocument } from "@/lib/legal";
 import { resetClerkForSignIn } from "@/lib/resetClerkForSignIn";
 
 // ── Module-level constants ────────────────────────────────────────────────────
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const WELCOME_BG = require("../../assets/welcome-bg.png");
+const APP_LOGO = require("../../assets/mumlogo.png");
 const CREAM = "#FFFBF7";
 const CARD_RADIUS = 32;
 
@@ -55,24 +59,45 @@ export default function RegisterScreen() {
   const clerk = useClerk();
   const router = useRouter();
 
+  const activePrivacy = getActiveLegalDocument("privacy");
+  const activeTerms = getActiveLegalDocument("terms");
+  const privacyContent = getActiveLegalContent("privacy");
+  const termsContent = getActiveLegalContent("terms");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState("");
   const [pendingVerification, setPendingVerification] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [legalPreview, setLegalPreview] = useState<null | "privacy" | "terms">(null);
 
   async function handleRegister() {
     if (!isLoaded) return;
+
+    if (!email.trim() || !password.trim()) {
+      Alert.alert(
+        "Missing details",
+        "Please enter your email address and password to continue."
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       await resetClerkForSignIn(clerk);
       try {
-        await signUp.create({ emailAddress: email, password });
+        await signUp.create({
+          emailAddress: email.trim(),
+          password,
+        });
       } catch (err) {
         if (isClerkSessionExistsError(err)) {
           await resetClerkForSignIn(clerk);
-          await signUp.create({ emailAddress: email, password });
+          await signUp.create({
+            emailAddress: email.trim(),
+            password,
+          });
         } else {
           throw err;
         }
@@ -142,10 +167,9 @@ export default function RegisterScreen() {
 
               {/* Brand */}
               <View style={styles.brandRow}>
-                <View style={styles.heartBadge}>
-                  <Ionicons name="heart" size={18} color={colors.rose[400]} />
+                <View style={styles.logoPlate}>
+                  <Image source={APP_LOGO} style={styles.logoMark} resizeMode="cover" />
                 </View>
-                <Text style={styles.brandName}>mumcare</Text>
               </View>
 
               {/* Envelope icon + warm message */}
@@ -191,7 +215,7 @@ export default function RegisterScreen() {
                 activeOpacity={0.87}
               >
                 <LinearGradient
-                  colors={ctaGradientColors}
+                    colors={ctaGradientColors}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={ctaButtonStyles.gradient}
@@ -263,16 +287,15 @@ export default function RegisterScreen() {
 
             {/* Brand */}
             <View style={styles.brandRow}>
-              <View style={styles.heartBadge}>
-                <Ionicons name="heart" size={18} color={colors.rose[400]} />
+              <View style={styles.logoPlate}>
+                <Image source={APP_LOGO} style={styles.logoMark} resizeMode="cover" />
               </View>
-              <Text style={styles.brandName}></Text>
             </View>
 
             {/* Warm opening message */}
             <View style={styles.heroText}>
-              <Text style={styles.heroGreeting}>YOUR JOURNEY BEGINS HERE</Text>
-              <Text style={styles.heroQuote}>
+              <Text style={styles.heroGreetingLight}>YOUR JOURNEY BEGINS HERE</Text>
+              <Text style={styles.heroQuoteLight}>
                 "You don't have to navigate{"\n"}this alone."
               </Text>
             </View>
@@ -280,8 +303,6 @@ export default function RegisterScreen() {
 
           {/* ── Form card ──────────────────────────────────────────── */}
           <View style={styles.card}>
-            <View style={styles.cardHandle} />
-
             <Text style={styles.cardTitle}>Create your account</Text>
             <Text style={styles.cardSubtitle}>
               A safe space for every step of your pregnancy.
@@ -335,6 +356,13 @@ export default function RegisterScreen() {
               </Text>
             </View>
 
+            <Text style={styles.legalText}>
+              By creating an account or continuing with social sign-in, you agree to our{" "}
+              <Text style={styles.legalLink} onPress={() => setLegalPreview("terms")}>Terms of Use</Text>
+              {" "}and acknowledge that your data will be handled in accordance with our{" "}
+              <Text style={styles.legalLink} onPress={() => setLegalPreview("privacy")}>Privacy Policy</Text>.
+            </Text>
+
             {/* CTA */}
             <TouchableOpacity
               style={[ctaButtonStyles.button, loading && { opacity: 0.75 }]}
@@ -351,7 +379,7 @@ export default function RegisterScreen() {
                 {loading ? (
                   <ActivityIndicator color="#FFF" />
                 ) : (
-                  <Text style={ctaButtonStyles.text}>Begin my journey</Text>
+                  <Text style={ctaButtonStyles.text}>Create Account</Text>
                 )}
               </LinearGradient>
             </TouchableOpacity>
@@ -372,6 +400,35 @@ export default function RegisterScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={legalPreview !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setLegalPreview(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {legalPreview === "terms" ? "Terms of Use" : "Privacy Policy"}
+              </Text>
+              <TouchableOpacity onPress={() => setLegalPreview(null)}>
+                <Ionicons name="close" size={22} color={colors.navy[700]} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.modalMeta}>
+              {(legalPreview === "terms" ? activeTerms : activePrivacy).region.toUpperCase()} ·
+              {(legalPreview === "terms" ? activeTerms : activePrivacy).version}
+            </Text>
+            <ScrollView style={styles.modalBody}>
+              <Text style={styles.modalContent}>
+                {legalPreview === "terms" ? termsContent : privacyContent}
+              </Text>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -400,16 +457,39 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.75)",
+    backgroundColor: "rgba(255,251,247,0.92)",
+    borderWidth: 1,
+    borderColor: "rgba(140, 90, 82, 0.18)",
     justifyContent: "center",
     alignItems: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#6A4039",
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.16,
+        shadowRadius: 6,
+      },
+      android: { elevation: 3 },
+    }),
   },
 
   brandRow: {
-    flexDirection: "row",
     alignItems: "center",
-    gap: 8,
     alignSelf: "center",
+  },
+  logoPlate: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    overflow: "hidden",
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    ...shadows.md,
+  },
+  logoMark: {
+    width: "100%",
+    height: "100%",
   },
   heartBadge: {
     width: 34,
@@ -437,6 +517,21 @@ const styles = StyleSheet.create({
 
   heroText: {
     alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.52)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.55)",
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#875851",
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.14,
+        shadowRadius: 10,
+      },
+      android: { elevation: 2 },
+    }),
   },
   verifyIconWrap: {
     width: 64,
@@ -458,19 +553,45 @@ const styles = StyleSheet.create({
   },
   heroGreeting: {
     fontSize: 11,
-    fontWeight: "700",
-    color: colors.rose[400],
+    fontWeight: "800",
+    color: "#FDE7EC",
     letterSpacing: 2,
     textTransform: "uppercase",
     marginBottom: 10,
+    textShadowColor: "rgba(0,0,0,0.35)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   heroQuote: {
     fontSize: 20,
     fontStyle: "italic",
-    color: colors.navy[700],
+    color: "#FFFFFF",
     textAlign: "center",
     lineHeight: 30,
-    fontWeight: "500",
+    fontWeight: "600",
+    textShadowColor: "rgba(0,0,0,0.4)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  heroGreetingLight: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#7F4E47",
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    marginBottom: 10,
+  },
+  heroQuoteLight: {
+    fontSize: 20,
+    fontStyle: "italic",
+    color: "#4D3B39",
+    textAlign: "center",
+    lineHeight: 30,
+    fontWeight: "600",
+    textShadowColor: "rgba(255,255,255,0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
   },
 
   // ── Card ────────────────────────────────────────────────────
@@ -521,8 +642,8 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 11,
-    fontWeight: "700",
-    color: colors.rose[400],
+    fontWeight: "800",
+    color: "#8E5A54",
     letterSpacing: 1.2,
     textTransform: "uppercase",
     marginBottom: 8,
@@ -570,6 +691,59 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     marginTop: 6,
     marginLeft: 4,
+  },
+  legalText: {
+    color: colors.navy[400],
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 14,
+    marginTop: -4,
+  },
+  legalLink: {
+    color: colors.rose[500],
+    textDecorationLine: "underline",
+    fontWeight: "700",
+  },
+
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(20,24,35,0.45)",
+    justifyContent: "flex-end",
+  },
+  modalCard: {
+    backgroundColor: CREAM,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 24,
+    maxHeight: "80%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  modalTitle: {
+    fontSize: 19,
+    fontWeight: "800",
+    color: colors.navy[700],
+  },
+  modalMeta: {
+    fontSize: 12,
+    color: colors.navy[300],
+    marginBottom: 10,
+    fontWeight: "700",
+  },
+  modalBody: {
+    maxHeight: "100%",
+  },
+  modalContent: {
+    color: colors.navy[600],
+    fontSize: 13,
+    lineHeight: 20,
+    paddingBottom: 16,
   },
 
   // ── Footer ──────────────────────────────────────────────────

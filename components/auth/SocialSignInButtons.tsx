@@ -9,7 +9,8 @@
  *  - Since we're in React Native (no SVG inline easily), we render
  *    the four Google brand colours as coloured squares forming the
  *    iconic 2×2 grid — clean, recognisable, guideline-safe.
- *  - Microsoft keeps its brand-blue icon — already correct.
+ *  - Microsoft icon is toned to neutral slate so it does not compete
+ *    with the app's warm palette on auth screens.
  *
  * Layout: side-by-side outlined white cards, consistent with the
  * cream/rose design language of the rest of the auth flow.
@@ -29,7 +30,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, spacing, shadows } from "@mumcare/ui";
+import { colors, spacing } from "@mumcare/ui";
 import { getErrorMessage } from "@/lib/errors";
 import { goHomeAfterClerkSetActive } from "@/lib/goHomeAfterClerkSetActive";
 import { GoogleIcon } from "@/components/icons/GoogleIcon";
@@ -113,7 +114,7 @@ export function SocialSignInButtons({
             <ActivityIndicator color={colors.rose[400]} size="small" />
           ) : (
             <>
-              <Ionicons name="logo-microsoft" size={20} color="#00A4EF" />
+              <Ionicons name="logo-microsoft" size={20} color="#5B6472" />
               <Text style={styles.socialBtnText}>Microsoft</Text>
             </>
           )}
@@ -159,7 +160,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: "#FFF",
     borderWidth: 1.5,
-    borderColor: colors.rose[100],
+    borderColor: "#D5D9E0",
     borderRadius: 16,
     paddingVertical: 14,
     alignItems: "center",
@@ -167,16 +168,16 @@ const styles = StyleSheet.create({
     gap: 10,
     ...Platform.select({
       ios: {
-        shadowColor: colors.rose[200],
+        shadowColor: "#BFC5D1",
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
+        shadowOpacity: 0.14,
         shadowRadius: 6,
       },
       android: { elevation: 2 },
     }),
   },
   socialBtnText: {
-    color: colors.navy[600],
+    color: "#4A5260",
     fontSize: 15,
     fontWeight: "600",
   },

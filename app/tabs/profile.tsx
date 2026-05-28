@@ -40,7 +40,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.screen}>
-        <LinearGradient colors={["rgba(255,255,255,0.7)", "rgba(255,245,245,0.4)"]} style={styles.bgOverlay}>
+        <LinearGradient colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)"]} style={styles.bgOverlay}>
           
           <ScrollView
             contentContainerStyle={[styles.content, isWide && styles.contentWide]}
@@ -57,7 +57,7 @@ export default function ProfileScreen() {
                         {profile?.first_name?.[0] ?? user?.firstName?.[0] ?? "M"}
                       </Text>
                     </View>
-                    <LinearGradient colors={["#E8697C", "#FFA07A"]} style={styles.plusBadge}>
+                    <LinearGradient colors={["#C97B6E", "#E7A693"]} style={styles.plusBadge}>
                       <Ionicons name="camera" size={12} color="#FFF" />
                     </LinearGradient>
                   </View>
@@ -82,7 +82,7 @@ export default function ProfileScreen() {
                   >
                     <View style={styles.tileLeft}>
                       <View style={styles.iconBox}>
-                        <Ionicons name={item.icon as any} size={20} color="#1A237E" />
+                        <Ionicons name={item.icon as any} size={20} color="#6D4A45" />
                       </View>
                       <View>
                         <Text style={styles.tileLabel}>{item.label}</Text>
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     backgroundColor: '#FFF',
     elevation: 15,
-    shadowColor: '#E8697C',
+    shadowColor: '#C97B6E',
     shadowOpacity: 0.15,
     shadowRadius: 20,
     marginBottom: 30,
@@ -151,19 +151,19 @@ const styles = StyleSheet.create({
   cardInner: { padding: 30, alignItems: 'center' },
   avatarContainer: { position: 'relative', marginBottom: 15 },
   avatar: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#FFE4E8', alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: '#FFF' },
-  avatarText: { fontSize: 32, fontWeight: '800', color: '#E8697C' },
+  avatarText: { fontSize: 32, fontWeight: '800', color: '#8E5A54' },
   plusBadge: { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#FFF' },
-  name: { fontSize: 22, fontWeight: '800', color: '#1A237E' },
+  name: { fontSize: 22, fontWeight: '800', color: '#4D3B39' },
   email: { fontSize: 14, color: '#757575', marginTop: 4 },
-  planBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(232, 105, 124, 0.1)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, marginTop: 15, gap: 5 },
-  planText: { fontSize: 11, fontWeight: '800', color: '#E8697C', letterSpacing: 1 },
+  planBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(201,123,110,0.14)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, marginTop: 15, gap: 5 },
+  planText: { fontSize: 11, fontWeight: '800', color: '#8E5A54', letterSpacing: 1 },
   menuContainer: { gap: 12 },
   menuContainerWide: { flex: 1, flexDirection: "row", flexWrap: "wrap" },
   menuTile: { 
     flexDirection: 'row', 
     alignItems: 'center', 
     justifyContent: 'space-between', 
-    backgroundColor: 'rgba(255,255,255,0.7)', 
+    backgroundColor: 'rgba(255,255,255,0.8)', 
     padding: 16, 
     borderRadius: 20,
     borderWidth: 1,
@@ -172,8 +172,8 @@ const styles = StyleSheet.create({
   menuTileWide: { width: "48.5%", minHeight: 78 },
   tileLeft: { flexDirection: 'row', alignItems: 'center', gap: 15 },
   iconBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', elevation: 2 },
-  tileLabel: { fontSize: 16, fontWeight: '700', color: '#1A237E' },
-  tileMeta: { fontSize: 12, color: '#E8697C', fontWeight: '600' },
+  tileLabel: { fontSize: 16, fontWeight: '700', color: '#4D3B39' },
+  tileMeta: { fontSize: 12, color: '#8E5A54', fontWeight: '600' },
   signOutTile: {
     backgroundColor: "rgba(255,82,82,0.06)",
     borderColor: "rgba(255,82,82,0.14)",

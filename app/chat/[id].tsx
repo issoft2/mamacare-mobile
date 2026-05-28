@@ -500,7 +500,7 @@ export default function ChatConversationScreen() {
               <Ionicons
                 name={isSpeaking ? "stop-circle" : "volume-medium-outline"}
                 size={16}
-                color={isSpeaking ? "#FFFFFF" : "#E8697C"}
+                color={isSpeaking ? "#FFFFFF" : "#8E5A54"}
               />
               <Text
                 style={[
@@ -520,7 +520,7 @@ export default function ChatConversationScreen() {
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#E8697C" />
+        <ActivityIndicator size="large" color="#C97B6E" />
         <Text style={styles.loadingText}>Opening your chat…</Text>
       </View>
     );
@@ -529,7 +529,7 @@ export default function ChatConversationScreen() {
   return (
     <View style={styles.screen}>
       <LinearGradient
-        colors={["rgba(255,255,255,0.7)", "rgba(255,245,245,0.4)"]}
+        colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)"]}
         style={styles.bgOverlay}
       >
         <KeyboardAvoidingView
@@ -543,7 +543,7 @@ export default function ChatConversationScreen() {
               onPress={() => router.replace("/tabs/chat")}
               style={styles.backBtn}
             >
-              <Ionicons name="chevron-back" size={28} color="#1A237E" />
+              <Ionicons name="chevron-back" size={28} color="#6D4A45" />
             </TouchableOpacity>
             <View>
               <Text style={styles.headerTitle}>MumCare AI</Text>
@@ -583,7 +583,7 @@ export default function ChatConversationScreen() {
                 <Ionicons
                 name={isListening ? "mic" : isTranscribing ? "sync" : "information-circle-outline"}
                 size={15}
-                color={isListening || isTranscribing ? "#E8697C" : "#7B8498"}
+                color={isListening || isTranscribing ? "#C97B6E" : "#7B8498"}
               />
               <Text style={styles.voiceNoticeText}>{voiceNotice}</Text>
               </View>
@@ -620,12 +620,12 @@ export default function ChatConversationScreen() {
                   activeOpacity={0.82}
                 >
                   {isTranscribing ? (
-                    <ActivityIndicator size="small" color="#E8697C" />
+                    <ActivityIndicator size="small" color="#C97B6E" />
                   ) : (
                     <Ionicons
                       name={isListening ? "stop" : "mic-outline"}
                       size={20}
-                      color={isListening ? "#FFFFFF" : "#E8697C"}
+                      color={isListening ? "#FFFFFF" : "#8E5A54"}
                     />
                   )}
                 </TouchableOpacity>
@@ -639,7 +639,7 @@ export default function ChatConversationScreen() {
                 disabled={!input.trim() || sendMessage.isPending}
               >
                 <LinearGradient
-                  colors={["#E8697C", "#FFA07A"]}
+                  colors={["#C97B6E", "#E7A693"]}
                   style={styles.sendGradient}
                 >
                   {sendMessage.isPending ? (
@@ -677,7 +677,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.05)",
   },
   backBtn:      { marginRight: 15 },
-  headerTitle:  { fontSize: 18, fontWeight: "800", color: "#1A237E" },
+  headerTitle:  { fontSize: 18, fontWeight: "800", color: "#4D3B39" },
   headerStatus: { fontSize: 12, color: "#88B0A8", fontWeight: "600" },
 
   messageList: { padding: 20, paddingBottom: 30 },
@@ -697,8 +697,8 @@ const styles = StyleSheet.create({
     elevation: 2, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 5,
   },
   userBubble: {
-    backgroundColor: "#E8697C", borderBottomRightRadius: 4,
-    shadowColor: "#E8697C", shadowOpacity: 0.25,
+    backgroundColor: "#C97B6E", borderBottomRightRadius: 4,
+    shadowColor: "#C97B6E", shadowOpacity: 0.25,
   },
   assistantBubble: { backgroundColor: "#FFF", borderBottomLeftRadius: 4 },
   typingBubble:    { paddingVertical: 12, paddingHorizontal: 16 },
@@ -718,10 +718,10 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(232,105,124,0.1)",
   },
   readAloudBtnActive: {
-    backgroundColor: "#E8697C",
+    backgroundColor: "#C97B6E",
   },
   readAloudText: {
-    color: "#E8697C",
+    color: "#8E5A54",
     fontSize: 12,
     fontWeight: "800",
   },
@@ -783,7 +783,7 @@ const styles = StyleSheet.create({
     borderRadius: 27,
     backgroundColor: "rgba(255,255,255,0.98)",
     borderWidth: 1,
-    borderColor: "rgba(232,105,124,0.16)",
+    borderColor: "rgba(140,90,82,0.16)",
     paddingLeft: 18,
     paddingRight: 8,
     paddingVertical: 6,
@@ -800,7 +800,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     minHeight: 38,
     maxHeight: 92,
-    color: "#1A237E",
+    color: "#4D3B39",
     fontSize: 16,
     lineHeight: 22,
     paddingTop: 8,
@@ -820,10 +820,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(232,105,124,0.1)",
+    backgroundColor: "rgba(201,123,110,0.12)",
   },
   voiceBtnActive: {
-    backgroundColor: "#E8697C",
+    backgroundColor: "#C97B6E",
   },
   voiceBtnDisabled: {
     opacity: 0.45,

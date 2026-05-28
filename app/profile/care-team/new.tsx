@@ -73,7 +73,7 @@ export default function AddCareTeamMemberScreen() {
     >
       <View style={styles.header}>
         <TouchableOpacity onPress={prevStep} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color="#1A237E" />
+          <Ionicons name="arrow-back" size={24} color="#6D4A45" />
         </TouchableOpacity>
         <View style={styles.progressTrack}>
           {[1, 2, 3].map((s) => (
@@ -189,7 +189,7 @@ function SuccessState({ name }: { name: string }) {
   return (
     <View style={styles.successScreen}>
       <View style={styles.confettiContainer}>
-        <Ionicons name="heart" size={80} color="#E8697C" />
+        <Ionicons name="heart" size={80} color="#C97B6E" />
       </View>
       <Text style={styles.successTitle}>Care Circle Updated</Text>
       <Text style={styles.successSub}>{name} has been added to your team. We've got it from here.</Text>
@@ -203,29 +203,29 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', elevation: 2 },
   progressTrack: { flex: 1, flexDirection: 'row', gap: 8 },
   dot: { flex: 1, height: 6, borderRadius: 3, backgroundColor: '#E0E0E0' },
-  dotActive: { backgroundColor: '#E8697C' },
+  dotActive: { backgroundColor: '#C97B6E' },
   content: { padding: 25 },
   stepContainer: {},
-  stepTitle: { fontSize: 26, fontWeight: '800', color: '#1A237E', marginBottom: 10 },
+  stepTitle: { fontSize: 26, fontWeight: '800', color: '#4D3B39', marginBottom: 10 },
   stepSub: { fontSize: 16, color: '#757575', lineHeight: 24, marginBottom: 30 },
   inputGroup: { marginBottom: 20 },
-  label: { fontSize: 12, fontWeight: '800', color: '#1A237E', textTransform: 'uppercase', marginBottom: 8, marginLeft: 4 },
-  input: { backgroundColor: '#FFF', borderRadius: 15, padding: 16, fontSize: 16, color: '#1A237E', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  label: { fontSize: 12, fontWeight: '800', color: '#6D4A45', textTransform: 'uppercase', marginBottom: 8, marginLeft: 4 },
+  input: { backgroundColor: '#FFF', borderRadius: 15, padding: 16, fontSize: 16, color: '#4D3B39', borderWidth: 1, borderColor: 'rgba(140,90,82,0.14)' },
   roleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
   roleChip: { paddingHorizontal: 18, paddingVertical: 12, borderRadius: 25, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E0E0E0' },
-  roleChipActive: { backgroundColor: '#1A237E', borderColor: '#1A237E' },
+  roleChipActive: { backgroundColor: '#8E5A54', borderColor: '#8E5A54' },
   roleText: { fontWeight: '700', color: '#757575' },
   roleTextActive: { color: '#FFF' },
   primaryToggle: { flexDirection: 'row', alignItems: 'center', gap: 15, marginTop: 10, backgroundColor: '#FFF', padding: 20, borderRadius: 20 },
-  checkbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: '#E8697C', alignItems: 'center', justifyContent: 'center' },
-  checkboxActive: { backgroundColor: '#E8697C' },
-  toggleTitle: { fontWeight: '700', color: '#1A237E' },
+  checkbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: '#C97B6E', alignItems: 'center', justifyContent: 'center' },
+  checkboxActive: { backgroundColor: '#C97B6E' },
+  toggleTitle: { fontWeight: '700', color: '#6D4A45' },
   toggleSub: { fontSize: 12, color: '#757575' },
   footer: { padding: 25, paddingBottom: 40 },
   mainBtn: { borderRadius: 20, overflow: 'hidden', elevation: 5 },
   disabledBtn: { opacity: 0.5 },
   successScreen: { flex: 1, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', padding: 40 },
   confettiContainer: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#FFF5F5', alignItems: 'center', justifyContent: 'center', marginBottom: 30 },
-  successTitle: { fontSize: 24, fontWeight: '800', color: '#1A237E', marginBottom: 10 },
+  successTitle: { fontSize: 24, fontWeight: '800', color: '#4D3B39', marginBottom: 10 },
   successSub: { textAlign: 'center', color: '#757575', lineHeight: 22 }
 });

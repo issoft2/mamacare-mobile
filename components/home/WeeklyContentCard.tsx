@@ -33,11 +33,13 @@ import { LinearGradient } from "expo-linear-gradient";
 
 import { colors } from "@mumcare/ui";
 import {
-  useCurrentWeekContent,
+  useProfile,
+  useWeekContent,
   useCreateChatSession,
   apiRequest,
   type WeeklyContent,
 } from "@mumcare/api";
+import { calculateGestationalWeek } from "@/lib/gestationalWeek";
 import { ctaButtonStyles, ctaGradientColors } from "../styles/ctaButton";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -102,24 +104,35 @@ function buildWeeklyPrompt(content: WeeklyContent, week: number): string {
 
 export function WeeklyContentCard() {
   const router = useRouter();
-  const { data, isLoading } = useCurrentWeekContent();
+  const { data: profile, isLoading: isProfileLoading } = useProfile();
+  const currentWeek = useMemo(
+    () =>
+      calculateGestationalWeek({
+        estimatedDueDate: profile?.estimated_due_date,
+        lmpDate: profile?.lmp_date,
+        fallbackWeek: profile?.gestational_week,
+      }),
+    [profile?.estimated_due_date, profile?.lmp_date, profile?.gestational_week]
+  );
+  const { data: weekResponse, isLoading: isWeekLoading } = useWeekContent(currentWeek ?? 0);
+  const content = weekResponse?.content;
   const createSession = useCreateChatSession();
   const [opening, setOpening] = useState(false);
 
   const dailyTip = useMemo(
-    () => (data?.content?.tips ? getDailyTip(data.content.tips) : ""),
-    [data?.content?.tips]
+    () => (content?.tips ? getDailyTip(content.tips) : ""),
+    [content?.tips]
   );
 
   async function handleTap() {
-    if (!data?.available || !data.content || !data.current_week) return;
+    if (!content || !currentWeek) return;
     if (opening) return;
 
     setOpening(true);
     try {
       // Step 1 — create the chat session
       const session = await createSession.mutateAsync({
-        gestational_week: data.current_week,
+        gestational_week: currentWeek,
       });
 
       const sessionId = session.id.toString();
@@ -129,7 +142,7 @@ export function WeeklyContentCard() {
       // are fixed at render time — the new sessionId isn't available
       // to the hook until the next render cycle, which causes a failure.
       // Direct apiRequest uses the session ID immediately and correctly.
-      const prompt = buildWeeklyPrompt(data.content, data.current_week);
+      const prompt = buildWeeklyPrompt(content, currentWeek);
       await apiRequest(`/chat/sessions/${sessionId}/messages`, {
         method: "POST",
         body: JSON.stringify({ content: prompt }),
@@ -150,7 +163,7 @@ export function WeeklyContentCard() {
   }
 
   // ── Loading ────────────────────────────────────────────────────────────────
-  if (isLoading) {
+  if (isProfileLoading || (currentWeek != null && isWeekLoading)) {
     return (
       <View style={[styles.card, styles.loadingCard]}>
         <ActivityIndicator color={colors.rose[300]} size="small" />
@@ -160,7 +173,7 @@ export function WeeklyContentCard() {
   }
 
   // ── No week set ────────────────────────────────────────────────────────────
-  if (!data?.available || !data.content) {
+  if (!currentWeek || !content) {
     return (
       <TouchableOpacity
         style={styles.card}
@@ -168,7 +181,7 @@ export function WeeklyContentCard() {
         activeOpacity={0.88}
       >
         <LinearGradient
-          colors={["#FFF5F7", "#FFFBF7"]}
+          colors={["#FFF7F2", "#FFFBF7"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradient}
@@ -191,7 +204,7 @@ export function WeeklyContentCard() {
   }
 
   // ── Content ────────────────────────────────────────────────────────────────
-  const { content, current_week } = data;
+  const current_week = currentWeek;
 
   return (
     <TouchableOpacity
@@ -201,7 +214,7 @@ export function WeeklyContentCard() {
       disabled={opening}
     >
       <LinearGradient
-        colors={["#FFF0F3", "#FFFBF7"]}
+        colors={["#FFF4EE", "#FFFBF7"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradient}
@@ -302,10 +315,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     overflow: "hidden",
     borderWidth: 1.5,
-    borderColor: colors.rose[100],
+    borderColor: "rgba(140,90,82,0.14)",
     ...Platform.select({
       ios: {
-        shadowColor: colors.rose[300],
+        shadowColor: "#C97B6E",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.15,
         shadowRadius: 12,
@@ -362,7 +375,7 @@ const styles = StyleSheet.create({
       },
       android: { elevation: 4 },
     }),
-    backgroundColor: "#E8697C", // Adding solid background color
+    backgroundColor: "#C97B6E",
   },
   weekBadgeNumber: { fontSize: 20, fontWeight: "800", color: "#FFF", lineHeight: 22 },
   weekBadgeLabel: {
@@ -372,7 +385,7 @@ const styles = StyleSheet.create({
   },
   topRight: { flex: 1, gap: 3 },
   trimesterLabel: {
-    fontSize: 11, fontWeight: "700", color: colors.rose[400],
+    fontSize: 11, fontWeight: "700", color: "#8E5A54",
     textTransform: "uppercase", letterSpacing: 1,
   },
   contentTitle: { fontSize: 16, fontWeight: "700", color: colors.navy[700] },
@@ -383,15 +396,15 @@ const styles = StyleSheet.create({
   babySizeRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
   babySizeEmoji: { fontSize: 18 },
   babySizeText: { fontSize: 13, color: colors.navy[400], flex: 1, lineHeight: 19 },
-  babySizeHighlight: { color: colors.rose[400], fontWeight: "700" },
+  babySizeHighlight: { color: "#8E5A54", fontWeight: "700" },
 
   overview: { fontSize: 14, color: colors.navy[500], lineHeight: 22, marginBottom: 14 },
 
   tipBox: {
     flexDirection: "row", alignItems: "flex-start", gap: 8,
-    backgroundColor: "rgba(232,105,124,0.07)",
+    backgroundColor: "rgba(201,123,110,0.10)",
     borderRadius: 12, padding: 12, marginBottom: 14,
-    borderLeftWidth: 3, borderLeftColor: colors.rose[300],
+    borderLeftWidth: 3, borderLeftColor: "#C97B6E",
   },
   tipText: {
     flex: 1, fontSize: 13, color: colors.navy[600],

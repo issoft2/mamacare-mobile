@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#1A237E",
+    color: "#4D3B39",
     marginBottom: 10,
   },
   description: {
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   reviewTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#1A237E",
+    color: "#4D3B39",
     marginBottom: 8,
   },
   linkRow: {
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 13,
-    color: "#1A237E",
+    color: "#6D4A45",
     fontWeight: "700",
     textDecorationLine: "underline",
     flex: 1,
@@ -149,11 +149,11 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 12,
-    color: "#E8697C",
+    color: "#8E5A54",
     fontWeight: "700",
   },
   button: {
-    backgroundColor: "#E8697C",
+    backgroundColor: "#C97B6E",
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,

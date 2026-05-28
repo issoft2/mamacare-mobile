@@ -23,6 +23,7 @@ import {
   useProfile,
 } from "@mumcare/api";
 import { colors, shadows } from "@mumcare/ui";
+import { calculateGestationalWeek } from "@/lib/gestationalWeek";
 
 export default function ChatScreen() {
   const router = useRouter();
@@ -41,7 +42,12 @@ export default function ChatScreen() {
     if (!prompt) return;
 
     async function openWithPrompt() {
-      const week = profile?.gestational_week ?? 12;
+      const week =
+        calculateGestationalWeek({
+          estimatedDueDate: profile?.estimated_due_date,
+          lmpDate: profile?.lmp_date,
+          fallbackWeek: profile?.gestational_week,
+        }) ?? 12;
       const session = await createSession.mutateAsync({
         gestational_week: week,
       });
@@ -70,7 +76,7 @@ export default function ChatScreen() {
           </Text>
         </View>
         <View style={styles.arrowCircle}>
-          <Ionicons name="chevron-forward" size={18} color="#E8697C" />
+          <Ionicons name="chevron-forward" size={18} color="#8E5A54" />
         </View>
       </TouchableOpacity>
     );
@@ -79,7 +85,7 @@ export default function ChatScreen() {
   return (
     <View style={styles.screen}>
       <LinearGradient
-        colors={["rgba(255,255,255,0.7)", "rgba(255,245,245,0.4)"]}
+        colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)"]}
         style={styles.bgOverlay}
       >
         <View style={[styles.page, isWide && styles.pageWide]}>
@@ -104,7 +110,7 @@ export default function ChatScreen() {
                 activeOpacity={0.84}
               >
                 <Text style={styles.homeCtaText}>Go to weekly note</Text>
-                <Ionicons name="chevron-forward" size={16} color="#E8697C" />
+                <Ionicons name="chevron-forward" size={16} color="#8E5A54" />
               </TouchableOpacity>
             </View>
           }
@@ -121,17 +127,17 @@ const styles = StyleSheet.create({
   page: { flex: 1 },
   pageWide: { width: "100%", maxWidth: 1100, alignSelf: "center", paddingHorizontal: 12 },
   header: { paddingTop: 60, paddingHorizontal: 20 },
-  screenTitle: { fontSize: 28, fontWeight: "700", color: "#1A237E" },
+  screenTitle: { fontSize: 28, fontWeight: "700", color: "#4D3B39" },
   list: { padding: 20, paddingBottom: 32 },
   sessionCard: {
-    backgroundColor: "rgba(255,255,255,0.75)",
+    backgroundColor: "rgba(255,255,255,0.82)",
     borderRadius: 24,
     padding: 20,
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.5)",
+    borderColor: "rgba(140,90,82,0.14)",
     elevation: 3,
     shadowOpacity: 0.05,
   },
@@ -139,7 +145,7 @@ const styles = StyleSheet.create({
   sessionTitle: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#1A237E",
+    color: "#4D3B39",
     marginBottom: 4,
   },
   sessionMeta: { fontSize: 13, color: "#757575" },
@@ -147,7 +153,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "rgba(232,105,124,0.1)",
+    backgroundColor: "rgba(201,123,110,0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -163,10 +169,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "rgba(232,105,124,0.10)",
+    backgroundColor: "rgba(201,123,110,0.12)",
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  homeCtaText: { color: "#E8697C", fontSize: 14, fontWeight: "800" },
+  homeCtaText: { color: "#8E5A54", fontSize: 14, fontWeight: "800" },
 });

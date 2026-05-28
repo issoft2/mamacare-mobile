@@ -48,12 +48,12 @@ export default function SleepLogScreen() {
 
   return (
     <View style={styles.screen}>
-        <LinearGradient colors={["rgba(26, 35, 126, 0.05)", "rgba(255, 255, 255, 0.9)"]} style={styles.bgOverlay}>
+        <LinearGradient colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)"]} style={styles.bgOverlay}>
           <ScrollView contentContainerStyle={styles.content}>
             
             <View style={styles.header}>
               <TouchableOpacity onPress={() => router.push("/tabs/tracker")} style={styles.backBtn}>
-                <Ionicons name="chevron-back" size={24} color="#1A237E" />
+                <Ionicons name="chevron-back" size={24} color="#6D4A45" />
               </TouchableOpacity>
               <View style={styles.headerCopy}>
                 <Text style={styles.eyebrow}>NIGHT REST</Text>
@@ -80,7 +80,7 @@ export default function SleepLogScreen() {
               <View style={styles.qualityGrid}>
 
               <View style={styles.supportBox}>
-                <Ionicons name="moon" size={14} color="#6B7BB8" />
+                <Ionicons name="moon" size={14} color="#8E5A54" />
                 <Text style={styles.supportText}>{getSleepAffirmation(quality)}</Text>
               </View>
                 {QUALITIES.map(q => (
@@ -153,8 +153,8 @@ const styles = StyleSheet.create({
     }),
   },
   headerCopy: { flex: 1 },
-  eyebrow: { fontSize: 11, fontWeight: '800', color: '#E8697C', letterSpacing: 1.1, marginBottom: 6 },
-  title: { fontSize: 26, fontWeight: "800", color: "#1A237E" },
+  eyebrow: { fontSize: 11, fontWeight: '800', color: '#8E5A54', letterSpacing: 1.1, marginBottom: 6 },
+  title: { fontSize: 26, fontWeight: "800", color: "#4D3B39" },
   subtitle: { marginTop: 6, fontSize: 13, lineHeight: 19, color: '#6E7890' },
   glassCard: {
     backgroundColor: "rgba(255,255,255,0.84)",
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.74)",
     ...Platform.select({
       ios: {
-        shadowColor: '#6B7BB8',
+        shadowColor: '#C97B6E',
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.1,
         shadowRadius: 18,
@@ -172,31 +172,31 @@ const styles = StyleSheet.create({
       android: { elevation: 4 },
     }),
   },
-  label: { fontSize: 11, fontWeight: '800', color: '#E8697C', textTransform: 'uppercase', letterSpacing: 1.1, marginBottom: 12, marginLeft: 4 },
+  label: { fontSize: 11, fontWeight: '800', color: '#8E5A54', textTransform: 'uppercase', letterSpacing: 1.1, marginBottom: 12, marginLeft: 4 },
   bandRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 25 },
-  bandBtn: { flex: 1, marginHorizontal: 4, paddingVertical: 12, borderRadius: 14, backgroundColor: '#FFF', alignItems: 'center', borderWidth: 1.2, borderColor: '#E5E9F5' },
-  bandActive: { borderColor: '#6B7BB8', backgroundColor: 'rgba(107, 123, 184, 0.1)' },
+  bandBtn: { flex: 1, marginHorizontal: 4, paddingVertical: 12, borderRadius: 14, backgroundColor: '#FFF', alignItems: 'center', borderWidth: 1.2, borderColor: 'rgba(140,90,82,0.16)' },
+  bandActive: { borderColor: '#C97B6E', backgroundColor: 'rgba(201, 123, 110, 0.10)' },
   bandText: { color: '#757575', fontWeight: '700' },
-  bandTextActive: { color: '#1A237E' },
+  bandTextActive: { color: '#6D4A45' },
   qualityGrid: { flexDirection: 'row', gap: 10, marginBottom: 25 },
-  qualityCard: { flex: 1, backgroundColor: '#FFF', padding: 15, borderRadius: 20, alignItems: 'center', borderWidth: 1.2, borderColor: '#E5E9F5' },
-  qualityActive: { borderColor: '#6B7BB8', backgroundColor: 'rgba(107, 123, 184, 0.05)' },
+  qualityCard: { flex: 1, backgroundColor: '#FFF', padding: 15, borderRadius: 20, alignItems: 'center', borderWidth: 1.2, borderColor: 'rgba(140,90,82,0.16)' },
+  qualityActive: { borderColor: '#C97B6E', backgroundColor: 'rgba(201, 123, 110, 0.10)' },
   qualityEmoji: { fontSize: 30, marginBottom: 5 },
   qualityLabel: { fontSize: 13, color: '#757575', fontWeight: '700' },
-  qualityLabelActive: { color: '#1A237E' },
+  qualityLabelActive: { color: '#6D4A45' },
   supportBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
-    backgroundColor: 'rgba(107, 123, 184, 0.09)',
+    backgroundColor: 'rgba(201, 123, 110, 0.10)',
     borderRadius: 14,
     padding: 12,
     marginTop: -6,
     marginBottom: 20,
     borderLeftWidth: 3,
-    borderLeftColor: '#6B7BB8',
+    borderLeftColor: '#C97B6E',
   },
-  supportText: { flex: 1, fontSize: 12.5, lineHeight: 18, color: '#3E4C7A' },
+  supportText: { flex: 1, fontSize: 12.5, lineHeight: 18, color: '#6D4A45' },
   input: {
     backgroundColor: '#FFF',
     borderRadius: 18,
@@ -204,9 +204,9 @@ const styles = StyleSheet.create({
     minHeight: 90,
     textAlignVertical: 'top',
     fontSize: 15,
-    color: '#1A237E',
+    color: '#4D3B39',
     borderWidth: 1.2,
-    borderColor: '#E5E9F5',
+    borderColor: 'rgba(140,90,82,0.16)',
   },
   submitBtn: { marginTop: 30 },
   submitBtnDisabled: { opacity: 0.72 },

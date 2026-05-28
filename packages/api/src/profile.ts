@@ -12,6 +12,35 @@ import type {
   Profile,
   UpdateProfileRequest,
 } from "@mumcare/types";
+
+export type ConsentTier = "marketing" | "system_improvement" | "anon_commercial" | "model_training";
+
+export type ConsentEventPayload = {
+  user_id: string;
+  clerk_user_id: string;
+  consent_tier: ConsentTier;
+  action: "granted" | "withdrawn";
+  consent_text_version: string;
+  jurisdiction: "NG" | "GB";
+  ip_address: string;
+  captured_at: string;
+  documentType: "privacy" | "terms";
+  language: string;
+  appVersion: string;
+  source: "onboarding" | "setting";
+};
+
+export async function postConsentEvents(events: ConsentEventPayload[]): Promise<void> {
+  await Promise.all(
+    events.map((payload) =>
+      apiRequest<void>("/data/consent", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      })
+    )
+  );
+}
+
 export function useAddCareTeamMember() {
   const queryClient = useQueryClient();
   return useMutation({

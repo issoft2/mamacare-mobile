@@ -110,7 +110,7 @@ export default function NewSymptomScreen() {
   return (
     <View style={styles.screen}>
       <LinearGradient
-        colors={["rgba(255,255,255,0.8)", "rgba(255,245,245,0.6)"]}
+        colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)"]}
         style={styles.bgOverlay}
       >
         <ScrollView
@@ -250,30 +250,32 @@ const styles = StyleSheet.create({
 
   backBtn: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.75)",
+    backgroundColor: "rgba(255,251,247,0.92)",
+    borderWidth: 1,
+    borderColor: "rgba(140,90,82,0.18)",
     justifyContent: "center", alignItems: "center",
     marginBottom: 20,
   },
 
   header: { marginBottom: 28 },
-  title: { fontSize: 26, fontWeight: "700", color: "#1A237E" },
-  subtitle: { fontSize: 15, color: "#757575", marginTop: 6, lineHeight: 22 },
+  title: { fontSize: 26, fontWeight: "700", color: "#4D3B39" },
+  subtitle: { fontSize: 15, color: "#7B6A66", marginTop: 6, lineHeight: 22 },
 
   formCard: {
-    backgroundColor: "rgba(255,255,255,0.75)",
+    backgroundColor: "rgba(255,255,255,0.82)",
     borderRadius: 30,
     padding: 24,
     elevation: 10,
     shadowOpacity: 0.08,
     shadowRadius: 20,
-    shadowColor: "#E8697C",
+    shadowColor: "#C97B6E",
     shadowOffset: { width: 0, height: 4 },
   },
 
   label: {
     fontSize: 11,
     fontWeight: "700",
-    color: colors.rose[400],
+    color: "#8E5A54",
     marginBottom: 12,
     textTransform: "uppercase",
     letterSpacing: 1.2,
@@ -290,8 +292,8 @@ const styles = StyleSheet.create({
     borderColor: colors.rose[100],
   },
   chipActive: {
-    backgroundColor: "#E8697C",
-    borderColor: "#E8697C",
+    backgroundColor: "#C97B6E",
+    borderColor: "#C97B6E",
   },
   chipText:       { color: colors.navy[400], fontSize: 14 },
   chipTextActive: { color: "#FFF", fontWeight: "700" },

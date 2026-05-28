@@ -39,7 +39,7 @@ const DRAWER_WIDTH = 292;
 const MOBILE_HEADER_HEIGHT = 64;
 const DESKTOP_BREAKPOINT = 900;
 const ROSE = "#E8697C";
-const BRAND_LOGO = require("../../assets/mumcaresplash.png");
+const BRAND_LOGO = require("../../assets/mumlogo.png");
 
 // ── Tab icon ──────────────────────────────────────────────────────────────────
 
@@ -384,7 +384,9 @@ function ResponsiveTabBar({
           <Ionicons name="menu" size={24} color="#1A237E" />
         </TouchableOpacity>
         <View style={styles.mobileBrand}>
-          <Image source={BRAND_LOGO} style={styles.mobileLogo} resizeMode="contain" />
+          <View style={styles.mobileLogoPlate}>
+            <Image source={BRAND_LOGO} style={styles.mobileLogo} resizeMode="cover" />
+          </View>
           <Text style={styles.mobileBrandText}>MumCare</Text>
         </View>
       </View>
@@ -409,7 +411,7 @@ function ResponsiveTabBar({
                 <Image
                   source={BRAND_LOGO}
                   style={styles.brandLogo}
-                  resizeMode="contain"
+                  resizeMode="cover"
                 />
               </View>
               <View style={styles.drawerTitleWrap}>
@@ -552,7 +554,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "#EEF1F6",
+    borderBottomColor: "#F1E4DE",
     paddingHorizontal: 16,
     ...Platform.select({
       ios: {
@@ -571,7 +573,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 14,
-    backgroundColor: "rgba(26,35,126,0.06)",
+    backgroundColor: "rgba(201,123,110,0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -579,20 +581,35 @@ const styles = StyleSheet.create({
   mobileBrand: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
     marginLeft: 12,
   },
 
+  mobileLogoPlate: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "rgba(140, 90, 82, 0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    shadowColor: "#6A4039",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+
   mobileLogo: {
-    width: 30,
-    height: 30,
-    borderRadius: 9,
-    backgroundColor: "#1A2E4A",
+    width: "100%",
+    height: "100%",
   },
 
   mobileBrandText: {
-    color: "#1A237E",
-    fontSize: 18,
+    color: "#4D3B39",
+    fontSize: 19,
     fontWeight: "800",
   },
 
@@ -603,7 +620,7 @@ const styles = StyleSheet.create({
 
   drawerBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(13, 22, 42, 0.28)",
+    backgroundColor: "rgba(58, 35, 29, 0.25)",
   },
 
   mobileDrawer: {
@@ -612,7 +629,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 18,
     justifyContent: "flex-start",
-    shadowColor: "#1A2E4A",
+    shadowColor: "#6A4039",
     shadowOpacity: 0.18,
     shadowRadius: 28,
     shadowOffset: { width: 10, height: 0 },
@@ -636,7 +653,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F6F7FB",
+    backgroundColor: "#F8EEE9",
   },
 
   drawerNav: {
@@ -667,7 +684,7 @@ const styles = StyleSheet.create({
 
   drawerLabel: {
     flex: 1,
-    color: "#7B8498",
+    color: "#6D4A45",
     fontSize: 15,
     fontWeight: "700",
     lineHeight: 20,
@@ -689,7 +706,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
-    borderTopColor: "#EEF1F6",
+    borderTopColor: "#F1E4DE",
     flexDirection: "row",
     alignItems: "center",
     paddingTop: 6,
@@ -711,7 +728,7 @@ const styles = StyleSheet.create({
   quickNavLabel: {
     width: "100%",
     textAlign: "center",
-    color: "#9AA2B4",
+    color: "#9A7F79",
     fontSize: 10,
     fontWeight: "700",
     marginTop: 1,
@@ -726,10 +743,10 @@ const styles = StyleSheet.create({
     width: SIDEBAR_WIDTH,
     backgroundColor: "#FFFFFF",
     borderRightWidth: 1,
-    borderRightColor: "#E9ECF3",
+    borderRightColor: "#F1E4DE",
     padding: 22,
     justifyContent: "space-between",
-    shadowColor: "#1A2E4A",
+    shadowColor: "#6A4039",
     shadowOpacity: 0.06,
     shadowRadius: 24,
     shadowOffset: { width: 8, height: 0 },
@@ -743,28 +760,35 @@ const styles = StyleSheet.create({
   },
 
   brandMark: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: "#1A2E4A",
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
+    borderWidth: 1.5,
+    borderColor: "rgba(140, 90, 82, 0.2)",
+    shadowColor: "#6A4039",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 6,
   },
 
   brandLogo: {
-    width: 38,
-    height: 38,
+    width: "100%",
+    height: "100%",
   },
 
   brandName: {
-    color: "#1A237E",
-    fontSize: 20,
+    color: "#4D3B39",
+    fontSize: 21,
     fontWeight: "800",
   },
 
   brandSub: {
-    color: "#7B8498",
+    color: "#8E5A54",
     fontSize: 12,
     marginTop: 2,
   },
@@ -776,7 +800,7 @@ const styles = StyleSheet.create({
 
   sidebarSubNav: {
     borderTopWidth: 1,
-    borderTopColor: "#EEF1F6",
+    borderTopColor: "#F1E4DE",
     marginTop: 8,
     paddingTop: 8,
     gap: 6,
@@ -792,7 +816,7 @@ const styles = StyleSheet.create({
   },
 
   sidebarLabel: {
-    color: "#7B8498",
+    color: "#6D4A45",
     fontSize: 15,
     fontWeight: "700",
   },
