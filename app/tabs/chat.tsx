@@ -23,7 +23,7 @@ import {
   useProfile,
 } from "@mumcare/api";
 import { colors, shadows } from "@mumcare/ui";
-import { calculateGestationalWeek } from "@/lib/gestationalWeek";
+import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
 
 export default function ChatScreen() {
   const router = useRouter();
@@ -42,12 +42,7 @@ export default function ChatScreen() {
     if (!prompt) return;
 
     async function openWithPrompt() {
-      const week =
-        calculateGestationalWeek({
-          estimatedDueDate: profile?.estimated_due_date,
-          lmpDate: profile?.lmp_date,
-          fallbackWeek: profile?.gestational_week,
-        }) ?? 12;
+      const week = resolveCurrentGestationalWeek(profile) ?? 12;
       const session = await createSession.mutateAsync({
         gestational_week: week,
       });

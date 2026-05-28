@@ -18,7 +18,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from '@expo/vector-icons';
 import {
-  useFolicAcidLogs,
+  useTodayFolicAcidLog,
   useHydrationLogs, useKickSessions,
   useLogFolicAcid,
   useLogHydration, useMoodLogs,
@@ -26,6 +26,7 @@ import {
   useProfile
 } from "@mumcare/api";
 import { ctaGradientColors } from "../../components/styles/ctaButton";
+import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
 
 const KICK_COUNTER_MIN_WEEK = 16;
 
@@ -52,7 +53,7 @@ export default function TrackerScreen() {
   const { data: profile } = useProfile();
   const { data: kicks } = useKickSessions();
   const { data: hydration } = useHydrationLogs();
-  const { data: folicAcidLogs } = useFolicAcidLogs();
+  const { data: todayFolicAcidLog } = useTodayFolicAcidLog();
   const { data: sleep } = useSleepLogs();
   const { data: mood } = useMoodLogs();
 
@@ -61,7 +62,7 @@ export default function TrackerScreen() {
   const logFolicAcid = useLogFolicAcid();
   const [folicTakenLocal, setFolicTakenLocal] = useState(false);
   const todayDateKey = getLocalDateKey(new Date());
-  const gestationalWeek = profile?.gestational_week ?? 0;
+  const gestationalWeek = resolveCurrentGestationalWeek(profile) ?? 0;
   const canUseKickCounter = gestationalWeek >= KICK_COUNTER_MIN_WEEK;
 
   const todayHydration = hydration?.find((entry) => {
@@ -72,11 +73,10 @@ export default function TrackerScreen() {
   const targetGlasses = todayHydration?.target_glasses ?? 8;
   const activeKick = kicks?.find(k => !k.ended_at);
 
-  const todayFolicAcidLog = folicAcidLogs?.find((entry) => {
-    const dateKey = getDateKeyFromRaw(entry.log_date) ?? getDateKeyFromRaw(entry.created_at);
-    return dateKey === todayDateKey;
-  });
-  const folicTakenToday = todayFolicAcidLog?.taken === true || folicTakenLocal;
+  const folicTakenToday =
+    todayFolicAcidLog?.is_logged_today === true ||
+    todayFolicAcidLog?.taken === true ||
+    folicTakenLocal;
 
   const hydrationProgress = Math.min(100, (glassesCount / targetGlasses) * 100);
 
@@ -173,7 +173,7 @@ export default function TrackerScreen() {
                      if (!canUseKickCounter) return;
                      if(activeKick) router.push(`/tracker/kick/${activeKick.id}` as any);
                      else {
-                       const session = await startKick.mutateAsync(profile?.gestational_week ?? 12);
+                       const session = await startKick.mutateAsync(gestationalWeek || 12);
                        router.push(`/tracker/kick/${session.id}` as any);
                      }
                   }}

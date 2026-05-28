@@ -42,3 +42,17 @@ export interface UpdatePreferencesRequest {
   quiet_hours_start?: number;
   quiet_hours_end?: number;
 }
+
+export type DailyTrackerReminderItem =
+  | "hydration"
+  | "folic_acid"
+  | "mood"
+  | "sleep"
+  | "symptoms";
+
+export interface DailyTrackerReminderStatus {
+  date: ISODateString;
+  pending_items: DailyTrackerReminderItem[];
+  completed_items?: DailyTrackerReminderItem[];
+  all_complete?: boolean;
+}

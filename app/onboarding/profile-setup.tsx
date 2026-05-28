@@ -26,15 +26,15 @@ export default function ProfileSetupScreen() {
   const router = useRouter();
   const { userId: clerkUserId } = useAuth();
   const { user } = useUser();
+  const effectiveClerkUserId = (clerkUserId ?? user?.id ?? null)?.trim() || null;
   const createProfile = useCreateProfile();
   const updateProfile = useUpdateProfile();
-  const { data: profile, isError, error, isPending } = useProfile();
+  const { data: profile, isPending } = useProfile();
   const activePrivacyDoc = getActiveLegalDocument("privacy");
   const accountFirstName = (user?.firstName ?? "").trim();
   const accountLastName = (user?.lastName ?? "").trim();
   const hasAccountName = accountFirstName.length > 0 && accountLastName.length > 0;
 
-  const isNotFound = isError && error instanceof ApiRequestError && error.isNotFound;
   const [consentSubmitting, setConsentSubmitting] = useState(false);
   const isSaving = createProfile.isPending || updateProfile.isPending;
   
@@ -55,6 +55,7 @@ export default function ProfileSetupScreen() {
   } as const;
 
   const isBusy = isSaving || consentSubmitting;
+  const isAuthReady = !!effectiveClerkUserId;
 
   function getJurisdictionFromRegion(region: "ng" | "uk"): "NG" | "GB" {
     return region === "uk" ? "GB" : "NG";
@@ -145,12 +146,9 @@ export default function ProfileSetupScreen() {
 
   async function submitConsentEvents(
     userId: string,
+    clerkId: string,
     selectedConsents: Record<ConsentTier, boolean>
   ): Promise<void> {
-    if (!clerkUserId) {
-      throw new Error("Missing Clerk user id for consent payload.");
-    }
-
     const capturedAt = new Date().toISOString();
     const appVersion = Constants.expoConfig?.version ?? "unknown";
     const jurisdiction = getJurisdictionFromRegion(activePrivacyDoc.region);
@@ -158,7 +156,7 @@ export default function ProfileSetupScreen() {
 
     const events: ConsentEventPayload[] = consentTiers.map(([tier, enabled]) => ({
       user_id: userId,
-      clerk_user_id: clerkUserId,
+      clerk_user_id: clerkId,
       consent_tier: tier,
       action: enabled ? "granted" : "withdrawn",
       consent_text_version: activePrivacyDoc.version,
@@ -172,7 +170,25 @@ export default function ProfileSetupScreen() {
       source: "onboarding",
     }));
 
-    await postConsentEvents(events);
+    const results = await Promise.allSettled(
+      events.map((payload) => postConsentEvents([payload]))
+    );
+
+    const failedTiers = results
+      .map((result, index) => ({ result, tier: events[index].consent_tier }))
+      .filter((entry): entry is { result: PromiseRejectedResult; tier: ConsentTier } => entry.result.status === "rejected")
+      .map((entry) => ({
+        consent_tier: entry.tier,
+        reason: entry.result.reason,
+      }));
+
+    if (failedTiers.length > 0) {
+      console.error("Consent event post failed for some tiers:", failedTiers);
+
+      if (failedTiers.length === events.length) {
+        throw new Error("Failed to sync consent preferences.");
+      }
+    }
   }
 
   useEffect(() => {
@@ -217,30 +233,60 @@ export default function ProfileSetupScreen() {
       return;
     }
 
+    if (!isAuthReady || !effectiveClerkUserId) {
+      setFormError('Your account is still loading. Please wait a moment and try again.');
+      return;
+    }
+
     try {
       setConsentSubmitting(true);
+      const payload = {
+        first_name: firstName,
+        last_name: lastName,
+        date_of_birth: dob,
+        estimated_due_date: edd,
+        lmp_date: lmp || null,
+        gestational_week,
+      };
+
       let savedProfile;
-      if(isNotFound) {
-        savedProfile = await createProfile.mutateAsync({
-          first_name: firstName,
-          last_name: lastName,
-          date_of_birth: dob,
-          estimated_due_date: edd,
-          lmp_date: lmp || undefined,
-          gestational_week,
-        });
+
+      if (profile?.id) {
+        try {
+          savedProfile = await updateProfile.mutateAsync(payload);
+        } catch (err) {
+          // Profile may have been deleted or not yet created on backend.
+          if (err instanceof ApiRequestError && err.isNotFound) {
+            savedProfile = await createProfile.mutateAsync({
+              ...payload,
+              lmp_date: payload.lmp_date ?? undefined,
+            });
+          } else {
+            throw err;
+          }
+        }
       } else {
-        savedProfile = await updateProfile.mutateAsync({
-          first_name: firstName,
-          last_name: lastName,
-          date_of_birth: dob,
-          estimated_due_date: edd,
-          lmp_date: lmp || null,
-          gestational_week,
-        });
+        try {
+          savedProfile = await createProfile.mutateAsync({
+            ...payload,
+            lmp_date: payload.lmp_date ?? undefined,
+          });
+        } catch (err) {
+          // If profile already exists, backend may return conflict/validation.
+          if (err instanceof ApiRequestError && (err.status === 409 || err.status === 422)) {
+            savedProfile = await updateProfile.mutateAsync(payload);
+          } else {
+            throw err;
+          }
+        }
       }
 
-      await submitConsentEvents(savedProfile.user_id, selectedConsents);
+      try {
+        await submitConsentEvents(savedProfile.user_id, effectiveClerkUserId, selectedConsents);
+      } catch (consentErr) {
+        // Profile save should not be blocked if consent sync endpoint is temporarily unavailable.
+        console.error("Profile saved but consent sync failed:", consentErr);
+      }
       router.replace("/tabs/home");
     }catch (err: any) {
       console.error("Failed to save profile:", err);
@@ -408,9 +454,9 @@ export default function ProfileSetupScreen() {
               </ConsentCheckbox>
 
               <TouchableOpacity
-                style={[ctaButtonStyles.button, styles.primaryConsentAction, isBusy && styles.submitBtnDisabled]}
+                style={[ctaButtonStyles.button, styles.primaryConsentAction, (isBusy || !isAuthReady) && styles.submitBtnDisabled]}
                 onPress={handleAcceptRecommendedSettings}
-                disabled={isBusy}
+                disabled={isBusy || !isAuthReady}
               >
                 <LinearGradient colors={ctaGradientColors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={ctaButtonStyles.gradient}>
                   {isBusy ? (
@@ -422,13 +468,20 @@ export default function ProfileSetupScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.secondaryConsentAction, isBusy && styles.submitBtnDisabled]}
+                style={[styles.secondaryConsentAction, (isBusy || !isAuthReady) && styles.submitBtnDisabled]}
                 onPress={handleSaveChoices}
-                disabled={isBusy}
+                disabled={isBusy || !isAuthReady}
                 activeOpacity={0.88}
               >
                 <Text style={styles.secondaryConsentActionText}>Save Choices</Text>
               </TouchableOpacity>
+
+              {!isAuthReady ? (
+                <View style={styles.authHintRow}>
+                  <ActivityIndicator size="small" color="#8E5A54" />
+                  <Text style={styles.authHintText}>Securing your account...</Text>
+                </View>
+              ) : null}
             </View>
           </View>
         </ScrollView>
@@ -536,5 +589,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
   },
   secondaryConsentActionText: { color: '#8E5A54', fontSize: 15, fontWeight: '800' },
+  authHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  authHintText: {
+    color: '#8E5A54',
+    fontSize: 12,
+    fontWeight: '600',
+  },
   submitBtnDisabled: { opacity: 0.72 },
 });

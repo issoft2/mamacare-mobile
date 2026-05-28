@@ -1,5 +1,11 @@
 const MS_PER_DAY = 86_400_000;
 
+type WeekProfileLike = {
+  estimated_due_date?: string | null;
+  lmp_date?: string | null;
+  gestational_week?: number | null;
+};
+
 function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
@@ -61,4 +67,20 @@ export function calculateGestationalWeek(params: {
   }
 
   return null;
+}
+
+export function resolveCurrentGestationalWeek(
+  profile?: WeekProfileLike | null,
+  now?: Date
+): number | null {
+  if (!profile) {
+    return null;
+  }
+
+  return calculateGestationalWeek({
+    estimatedDueDate: profile.estimated_due_date,
+    lmpDate: profile.lmp_date,
+    fallbackWeek: profile.gestational_week,
+    now,
+  });
 }

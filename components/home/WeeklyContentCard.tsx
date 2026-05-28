@@ -39,7 +39,7 @@ import {
   apiRequest,
   type WeeklyContent,
 } from "@mumcare/api";
-import { calculateGestationalWeek } from "@/lib/gestationalWeek";
+import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
 import { ctaButtonStyles, ctaGradientColors } from "../styles/ctaButton";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -105,15 +105,7 @@ function buildWeeklyPrompt(content: WeeklyContent, week: number): string {
 export function WeeklyContentCard() {
   const router = useRouter();
   const { data: profile, isLoading: isProfileLoading } = useProfile();
-  const currentWeek = useMemo(
-    () =>
-      calculateGestationalWeek({
-        estimatedDueDate: profile?.estimated_due_date,
-        lmpDate: profile?.lmp_date,
-        fallbackWeek: profile?.gestational_week,
-      }),
-    [profile?.estimated_due_date, profile?.lmp_date, profile?.gestational_week]
-  );
+  const currentWeek = useMemo(() => resolveCurrentGestationalWeek(profile), [profile]);
   const { data: weekResponse, isLoading: isWeekLoading } = useWeekContent(currentWeek ?? 0);
   const content = weekResponse?.content;
   const createSession = useCreateChatSession();

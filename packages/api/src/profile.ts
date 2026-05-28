@@ -14,11 +14,12 @@ import type {
 } from "@mumcare/types";
 
 export type ConsentTier = "marketing" | "system_improvement" | "anon_commercial" | "model_training";
+type BackendConsentTier = ConsentTier | Uppercase<ConsentTier>;
 
 export type ConsentEventPayload = {
   user_id: string;
   clerk_user_id: string;
-  consent_tier: ConsentTier;
+  consent_tier: BackendConsentTier;
   action: "granted" | "withdrawn";
   consent_text_version: string;
   jurisdiction: "NG" | "GB";
@@ -30,15 +31,45 @@ export type ConsentEventPayload = {
   source: "onboarding" | "setting";
 };
 
-export async function postConsentEvents(events: ConsentEventPayload[]): Promise<void> {
-  await Promise.all(
-    events.map((payload) =>
-      apiRequest<void>("/data/consent", {
+const CONSENT_TIER_FALLBACKS: Record<ConsentTier, BackendConsentTier[]> = {
+  marketing: ["marketing", "MARKETING"],
+  system_improvement: ["system_improvement", "SYSTEM_IMPROVEMENT"],
+  anon_commercial: ["anon_commercial", "ANON_COMMERCIAL"],
+  model_training: ["model_training", "MODEL_TRAINING"],
+};
+
+async function postSingleConsentEvent(payload: ConsentEventPayload): Promise<void> {
+  const tier = payload.consent_tier.toLowerCase() as ConsentTier;
+  const fallbackTiers = CONSENT_TIER_FALLBACKS[tier] ?? [payload.consent_tier];
+  let lastError: unknown = null;
+
+  for (const consentTier of fallbackTiers) {
+    try {
+      await apiRequest<void>("/data/consent", {
         method: "POST",
-        body: JSON.stringify(payload),
-      })
-    )
-  );
+        body: JSON.stringify({ ...payload, consent_tier: consentTier }),
+      });
+      return;
+    } catch (err) {
+      lastError = err;
+      const isTierValidationError =
+        err instanceof ApiRequestError &&
+        err.code === "VALIDATION_ERROR" &&
+        err.body?.error?.field === "consent_tier";
+
+      if (!isTierValidationError) {
+        throw err;
+      }
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Failed to post consent event.");
+}
+
+export async function postConsentEvents(events: ConsentEventPayload[]): Promise<void> {
+  await Promise.all(events.map((payload) => postSingleConsentEvent(payload)));
 }
 
 export function useAddCareTeamMember() {

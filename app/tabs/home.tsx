@@ -29,7 +29,8 @@ import { Ionicons } from "@expo/vector-icons";
 import {
   apiRequest,
   useAppointments,
-  useFolicAcidLogs,
+  useDailyTrackerReminderStatus,
+  useTodayFolicAcidLog,
   useHydrationLogs,
   useKickSessions,
   useLogFolicAcid,
@@ -46,8 +47,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors } from "@mumcare/ui";
 import { getTimeBasedGreeting } from "../../lib/greetings";
 import { WeeklyContentCard } from "@/components/home/WeeklyContentCard";
-import { calculateGestationalWeek } from "@/lib/gestationalWeek";
-import type { Mood, Severity, UrgencyTier } from "@mumcare/types";
+import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
+import type { DailyTrackerReminderItem, Mood, Severity, UrgencyTier } from "@mumcare/types";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -88,6 +89,13 @@ const CARE_CARD_COLORS = {
 
 const KICK_COUNTER_MIN_WEEK = 16;
 const PREFS_CACHE_KEY = "notificationPreferences";
+const TRACKER_REMINDER_LABELS: Record<DailyTrackerReminderItem, string> = {
+  hydration: "Hydration",
+  folic_acid: "Folic acid",
+  mood: "Mood",
+  sleep: "Rest",
+  symptoms: "Symptoms",
+};
 
 // ── Severity colour coding ────────────────────────────────────────────────────
 
@@ -276,6 +284,54 @@ function NextVisitBanner({
   );
 }
 
+function TrackerReminderBanner({
+  pending,
+  onDismiss,
+  onTap,
+  style,
+}: {
+  pending: string[];
+  onDismiss: () => void;
+  onTap: () => void;
+  style?: any;
+}) {
+  const summary =
+    pending.length <= 3
+      ? pending.join(", ")
+      : `${pending.slice(0, 3).join(", ")} +${pending.length - 3} more`;
+
+  return (
+    <TouchableOpacity onPress={onTap} activeOpacity={0.88} style={[styles.trackerBanner, style]}>
+      <LinearGradient
+        colors={["#FFF6E8", "#FFFAF3"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.bannerGradient}
+      >
+        <View style={styles.trackerBannerIconWrap}>
+          <Ionicons name="notifications-outline" size={18} color="#C97B6E" />
+        </View>
+
+        <View style={styles.bannerText}>
+          <Text style={styles.trackerBannerTitle}>Today's check-ins waiting</Text>
+          <Text style={styles.trackerBannerDate}>Log: {summary}</Text>
+        </View>
+
+        <View style={styles.bannerActions}>
+          <Ionicons name="chevron-forward" size={16} color={colors.rose[300]} />
+          <TouchableOpacity
+            onPress={onDismiss}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={styles.bannerDismiss}
+          >
+            <Ionicons name="close" size={14} color={colors.navy[300]} />
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+}
+
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
@@ -286,13 +342,17 @@ export default function HomeScreen() {
   const [feeling, setFeeling] = useState<Feeling | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [appointmentRemindersEnabled, setAppointmentRemindersEnabled] = useState(true);
+  const [dailyTrackerRemindersEnabled, setDailyTrackerRemindersEnabled] = useState(true);
+  const [trackerBannerDismissed, setTrackerBannerDismissed] = useState(false);
   const [folicTakenLocal, setFolicTakenLocal] = useState(false);
 
   const { data: profile }      = useProfile();
   // const { data: patterns }     = useSymptomPatterns();
   const { data: symptomLogs }  = useSymptomLogs(10, 0);
   const { data: hydration }    = useHydrationLogs();
-  const { data: folicAcidLogs } = useFolicAcidLogs();
+  const { data: todayFolicAcidLog } = useTodayFolicAcidLog();
+  const { data: dailyTrackerReminderStatus, isSuccess: hasBackendTrackerStatus } =
+    useDailyTrackerReminderStatus();
   const { data: kickSessions } = useKickSessions();
 
 
@@ -311,9 +371,15 @@ export default function HomeScreen() {
       try {
         const raw = await AsyncStorage.getItem(userScopedKey);
         if (raw) {
-          const parsed = JSON.parse(raw) as { appointment_reminders?: boolean };
+          const parsed = JSON.parse(raw) as {
+            appointment_reminders?: boolean;
+            hydration_reminders?: boolean;
+          };
           if (!cancelled && typeof parsed.appointment_reminders === "boolean") {
             setAppointmentRemindersEnabled(parsed.appointment_reminders);
+          }
+          if (!cancelled && typeof parsed.hydration_reminders === "boolean") {
+            setDailyTrackerRemindersEnabled(parsed.hydration_reminders);
           }
         }
       } catch {
@@ -321,13 +387,19 @@ export default function HomeScreen() {
       }
 
       try {
-        const prefs = await apiRequest<{ appointment_reminders?: boolean }>(
+        const prefs = await apiRequest<{
+          appointment_reminders?: boolean;
+          hydration_reminders?: boolean;
+        }>(
           "/notifications/preferences",
           { method: "GET" }
         );
 
         if (!cancelled && typeof prefs.appointment_reminders === "boolean") {
           setAppointmentRemindersEnabled(prefs.appointment_reminders);
+        }
+        if (!cancelled && typeof prefs.hydration_reminders === "boolean") {
+          setDailyTrackerRemindersEnabled(prefs.hydration_reminders);
         }
       } catch {
         // Keep current preference fallback.
@@ -371,17 +443,10 @@ export default function HomeScreen() {
     }
   };
 
-  // Folic acid (today only)
-  const todayFolicAcidLog = useMemo(
-    () =>
-      folicAcidLogs?.find((entry) => {
-        const dateKey = getDateKeyFromRaw(entry.log_date) ?? getDateKeyFromRaw(entry.created_at);
-        return dateKey === todayDateKey;
-      }),
-    [folicAcidLogs, todayDateKey]
-  );
-
-  const folicTakenToday = todayFolicAcidLog?.taken === true || folicTakenLocal;
+  const folicTakenToday =
+    todayFolicAcidLog?.is_logged_today === true ||
+    todayFolicAcidLog?.taken === true ||
+    folicTakenLocal;
 
   const handleFolicAcidTap = async () => {
     if (folicTakenToday || logFolicAcid.isPending) return;
@@ -488,14 +553,53 @@ export default function HomeScreen() {
 
   const showBanner =
     !bannerDismissed && !!nextAppointment && appointmentRemindersEnabled;
-  const gestationalWeek = useMemo(
+
+  useEffect(() => {
+    setTrackerBannerDismissed(false);
+  }, [todayDateKey]);
+
+  const localPendingTrackerItems = useMemo(() => {
+    const pending: string[] = [];
+
+    if (!todayHydrationLog) {
+      pending.push("Hydration");
+    }
+    if (!folicTakenToday) {
+      pending.push("Folic acid");
+    }
+    if (!todayMoodLog) {
+      pending.push("Mood");
+    }
+    if (!todaySleepLog) {
+      pending.push("Rest");
+    }
+    if (todaySymptoms.length === 0) {
+      pending.push("Symptoms");
+    }
+
+    return pending;
+  }, [folicTakenToday, todayHydrationLog, todayMoodLog, todaySleepLog, todaySymptoms.length]);
+
+  const backendPendingTrackerItems = useMemo(
     () =>
-      calculateGestationalWeek({
-        estimatedDueDate: profile?.estimated_due_date,
-        lmpDate: profile?.lmp_date,
-        fallbackWeek: profile?.gestational_week,
-      }) ?? 0,
-    [profile?.estimated_due_date, profile?.lmp_date, profile?.gestational_week]
+      (dailyTrackerReminderStatus?.pending_items ?? [])
+        .map((item) => TRACKER_REMINDER_LABELS[item])
+        .filter(Boolean),
+    [dailyTrackerReminderStatus?.pending_items]
+  );
+
+  const pendingTrackerItems = hasBackendTrackerStatus
+    ? backendPendingTrackerItems
+    : localPendingTrackerItems;
+
+  const showTrackerReminderBanner =
+    dailyTrackerRemindersEnabled &&
+    !trackerBannerDismissed &&
+    pendingTrackerItems.length > 0;
+
+  const gestationalWeek = useMemo(
+    () => resolveCurrentGestationalWeek(profile) ?? 0,
+    [profile]
   );
   const canUseKickCounter = gestationalWeek >= KICK_COUNTER_MIN_WEEK;
 
@@ -537,6 +641,15 @@ export default function HomeScreen() {
             date={nextAppointment.scheduled_at}
             onDismiss={() => setBannerDismissed(true)}
             onTap={() => router.push("/tabs/profile")}
+          />
+        )}
+
+        {showTrackerReminderBanner && (
+          <TrackerReminderBanner
+            pending={pendingTrackerItems}
+            onDismiss={() => setTrackerBannerDismissed(true)}
+            onTap={() => router.push("/tabs/tracker")}
+            style={!showBanner ? styles.trackerBannerStandalone : undefined}
           />
         )}
 
@@ -905,6 +1018,44 @@ const styles = StyleSheet.create({
   },
   bannerDismiss: {
     padding: 4,
+  },
+  trackerBanner: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 4,
+    borderRadius: 16,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(201,123,110,0.24)",
+    elevation: 2,
+    shadowColor: "#C97B6E",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  trackerBannerStandalone: {
+    marginTop: 52,
+  },
+  trackerBannerIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: "rgba(201,123,110,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  trackerBannerTitle: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#8E5A54",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  trackerBannerDate: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#4D3B39",
   },
 
   // ── Hero ────────────────────────────────────────────────────
