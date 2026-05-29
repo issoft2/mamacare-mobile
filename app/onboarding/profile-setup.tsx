@@ -33,7 +33,6 @@ export default function ProfileSetupScreen() {
   const activePrivacyDoc = getActiveLegalDocument("privacy");
   const accountFirstName = (user?.firstName ?? "").trim();
   const accountLastName = (user?.lastName ?? "").trim();
-  const hasAccountName = accountFirstName.length > 0 && accountLastName.length > 0;
 
   const [consentSubmitting, setConsentSubmitting] = useState(false);
   const isSaving = createProfile.isPending || updateProfile.isPending;
@@ -91,6 +90,13 @@ export default function ProfileSetupScreen() {
     return `${y}-${m}-${d}`;
   }
 
+  function isPastDate(date: Date): boolean {
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const inputStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    return inputStart < todayStart;
+  }
+
   function addDays(date: Date, days: number): Date {
     const next = new Date(date);
     next.setDate(next.getDate() + days);
@@ -139,6 +145,14 @@ export default function ProfileSetupScreen() {
       setForm((prev) => ({ ...prev, edd: value }));
       return;
     }
+
+    if (isPastDate(edd)) {
+      setForm((prev) => ({ ...prev, edd: value }));
+      setFormError("Estimated due date cannot be in the past.");
+      return;
+    }
+
+    setFormError("");
 
     const autoWeek = deriveWeekFromEdd(edd);
     setForm((prev) => ({ ...prev, edd: value, week: String(autoWeek) }));
@@ -204,14 +218,14 @@ export default function ProfileSetupScreen() {
       return;
     }
 
-    if (hasAccountName) {
+    if (accountFirstName || accountLastName) {
       setForm((prev) => ({
         ...prev,
-        firstName: accountFirstName,
-        lastName: accountLastName,
+        firstName: prev.firstName || accountFirstName,
+        lastName: prev.lastName || accountLastName,
       }));
     }
-  }, [accountFirstName, accountLastName, hasAccountName, profile]);
+  }, [accountFirstName, accountLastName, profile]);
 
   // handle save
   async function persistProfileAndConsents(selectedConsents: Record<ConsentTier, boolean>) {
@@ -225,6 +239,17 @@ export default function ProfileSetupScreen() {
 
     if (!firstName || !lastName || !dob || !edd) {
       setFormError('Please complete all profile fields.');
+      return;
+    }
+
+    const parsedEdd = parseIsoDate(edd);
+    if (!parsedEdd) {
+      setFormError('Estimated due date must be in YYYY-MM-DD format.');
+      return;
+    }
+
+    if (isPastDate(parsedEdd)) {
+      setFormError('Estimated due date cannot be in the past.');
       return;
     }
     
@@ -335,33 +360,26 @@ export default function ProfileSetupScreen() {
               </View>
             ) : null}
 
-            {hasAccountName ? (
-              <View style={styles.accountNameCard}>
-                <Text style={styles.accountNameEyebrow}>NAME ON YOUR ACCOUNT</Text>
-                <Text style={styles.accountNameValue}>{accountFirstName} {accountLastName}</Text>
+            <View style={styles.row}>
+              <View style={[styles.inputGroup, { flex: 1 }]}> 
+                <Text style={styles.label}>First Name</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Sarah"
+                  value={form.firstName}
+                  onChangeText={(v) => setForm({ ...form, firstName: v })}
+                />
               </View>
-            ) : (
-              <View style={styles.row}>
-                <View style={[styles.inputGroup, { flex: 1 }]}> 
-                  <Text style={styles.label}>First Name</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Sarah"
-                    value={form.firstName}
-                    onChangeText={(v) => setForm({ ...form, firstName: v })}
-                  />
-                </View>
-                <View style={[styles.inputGroup, { flex: 1 }]}> 
-                  <Text style={styles.label}>Last Name</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Thompson"
-                    value={form.lastName}
-                    onChangeText={(v) => setForm({ ...form, lastName: v })}
-                  />
-                </View>
+              <View style={[styles.inputGroup, { flex: 1 }]}> 
+                <Text style={styles.label}>Last Name</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Thompson"
+                  value={form.lastName}
+                  onChangeText={(v) => setForm({ ...form, lastName: v })}
+                />
               </View>
-            )}
+            </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Date of Birth</Text>
@@ -437,7 +455,7 @@ export default function ProfileSetupScreen() {
                 Help us study usage trends to fix bugs faster and improve overall app speed.
               </ConsentCheckbox>
               <ConsentCheckbox
-                label="Insights Sharing (Anonymous Commercialization)"
+                label="Insights Sharing (Anonymous data)"
                 value={consents.anon_commercial}
                 onValueChange={(v) => setConsents((c) => ({ ...c, anon_commercial: v }))}
                 learnMoreRoute={getActiveLegalRoute("privacy")}
@@ -544,25 +562,6 @@ const styles = StyleSheet.create({
   formContainer: { gap: 20 },
   errorBox: { flexDirection: 'row', backgroundColor: '#FCEBEB', padding: 15, borderRadius: 15, alignItems: 'center', gap: 10 },
   errorText: { flex: 1, color: '#A32D2D', fontSize: 13, fontWeight: '600' },
-  accountNameCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(140, 90, 82, 0.2)',
-    padding: 14,
-  },
-  accountNameEyebrow: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#8E5A54',
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  accountNameValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#4D3B39',
-  },
   row: { flexDirection: 'row', gap: 15 },
   inputGroup: { gap: 8 },
   label: { fontSize: 13, fontWeight: '700', color: '#6D4A45', marginLeft: 4 },
