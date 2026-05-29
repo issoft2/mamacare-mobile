@@ -18,10 +18,11 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from '@expo/vector-icons';
 import { useProfile, useSubscription } from "@mumcare/api";
+import { signOutWithPushCleanup } from "@/lib/pushNotifications";
 
 export default function ProfileScreen() {
   const { user } = useUser();
-  const { signOut } = useAuth();
+  const { signOut, userId } = useAuth();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 980;
@@ -100,7 +101,7 @@ export default function ProfileScreen() {
                     isWide && styles.menuTileWide,
                   ]}
                   onPress={() => {
-                    void signOut();
+                    void signOutWithPushCleanup({ userId, signOut });
                   }}
                   activeOpacity={0.82}
                 >

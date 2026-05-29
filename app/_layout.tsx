@@ -5,6 +5,7 @@
 
 import { ClerkProvider, useAuth } from "@clerk/clerk-expo";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Slot,
   usePathname,
@@ -13,12 +14,24 @@ import {
   useSegments,
 } from "expo-router";
 import * as SecureStore from "expo-secure-store";
+import * as Notifications from "expo-notifications";
 import * as WebBrowser from "expo-web-browser";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Platform, StyleSheet, View } from "react-native";
+import { Text, TouchableOpacity } from "react-native";
 import { configureApiBaseUrl, configureApiClient } from "@mumcare/api";
 
 import { API_BASE_URL, EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY } from "@/lib/env";
+import {
+  configurePushNotificationsAsync,
+  getNotificationTypeFromNotification,
+  getNotificationTypeFromResponse,
+  getRouteFromNotification,
+  getRouteFromNotificationResponse,
+  recordPushNotificationEventAsync,
+  registerDevicePushTokenForUserAsync,
+  shouldShowForegroundBannerForUserAsync,
+} from "@/lib/pushNotifications";
 import { registerServiceWorker } from "@/lib/registerServiceWorker";
 import { checkConsentVersion } from "@/lib/legal";
 
@@ -222,9 +235,211 @@ function AppReconsentCheck() {
   return null;
 }
 
+function PushTokenSync() {
+  const { isLoaded, isSignedIn, userId } = useAuth();
+
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      return;
+    }
+    if (!isLoaded || !isSignedIn || !userId) {
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      const result = await registerDevicePushTokenForUserAsync(userId);
+      if (cancelled) {
+        return;
+      }
+
+      if (result.status === "failed") {
+        // eslint-disable-next-line no-console
+        console.warn("Push token sync failed:", result.reason);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, isSignedIn, userId]);
+
+  return null;
+}
+
+function PushNotificationRuntimeHandlers() {
+  const { userId } = useAuth();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const handledResponseIdRef = useRef<string | null>(null);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [banner, setBanner] = useState<{
+    title: string;
+    body: string;
+    route: string;
+  } | null>(null);
+
+  function invalidateDataForRoute(route: string) {
+    const key = route.toLowerCase();
+    if (key.includes("/tracker")) {
+      void queryClient.invalidateQueries({ queryKey: ["tracker"] });
+      return;
+    }
+    if (key.includes("/appointments") || key.includes("/profile")) {
+      void queryClient.invalidateQueries({ queryKey: ["profile", "appointments"] });
+      void queryClient.invalidateQueries({ queryKey: ["profile", "detail"] });
+      return;
+    }
+    if (key.includes("/symptoms")) {
+      void queryClient.invalidateQueries({ queryKey: ["symptoms"] });
+      return;
+    }
+    void queryClient.invalidateQueries({ queryKey: ["content"] });
+    void queryClient.invalidateQueries({ queryKey: ["profile", "detail"] });
+  }
+
+  function showForegroundBanner(payload: {
+    title?: string | null;
+    body?: string | null;
+    route: string;
+  }) {
+    const next = {
+      title: payload.title?.trim() || "New update from MumCare",
+      body: payload.body?.trim() || "Tap to view your latest reminder.",
+      route: payload.route,
+    };
+    setBanner(next);
+
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+    }
+    hideTimerRef.current = setTimeout(() => {
+      setBanner(null);
+      hideTimerRef.current = null;
+    }, 5500);
+  }
+
+  function openRoute(route: string) {
+    setBanner(null);
+    invalidateDataForRoute(route);
+    void recordPushNotificationEventAsync({
+      event: "routed",
+      notificationType: "unknown",
+      route,
+    });
+    router.push(route as any);
+  }
+
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      return;
+    }
+
+    let cancelled = false;
+
+    const receivedSubscription = Notifications.addNotificationReceivedListener(
+      async (notification) => {
+        const route = getRouteFromNotification(notification);
+        const notificationType = getNotificationTypeFromNotification(notification);
+        void recordPushNotificationEventAsync({
+          event: "received",
+          notificationType,
+          route,
+        });
+        invalidateDataForRoute(route);
+
+        const shouldShow = await shouldShowForegroundBannerForUserAsync({
+          userId,
+          notificationType,
+        });
+        if (!shouldShow) {
+          return;
+        }
+
+        showForegroundBanner({
+          route,
+          title: notification.request.content.title,
+          body: notification.request.content.body,
+        });
+      }
+    );
+
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const requestId = response.notification.request.identifier;
+        if (handledResponseIdRef.current === requestId) {
+          return;
+        }
+        handledResponseIdRef.current = requestId;
+        const route = getRouteFromNotificationResponse(response);
+        const notificationType = getNotificationTypeFromResponse(response);
+        void recordPushNotificationEventAsync({
+          event: "opened",
+          notificationType,
+          route,
+        });
+        openRoute(route);
+      }
+    );
+
+    (async () => {
+      const initialResponse = await Notifications.getLastNotificationResponseAsync();
+      if (cancelled || !initialResponse) {
+        return;
+      }
+
+      const requestId = initialResponse.notification.request.identifier;
+      if (handledResponseIdRef.current === requestId) {
+        return;
+      }
+      handledResponseIdRef.current = requestId;
+      const route = getRouteFromNotificationResponse(initialResponse);
+      const notificationType = getNotificationTypeFromResponse(initialResponse);
+      void recordPushNotificationEventAsync({
+        event: "opened",
+        notificationType,
+        route,
+      });
+      openRoute(route);
+    })();
+
+    return () => {
+      cancelled = true;
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = null;
+      }
+      receivedSubscription.remove();
+      responseSubscription.remove();
+    };
+  }, [queryClient, router, userId]);
+
+  if (!banner) {
+    return null;
+  }
+
+  return (
+    <View pointerEvents="box-none" style={styles.pushBannerRoot}>
+      <TouchableOpacity
+        activeOpacity={0.92}
+        style={styles.pushBannerCard}
+        onPress={() => openRoute(banner.route)}
+      >
+        <Text style={styles.pushBannerTitle}>{banner.title}</Text>
+        <Text style={styles.pushBannerBody} numberOfLines={2}>
+          {banner.body}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 export default function RootLayout() {
   useEffect(() => {
     registerServiceWorker();
+    if (Platform.OS !== "web") {
+      void configurePushNotificationsAsync();
+    }
   }, []);
 
   const content =
@@ -242,6 +457,8 @@ export default function RootLayout() {
       tokenCache={tokenCache}
     >
       <QueryClientProvider client={queryClient}>
+        <PushNotificationRuntimeHandlers />
+        <PushTokenSync />
         <AppReconsentCheck />
         {content}
       </QueryClientProvider>
@@ -255,5 +472,36 @@ const styles = StyleSheet.create({
     minHeight: "100%",
     width: "100%",
     backgroundColor: "#F7F8FC",
+  },
+  pushBannerRoot: {
+    position: "absolute",
+    top: Platform.OS === "ios" ? 58 : 40,
+    left: 12,
+    right: 12,
+    zIndex: 40,
+  },
+  pushBannerCard: {
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: "#FFF8EF",
+    borderWidth: 1,
+    borderColor: "rgba(201,123,110,0.24)",
+    shadowColor: "#8E5A54",
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
+  },
+  pushBannerTitle: {
+    color: "#4D3B39",
+    fontWeight: "800",
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  pushBannerBody: {
+    color: "#6D4A45",
+    fontSize: 12,
+    lineHeight: 17,
   },
 });

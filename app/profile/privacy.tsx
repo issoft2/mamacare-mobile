@@ -22,9 +22,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { apiRequest } from "@mumcare/api";
 import { colors, spacing, typography, shadows } from "@mumcare/ui";
 import { getActiveLegalDocument, getActiveLegalRoute } from "@/lib/legal";
+import { signOutWithPushCleanup } from "@/lib/pushNotifications";
 
 export default function PrivacyScreen() {
-  const { signOut } = useAuth();
+  const { signOut, userId } = useAuth();
   const router = useRouter();
   const activePrivacy = getActiveLegalDocument("privacy");
   const activeTerms = getActiveLegalDocument("terms");
@@ -192,7 +193,7 @@ export default function PrivacyScreen() {
               title="Delete My Account" 
               desc="Permanently remove your personal information."
               danger
-              onPress={() => handleDeleteAccount(signOut)}
+              onPress={() => handleDeleteAccount(signOut, userId)}
             />
           </View>
         </View>
@@ -246,13 +247,19 @@ function ActionRow({ icon, title, desc, onPress, danger }: any) {
   );
 }
 
-const handleDeleteAccount = (signOut: any) => {
+const handleDeleteAccount = (signOut: any, userId: string | null | undefined) => {
   Alert.alert(
     "Are you sure?",
     "This will delete your account. Health data will be archived for 7 years per clinical law but will not be accessible to you.",
     [
       { text: "Cancel", style: "cancel" },
-      { text: "Delete Everything", style: "destructive", onPress: () => signOut() }
+      {
+        text: "Delete Everything",
+        style: "destructive",
+        onPress: () => {
+          void signOutWithPushCleanup({ userId, signOut });
+        },
+      }
     ]
   );
 };
