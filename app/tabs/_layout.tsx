@@ -30,6 +30,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
 import { usePwaInstallPrompt } from "@/lib/usePwaInstallPrompt";
+import { signOutWithPushCleanup } from "@/lib/pushNotifications";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -193,7 +194,7 @@ function ResponsiveTabBar({
   topInset,
 }: any) {
   const install = usePwaInstallPrompt();
-  const { signOut } = useAuth();
+  const { signOut, userId } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const privacyActive = pathname.startsWith("/profile/privacy");
@@ -492,7 +493,7 @@ function ResponsiveTabBar({
                 style={styles.drawerItem}
                 onPress={() => {
                   setDrawerOpen(false);
-                  void signOut();
+                  void signOutWithPushCleanup({ userId, signOut });
                 }}
                 activeOpacity={0.82}
               >
