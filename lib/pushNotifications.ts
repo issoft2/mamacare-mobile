@@ -5,8 +5,16 @@ import { ApiRequestError, apiRequest } from "@mumcare/api";
 
 const DEFAULT_CHANNEL_ID = "default";
 const PUSH_TOKEN_CACHE_PREFIX = "pushToken";
-const PUSH_TOKENS_ENDPOINT = "/notifications/push-tokens";
-const PUSH_TOKEN_DEACTIVATE_ENDPOINT = "/notifications/push-tokens/deactivate";
+const PUSH_TOKENS_ENDPOINTS = [
+  "/notifications/push-tokens",
+  "/notifications/push-token",
+  "/notifications/push_tokens",
+] as const;
+const PUSH_TOKEN_DEACTIVATE_ENDPOINTS = [
+  "/notifications/push-tokens/deactivate",
+  "/notifications/push-token/deactivate",
+  "/notifications/push_tokens/deactivate",
+] as const;
 const DEFAULT_NOTIFICATION_ROUTE = "/tabs/home";
 const PREFS_CACHE_KEY = "notificationPreferences";
 const PUSH_EVENT_CACHE_KEY = "pushNotificationEvents";
@@ -128,6 +136,86 @@ function isPushTokenEndpointUnavailable(err: unknown): boolean {
     return false;
   }
   return err.status === 404 || err.status === 405 || err.status === 501;
+}
+
+function formatPushApiError(err: unknown): string {
+  if (err instanceof ApiRequestError) {
+    const field = (err.body?.error as { field?: string } | undefined)?.field;
+    const fieldSuffix = field ? ` field=${field}` : "";
+    return `status=${err.status} code=${err.code}${fieldSuffix} message=${err.message}`;
+  }
+  return err instanceof Error ? err.message : "unknown_error";
+}
+
+async function tryRegisterPushTokenAsync(params: {
+  token: string;
+  platform: "ios" | "android";
+}): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const appVersion = Constants.expoConfig?.version ?? "unknown";
+  const payloadVariants = [
+    {
+      fcm_token: params.token,
+      token: params.token,
+      device_platform: params.platform,
+      platform: params.platform,
+      device_name: null,
+      app_version: appVersion,
+      is_active: true,
+    },
+    {
+      token: params.token,
+      device_platform: params.platform,
+      is_active: true,
+    },
+  ] as const;
+
+  const methods = ["POST", "PUT"] as const;
+  const attemptErrors: string[] = [];
+
+  for (const endpoint of PUSH_TOKENS_ENDPOINTS) {
+    for (const method of methods) {
+      for (const body of payloadVariants) {
+        try {
+          await apiRequest(endpoint, {
+            method,
+            body: JSON.stringify(body),
+          });
+          return { ok: true };
+        } catch (err) {
+          attemptErrors.push(`${method} ${endpoint} -> ${formatPushApiError(err)}`);
+        }
+      }
+    }
+  }
+
+  return {
+    ok: false,
+    reason: attemptErrors.slice(0, 6).join(" | "),
+  };
+}
+
+async function tryDeactivatePushTokenAsync(token: string): Promise<void> {
+  const payloadVariants = [
+    { fcm_token: token, token },
+    { token },
+  ] as const;
+  const methods = ["POST", "PATCH", "DELETE"] as const;
+
+  for (const endpoint of PUSH_TOKEN_DEACTIVATE_ENDPOINTS) {
+    for (const method of methods) {
+      for (const body of payloadVariants) {
+        try {
+          await apiRequest(endpoint, {
+            method,
+            body: JSON.stringify(body),
+          });
+          return;
+        } catch {
+          // Try next shape/endpoint/method.
+        }
+      }
+    }
+  }
 }
 
 function hasGrantedNotificationPermission(value: unknown): boolean {
@@ -332,16 +420,17 @@ export async function registerDevicePushTokenForUserAsync(
   const wasCached = cachedToken === token;
 
   try {
-    await apiRequest(PUSH_TOKENS_ENDPOINT, {
-      method: "POST",
-      body: JSON.stringify({
-        fcm_token: token,
-        token,
-        device_platform: Platform.OS === "ios" ? "ios" : "android",
-        device_name: null,
-        is_active: true,
-      }),
+    const registration = await tryRegisterPushTokenAsync({
+      token,
+      platform: Platform.OS === "ios" ? "ios" : "android",
     });
+    if (!registration.ok) {
+      return {
+        status: "failed",
+        reason: `All push token registration attempts failed: ${registration.reason}`,
+      };
+    }
+
     await AsyncStorage.setItem(cacheKey, token);
     if (wasCached) {
       return { status: "cached", token };
@@ -375,10 +464,7 @@ export async function deactivateDevicePushTokenForUserAsync(
   }
 
   try {
-    await apiRequest(PUSH_TOKEN_DEACTIVATE_ENDPOINT, {
-      method: "POST",
-      body: JSON.stringify({ fcm_token: token, token }),
-    });
+    await tryDeactivatePushTokenAsync(token);
   } catch (err) {
     if (!isPushTokenEndpointUnavailable(err)) {
       // eslint-disable-next-line no-console
