@@ -427,10 +427,18 @@ export async function registerDevicePushTokenForUserAsync(
   }
 
   const projectId = getExpoProjectId();
-  const tokenResponse = projectId
-    ? await Notifications.getExpoPushTokenAsync({ projectId })
-    : await Notifications.getExpoPushTokenAsync();
-  const token = tokenResponse.data;
+  let token: string;
+  try {
+    const tokenResponse = projectId
+      ? await Notifications.getExpoPushTokenAsync({ projectId })
+      : await Notifications.getExpoPushTokenAsync();
+    token = tokenResponse.data;
+  } catch (err) {
+    return {
+      status: "failed",
+      reason: `Failed to fetch Expo push token: ${formatPushApiError(err)}`,
+    };
+  }
 
   const cacheKey = tokenCacheKey(userId);
   const tokenIdKey = tokenIdCacheKey(userId);
