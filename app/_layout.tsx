@@ -14,7 +14,6 @@ import {
   useSegments,
 } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import * as Notifications from "expo-notifications";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useRef, useState } from "react";
 import { Platform, StyleSheet, View } from "react-native";
@@ -28,6 +27,7 @@ import {
   getNotificationTypeFromResponse,
   getRouteFromNotification,
   getRouteFromNotificationResponse,
+  isExpoGoEnvironment,
   recordPushNotificationEventAsync,
   registerDevicePushTokenForUserAsync,
   shouldShowForegroundBannerForUserAsync,
@@ -364,55 +364,64 @@ function PushNotificationRuntimeHandlers() {
     if (Platform.OS === "web") {
       return;
     }
+    if (isExpoGoEnvironment()) {
+      // eslint-disable-next-line no-console
+      console.log("Push runtime listeners skipped in Expo Go (SDK 53+ limitation).");
+      return;
+    }
 
     let cancelled = false;
-
-    const receivedSubscription = Notifications.addNotificationReceivedListener(
-      async (notification) => {
-        const route = getRouteFromNotification(notification);
-        const notificationType = getNotificationTypeFromNotification(notification);
-        void recordPushNotificationEventAsync({
-          event: "received",
-          notificationType,
-          route,
-        });
-        invalidateDataForRoute(route);
-
-        const shouldShow = await shouldShowForegroundBannerForUserAsync({
-          userId,
-          notificationType,
-        });
-        if (!shouldShow) {
-          return;
-        }
-
-        showForegroundBanner({
-          route,
-          title: notification.request.content.title,
-          body: notification.request.content.body,
-        });
-      }
-    );
-
-    const responseSubscription = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
-        const requestId = response.notification.request.identifier;
-        if (handledResponseIdRef.current === requestId) {
-          return;
-        }
-        handledResponseIdRef.current = requestId;
-        const route = getRouteFromNotificationResponse(response);
-        const notificationType = getNotificationTypeFromResponse(response);
-        void recordPushNotificationEventAsync({
-          event: "opened",
-          notificationType,
-          route,
-        });
-        openRoute(route);
-      }
-    );
+    let receivedSubscription: { remove: () => void } | null = null;
+    let responseSubscription: { remove: () => void } | null = null;
 
     (async () => {
+      const Notifications = await import("expo-notifications");
+
+      receivedSubscription = Notifications.addNotificationReceivedListener(
+        async (notification) => {
+          const route = getRouteFromNotification(notification);
+          const notificationType = getNotificationTypeFromNotification(notification);
+          void recordPushNotificationEventAsync({
+            event: "received",
+            notificationType,
+            route,
+          });
+          invalidateDataForRoute(route);
+
+          const shouldShow = await shouldShowForegroundBannerForUserAsync({
+            userId,
+            notificationType,
+          });
+          if (!shouldShow) {
+            return;
+          }
+
+          showForegroundBanner({
+            route,
+            title: notification.request.content.title,
+            body: notification.request.content.body,
+          });
+        }
+      );
+
+      responseSubscription = Notifications.addNotificationResponseReceivedListener(
+        (response) => {
+          const requestId = response.notification.request.identifier;
+          if (handledResponseIdRef.current === requestId) {
+            return;
+          }
+          handledResponseIdRef.current = requestId;
+          const route = getRouteFromNotificationResponse(response);
+          const notificationType = getNotificationTypeFromResponse(response);
+          void recordPushNotificationEventAsync({
+            event: "opened",
+            notificationType,
+            route,
+          });
+          openRoute(route);
+        }
+      );
+
       const initialResponse = await Notifications.getLastNotificationResponseAsync();
       if (cancelled || !initialResponse) {
         return;
@@ -439,8 +448,8 @@ function PushNotificationRuntimeHandlers() {
         clearTimeout(hideTimerRef.current);
         hideTimerRef.current = null;
       }
-      receivedSubscription.remove();
-      responseSubscription.remove();
+      receivedSubscription?.remove();
+      responseSubscription?.remove();
     };
   }, [queryClient, router, userId]);
 

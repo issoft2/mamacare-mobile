@@ -1,5 +1,4 @@
 import { Platform } from "react-native";
-import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ApiRequestError, apiRequest } from "@mumcare/api";
@@ -13,6 +12,14 @@ const PREFS_CACHE_KEY = "notificationPreferences";
 const PUSH_EVENT_CACHE_KEY = "pushNotificationEvents";
 
 let didConfigure = false;
+let notificationsModulePromise: Promise<typeof import("expo-notifications")> | null = null;
+
+async function getNotificationsModuleAsync() {
+  if (!notificationsModulePromise) {
+    notificationsModulePromise = import("expo-notifications");
+  }
+  return notificationsModulePromise;
+}
 
 type PushTokenSyncResult =
   | { status: "skipped"; reason: string }
@@ -40,6 +47,11 @@ export type NotificationType =
 
 function tokenCacheKey(userId: string): string {
   return `${PUSH_TOKEN_CACHE_PREFIX}:${userId}`;
+}
+
+export function isExpoGoEnvironment(): boolean {
+  // Expo Go reports appOwnership as "expo".
+  return Constants.appOwnership === "expo";
 }
 
 function prefsCacheKey(userId: string): string {
@@ -150,6 +162,13 @@ export async function configurePushNotificationsAsync(): Promise<void> {
     return;
   }
 
+  if (isExpoGoEnvironment()) {
+    didConfigure = true;
+    return;
+  }
+
+  const Notifications = await getNotificationsModuleAsync();
+
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowBanner: true,
@@ -173,7 +192,13 @@ export async function configurePushNotificationsAsync(): Promise<void> {
 }
 
 export function getRouteFromNotificationResponse(
-  response: Notifications.NotificationResponse | null | undefined
+  response: {
+    notification?: {
+      request?: {
+        content?: { data?: Record<string, unknown> };
+      };
+    };
+  } | null | undefined
 ): string {
   const data = response?.notification?.request?.content?.data;
   const fromDeepLink = normalizeRoute((data as Record<string, unknown> | undefined)?.deep_link);
@@ -184,14 +209,24 @@ export function getRouteFromNotificationResponse(
 }
 
 export function getNotificationTypeFromResponse(
-  response: Notifications.NotificationResponse | null | undefined
+  response: {
+    notification?: {
+      request?: {
+        content?: { data?: Record<string, unknown> };
+      };
+    };
+  } | null | undefined
 ): NotificationType {
   const data = response?.notification?.request?.content?.data;
   return normalizeNotificationType((data as Record<string, unknown> | undefined)?.notification_type);
 }
 
 export function getRouteFromNotification(
-  notification: Notifications.Notification | null | undefined
+  notification: {
+    request?: {
+      content?: { data?: Record<string, unknown> };
+    };
+  } | null | undefined
 ): string {
   const data = notification?.request?.content?.data;
   const fromDeepLink = normalizeRoute((data as Record<string, unknown> | undefined)?.deep_link);
@@ -202,7 +237,11 @@ export function getRouteFromNotification(
 }
 
 export function getNotificationTypeFromNotification(
-  notification: Notifications.Notification | null | undefined
+  notification: {
+    request?: {
+      content?: { data?: Record<string, unknown> };
+    };
+  } | null | undefined
 ): NotificationType {
   const data = notification?.request?.content?.data;
   return normalizeNotificationType((data as Record<string, unknown> | undefined)?.notification_type);
@@ -259,7 +298,17 @@ export async function registerDevicePushTokenForUserAsync(
     return { status: "skipped", reason: "Web push is not part of native push setup." };
   }
 
+  if (isExpoGoEnvironment()) {
+    return {
+      status: "skipped",
+      reason:
+        "Remote push notifications are not supported in Expo Go on SDK 53+. Use a development build.",
+    };
+  }
+
   await configurePushNotificationsAsync();
+
+  const Notifications = await getNotificationsModuleAsync();
 
   const existing = await Notifications.getPermissionsAsync();
   let isGranted = hasGrantedNotificationPermission(existing);
