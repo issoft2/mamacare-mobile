@@ -35,6 +35,50 @@ export default function EditProfileScreen() {
   const [form, setForm] = useState({ firstName: "", lastName: "", week: "", edd: "", dob: "" });
   const [formError, setFormError] = useState("");
 
+  function parseIsoDate(value: string): Date | null {
+    const trimmed = value.trim();
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+    if (!match) return null;
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const parsed = new Date(year, month - 1, day);
+
+    if (
+      parsed.getFullYear() !== year ||
+      parsed.getMonth() !== month - 1 ||
+      parsed.getDate() !== day
+    ) {
+      return null;
+    }
+
+    return parsed;
+  }
+
+  function isPastDate(date: Date): boolean {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const inputDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    return inputDate < today;
+  }
+
+  function handleEddChange(value: string) {
+    setForm((prev) => ({ ...prev, edd: value }));
+
+    const parsed = parseIsoDate(value);
+    if (!parsed) {
+      return;
+    }
+
+    if (isPastDate(parsed)) {
+      setFormError("Estimated due date cannot be in the past.");
+      return;
+    }
+
+    setFormError("");
+  }
+
   useEffect(() => {
     if (profile) {
       setForm({
@@ -57,6 +101,17 @@ export default function EditProfileScreen() {
 
     if (!firstName || !lastName || !dob || !edd) {
       setFormError("Please complete all profile fields.");
+      return;
+    }
+
+    const parsedEdd = parseIsoDate(edd);
+    if (!parsedEdd) {
+      setFormError("Estimated due date must be in YYYY-MM-DD format.");
+      return;
+    }
+
+    if (isPastDate(parsedEdd)) {
+      setFormError("Estimated due date cannot be in the past.");
       return;
     }
     
@@ -230,13 +285,13 @@ export default function EditProfileScreen() {
                   <TextInput
                     style={styles.input}
                     value={form.edd}
-                    onChangeText={(v) => setForm({...form, edd: v})}
+                    onChangeText={handleEddChange}
                     placeholder="2026-08-20"
                     placeholderTextColor="#AEB5C4"
                   />
                 </View>
                 <Text style={styles.fieldHint}>
-                  This can be adjusted later if your care team updates it.
+                  Use YYYY-MM-DD. Today or a future date only.
                 </Text>
               </View>
 
