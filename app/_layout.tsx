@@ -236,7 +236,7 @@ function AppReconsentCheck() {
 }
 
 function PushTokenSync() {
-  const { isLoaded, isSignedIn, userId } = useAuth();
+  const { isLoaded, isSignedIn, userId, getToken } = useAuth();
 
   useEffect(() => {
     if (Platform.OS === "web") {
@@ -248,7 +248,20 @@ function PushTokenSync() {
 
     let cancelled = false;
     (async () => {
-      const result = await registerDevicePushTokenForUserAsync(userId);
+      // Ensure API client token getter is configured before token registration calls.
+      configureApiClient(() => getToken());
+
+      let result = await registerDevicePushTokenForUserAsync(userId);
+
+      // Auth/session restoration may lag briefly on mobile startup; retry once.
+      if (result.status === "failed") {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        if (cancelled) {
+          return;
+        }
+        result = await registerDevicePushTokenForUserAsync(userId);
+      }
+
       if (cancelled) {
         return;
       }
@@ -292,7 +305,7 @@ function PushTokenSync() {
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, isSignedIn, userId]);
+  }, [getToken, isLoaded, isSignedIn, userId]);
 
   return null;
 }
