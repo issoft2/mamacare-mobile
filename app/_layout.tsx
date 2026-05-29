@@ -253,6 +253,36 @@ function PushTokenSync() {
         return;
       }
 
+      if (result.status === "registered") {
+        // eslint-disable-next-line no-console
+        console.log("Push token registered for user:", userId);
+        return;
+      }
+
+      if (result.status === "cached") {
+        // eslint-disable-next-line no-console
+        console.log("Push token already registered (cached):", userId);
+        return;
+      }
+
+      if (result.status === "deferred") {
+        // eslint-disable-next-line no-console
+        console.warn("Push token sync deferred:", result.reason);
+        return;
+      }
+
+      if (result.status === "denied") {
+        // eslint-disable-next-line no-console
+        console.warn("Push notifications permission denied:", result.reason);
+        return;
+      }
+
+      if (result.status === "skipped") {
+        // eslint-disable-next-line no-console
+        console.log("Push token sync skipped:", result.reason);
+        return;
+      }
+
       if (result.status === "failed") {
         // eslint-disable-next-line no-console
         console.warn("Push token sync failed:", result.reason);
