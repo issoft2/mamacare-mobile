@@ -280,21 +280,23 @@ export async function registerDevicePushTokenForUserAsync(
 
   const cacheKey = tokenCacheKey(userId);
   const cachedToken = await AsyncStorage.getItem(cacheKey);
-  if (cachedToken === token) {
-    return { status: "cached", token };
-  }
+  const wasCached = cachedToken === token;
 
   try {
     await apiRequest(PUSH_TOKENS_ENDPOINT, {
       method: "POST",
       body: JSON.stringify({
         fcm_token: token,
+        token,
         device_platform: Platform.OS === "ios" ? "ios" : "android",
         device_name: null,
         is_active: true,
       }),
     });
     await AsyncStorage.setItem(cacheKey, token);
+    if (wasCached) {
+      return { status: "cached", token };
+    }
     return { status: "registered", token };
   } catch (err) {
     if (isPushTokenEndpointUnavailable(err)) {
@@ -326,7 +328,7 @@ export async function deactivateDevicePushTokenForUserAsync(
   try {
     await apiRequest(PUSH_TOKEN_DEACTIVATE_ENDPOINT, {
       method: "POST",
-      body: JSON.stringify({ fcm_token: token }),
+      body: JSON.stringify({ fcm_token: token, token }),
     });
   } catch (err) {
     if (!isPushTokenEndpointUnavailable(err)) {
