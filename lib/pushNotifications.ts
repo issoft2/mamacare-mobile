@@ -5,6 +5,7 @@ import { ApiRequestError, apiRequest } from "@mumcare/api";
 
 const DEFAULT_CHANNEL_ID = "default";
 const PUSH_TOKEN_CACHE_PREFIX = "pushToken";
+const PUSH_TOKEN_ID_CACHE_PREFIX = "pushTokenId";
 const PUSH_TOKENS_ENDPOINTS = [
   "/notifications/push-tokens",
   "/notifications/push-token",
@@ -55,6 +56,10 @@ export type NotificationType =
 
 function tokenCacheKey(userId: string): string {
   return `${PUSH_TOKEN_CACHE_PREFIX}:${userId}`;
+}
+
+function tokenIdCacheKey(userId: string): string {
+  return `${PUSH_TOKEN_ID_CACHE_PREFIX}:${userId}`;
 }
 
 export function isExpoGoEnvironment(): boolean {
@@ -150,7 +155,7 @@ function formatPushApiError(err: unknown): string {
 async function tryRegisterPushTokenAsync(params: {
   token: string;
   platform: "ios" | "android";
-}): Promise<{ ok: true } | { ok: false; reason: string }> {
+}): Promise<{ ok: true; tokenId: string | null } | { ok: false; reason: string }> {
   const appVersion = Constants.expoConfig?.version ?? "unknown";
   const payloadVariants = [
     {
@@ -176,11 +181,16 @@ async function tryRegisterPushTokenAsync(params: {
     for (const method of methods) {
       for (const body of payloadVariants) {
         try {
-          await apiRequest(endpoint, {
+          const response = await apiRequest<{ id?: string } | unknown>(endpoint, {
             method,
             body: JSON.stringify(body),
           });
-          return { ok: true };
+          const tokenId =
+            response && typeof response === "object" && "id" in response &&
+            typeof (response as { id?: unknown }).id === "string"
+              ? (response as { id: string }).id
+              : null;
+          return { ok: true, tokenId };
         } catch (err) {
           attemptErrors.push(`${method} ${endpoint} -> ${formatPushApiError(err)}`);
         }
@@ -216,6 +226,13 @@ async function tryDeactivatePushTokenAsync(token: string): Promise<void> {
       }
     }
   }
+}
+
+async function patchDeactivateByIdAsync(tokenId: string): Promise<void> {
+  await apiRequest(`/notifications/push-tokens/${tokenId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ is_active: false }),
+  });
 }
 
 function hasGrantedNotificationPermission(value: unknown): boolean {
@@ -416,6 +433,7 @@ export async function registerDevicePushTokenForUserAsync(
   const token = tokenResponse.data;
 
   const cacheKey = tokenCacheKey(userId);
+  const tokenIdKey = tokenIdCacheKey(userId);
   const cachedToken = await AsyncStorage.getItem(cacheKey);
   const wasCached = cachedToken === token;
 
@@ -432,6 +450,9 @@ export async function registerDevicePushTokenForUserAsync(
     }
 
     await AsyncStorage.setItem(cacheKey, token);
+    if (registration.tokenId) {
+      await AsyncStorage.setItem(tokenIdKey, registration.tokenId);
+    }
     if (wasCached) {
       return { status: "cached", token };
     }
@@ -458,13 +479,23 @@ export async function deactivateDevicePushTokenForUserAsync(
   }
 
   const cacheKey = tokenCacheKey(userId);
+  const tokenIdKey = tokenIdCacheKey(userId);
   const token = await AsyncStorage.getItem(cacheKey);
+  const tokenId = await AsyncStorage.getItem(tokenIdKey);
   if (!token) {
     return;
   }
 
   try {
-    await tryDeactivatePushTokenAsync(token);
+    if (tokenId) {
+      try {
+        await patchDeactivateByIdAsync(tokenId);
+      } catch {
+        await tryDeactivatePushTokenAsync(token);
+      }
+    } else {
+      await tryDeactivatePushTokenAsync(token);
+    }
   } catch (err) {
     if (!isPushTokenEndpointUnavailable(err)) {
       // eslint-disable-next-line no-console
@@ -472,6 +503,7 @@ export async function deactivateDevicePushTokenForUserAsync(
     }
   } finally {
     await AsyncStorage.removeItem(cacheKey);
+    await AsyncStorage.removeItem(tokenIdKey);
   }
 }
 
