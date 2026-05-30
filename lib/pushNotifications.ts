@@ -6,11 +6,7 @@ import { ApiRequestError, apiRequest } from "@mumcare/api";
 const DEFAULT_CHANNEL_ID = "default";
 const PUSH_TOKEN_CACHE_PREFIX = "pushToken";
 const PUSH_TOKEN_ID_CACHE_PREFIX = "pushTokenId";
-const PUSH_TOKENS_ENDPOINTS = [
-  "/notifications/push-tokens",
-  "/notifications/push-token",
-  "/notifications/push_tokens",
-] as const;
+const PUSH_TOKENS_ENDPOINT = "/notifications/push-tokens";
 const PUSH_TOKEN_DEACTIVATE_ENDPOINTS = [
   "/notifications/push-tokens/deactivate",
   "/notifications/push-token/deactivate",
@@ -155,53 +151,47 @@ function formatPushApiError(err: unknown): string {
 async function tryRegisterPushTokenAsync(params: {
   token: string;
   platform: "ios" | "android";
-}): Promise<{ ok: true; tokenId: string | null } | { ok: false; reason: string }> {
+}): Promise<
+  | { ok: true; tokenId: string | null }
+  | { ok: false; reason: string; endpointUnavailable: boolean }
+> {
   const appVersion = Constants.expoConfig?.version ?? "unknown";
-  const payloadVariants = [
-    {
-      fcm_token: params.token,
-      token: params.token,
-      device_platform: params.platform,
-      platform: params.platform,
-      device_name: null,
-      app_version: appVersion,
-      is_active: true,
-    },
-    {
-      token: params.token,
-      device_platform: params.platform,
-      is_active: true,
-    },
-  ] as const;
+  const deviceName =
+    typeof Constants.deviceName === "string" && Constants.deviceName.trim().length > 0
+      ? Constants.deviceName.trim()
+      : null;
+  const payload = {
+    token: params.token,
+    device_platform: params.platform,
+    device_name: deviceName,
+    app_version: appVersion,
+    is_active: true,
+  } as const;
 
-  const methods = ["POST", "PUT"] as const;
   const attemptErrors: string[] = [];
-
-  for (const endpoint of PUSH_TOKENS_ENDPOINTS) {
-    for (const method of methods) {
-      for (const body of payloadVariants) {
-        try {
-          const response = await apiRequest<{ id?: string } | unknown>(endpoint, {
-            method,
-            body: JSON.stringify(body),
-          });
-          const tokenId =
-            response && typeof response === "object" && "id" in response &&
-            typeof (response as { id?: unknown }).id === "string"
-              ? (response as { id: string }).id
-              : null;
-          return { ok: true, tokenId };
-        } catch (err) {
-          attemptErrors.push(`${method} ${endpoint} -> ${formatPushApiError(err)}`);
-        }
-      }
-    }
+  try {
+    const response = await apiRequest<{ id?: string } | unknown>(PUSH_TOKENS_ENDPOINT, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    const tokenId =
+      response && typeof response === "object" && "id" in response &&
+      typeof (response as { id?: unknown }).id === "string"
+        ? (response as { id: string }).id
+        : null;
+    return { ok: true, tokenId };
+  } catch (err) {
+    attemptErrors.push(`POST ${PUSH_TOKENS_ENDPOINT} -> ${formatPushApiError(err)}`);
+    return {
+      ok: false,
+      reason: attemptErrors.join(" | "),
+      endpointUnavailable: isPushTokenEndpointUnavailable(err),
+    };
   }
+}
 
-  return {
-    ok: false,
-    reason: attemptErrors.slice(0, 6).join(" | "),
-  };
+function isExpoPushToken(value: string): boolean {
+  return /^ExponentPushToken\[[^\]]+\]$/.test(value) || /^ExpoPushToken\[[^\]]+\]$/.test(value);
 }
 
 async function tryDeactivatePushTokenAsync(token: string): Promise<void> {
@@ -445,12 +435,25 @@ export async function registerDevicePushTokenForUserAsync(
   const cachedToken = await AsyncStorage.getItem(cacheKey);
   const wasCached = cachedToken === token;
 
+  if (!isExpoPushToken(token)) {
+    return {
+      status: "failed",
+      reason: "Push token format is invalid for notifications API (expected ExpoPushToken/ExponentPushToken).",
+    };
+  }
+
   try {
     const registration = await tryRegisterPushTokenAsync({
       token,
       platform: Platform.OS === "ios" ? "ios" : "android",
     });
     if (!registration.ok) {
+      if (registration.endpointUnavailable) {
+        return {
+          status: "deferred",
+          reason: "Push token endpoint is not available yet.",
+        };
+      }
       return {
         status: "failed",
         reason: `All push token registration attempts failed: ${registration.reason}`,
