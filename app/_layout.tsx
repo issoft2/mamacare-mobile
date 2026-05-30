@@ -240,9 +240,22 @@ function PushTokenSync() {
 
   useEffect(() => {
     if (Platform.OS === "web") {
+      if (typeof __DEV__ !== "undefined" && __DEV__) {
+        // eslint-disable-next-line no-console
+        console.log("Push token sync skipped on web (native Expo push registration is mobile-only).");
+      }
       return;
     }
     if (!isLoaded || !isSignedIn || !userId) {
+      if (typeof __DEV__ !== "undefined" && __DEV__) {
+        const reason = !isLoaded
+          ? "auth not loaded"
+          : !isSignedIn
+            ? "user is signed out"
+            : "missing userId";
+        // eslint-disable-next-line no-console
+        console.log(`Push token sync waiting: ${reason}.`);
+      }
       return;
     }
 
