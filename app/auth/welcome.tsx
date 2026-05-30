@@ -59,7 +59,7 @@ export default function WelcomeScreen() {
       <Image
         source={WELCOME_BG}
         style={styles.backgroundImage}
-        resizeMode="cover"
+        resizeMode="contain"
       />
 
       <LinearGradient

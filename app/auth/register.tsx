@@ -22,7 +22,6 @@ import {
   Alert,
   Dimensions,
   Image,
-  ImageBackground,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -136,34 +135,38 @@ export default function RegisterScreen() {
   // ── Verification screen ─────────────────────────────────────────────────────
   if (pendingVerification) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <View style={styles.container}>
         <Stack.Screen options={{ headerShown: false }} />
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ flex: 1 }}
-        >
-          <ScrollView
-            contentContainerStyle={styles.scroll}
-            keyboardShouldPersistTaps="handled"
-            bounces={false}
-            showsVerticalScrollIndicator={false}
+        <Image
+          source={WELCOME_BG}
+          style={styles.backgroundImage}
+          resizeMode="cover"
+        />
+
+        <LinearGradient
+          colors={[
+            "rgba(255,248,244,0.18)",
+            "rgba(255,248,244,0.82)",
+            "#FFF8F4",
+          ]}
+          locations={[0, 0.46, 0.78]}
+          style={StyleSheet.absoluteFill}
+        />
+
+        <SafeAreaView style={styles.safeArea} edges={["top"]}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={{ flex: 1 }}
           >
-            {/* Hero — warm envelope moment */}
-            <ImageBackground
-              source={WELCOME_BG}
-              style={styles.hero}
-              resizeMode="cover"
+            <ScrollView
+              contentContainerStyle={styles.scroll}
+              keyboardShouldPersistTaps="handled"
+              bounces={false}
+              showsVerticalScrollIndicator={false}
             >
-              <LinearGradient
-                colors={[
-                  "rgba(255,245,240,0.15)",
-                  "rgba(180,80,100,0.25)",
-                  "rgba(255,251,247,0.97)",
-                ]}
-                locations={[0, 0.5, 1]}
-                style={StyleSheet.absoluteFill}
-              />
+              {/* Hero — warm envelope moment */}
+              <View style={styles.hero}>
 
               {/* Brand */}
               <View style={styles.brandRow}>
@@ -182,7 +185,7 @@ export default function RegisterScreen() {
                   "We sent a little code{"\n"}to {email}"
                 </Text>
               </View>
-            </ImageBackground>
+              </View>
 
             {/* Card */}
             <View style={styles.card}>
@@ -239,42 +242,47 @@ export default function RegisterScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </View>
     );
   }
 
   // ── Registration screen ─────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+    <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-          bounces={false}
-          showsVerticalScrollIndicator={false}
+      <Image
+        source={WELCOME_BG}
+        style={styles.backgroundImage}
+        resizeMode="cover"
+      />
+
+      <LinearGradient
+        colors={[
+          "rgba(255,248,244,0.18)",
+          "rgba(255,248,244,0.82)",
+          "#FFF8F4",
+        ]}
+        locations={[0, 0.46, 0.78]}
+        style={StyleSheet.absoluteFill}
+      />
+
+      <SafeAreaView style={styles.safeArea} edges={["top"]}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
         >
-          {/* ── Hero zone ──────────────────────────────────────────── */}
-          <ImageBackground
-            source={WELCOME_BG}
-            style={styles.hero}
-            resizeMode="cover"
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+            showsVerticalScrollIndicator={false}
           >
-            <LinearGradient
-              colors={[
-                "rgba(255,245,240,0.15)",
-                "rgba(180,80,100,0.25)",
-                "rgba(255,251,247,0.97)",
-              ]}
-              locations={[0, 0.5, 1]}
-              style={StyleSheet.absoluteFill}
-            />
+            {/* ── Hero zone ──────────────────────────────────────────── */}
+            <View style={styles.hero}>
 
             {/* Back button */}
             <TouchableOpacity
@@ -299,7 +307,7 @@ export default function RegisterScreen() {
                 "You don't have to navigate{"\n"}this alone."
               </Text>
             </View>
-          </ImageBackground>
+            </View>
 
           {/* ── Form card ──────────────────────────────────────────── */}
           <View style={styles.card}>
@@ -398,47 +406,58 @@ export default function RegisterScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          </ScrollView>
+        </KeyboardAvoidingView>
 
-      <Modal
-        visible={legalPreview !== null}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setLegalPreview(null)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {legalPreview === "terms" ? "Terms of Use" : "Privacy Policy"}
+        <Modal
+          visible={legalPreview !== null}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setLegalPreview(null)}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>
+                  {legalPreview === "terms" ? "Terms of Use" : "Privacy Policy"}
+                </Text>
+                <TouchableOpacity onPress={() => setLegalPreview(null)}>
+                  <Ionicons name="close" size={22} color={colors.navy[700]} />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.modalMeta}>
+                {(legalPreview === "terms" ? activeTerms : activePrivacy).region.toUpperCase()} ·
+                {(legalPreview === "terms" ? activeTerms : activePrivacy).version}
               </Text>
-              <TouchableOpacity onPress={() => setLegalPreview(null)}>
-                <Ionicons name="close" size={22} color={colors.navy[700]} />
-              </TouchableOpacity>
+              <ScrollView style={styles.modalBody}>
+                <Text style={styles.modalContent}>
+                  {legalPreview === "terms" ? termsContent : privacyContent}
+                </Text>
+              </ScrollView>
             </View>
-            <Text style={styles.modalMeta}>
-              {(legalPreview === "terms" ? activeTerms : activePrivacy).region.toUpperCase()} ·
-              {(legalPreview === "terms" ? activeTerms : activePrivacy).version}
-            </Text>
-            <ScrollView style={styles.modalBody}>
-              <Text style={styles.modalContent}>
-                {legalPreview === "terms" ? termsContent : privacyContent}
-              </Text>
-            </ScrollView>
           </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+        </Modal>
+      </SafeAreaView>
+    </View>
   );
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    minHeight: "100%",
+    backgroundColor: CREAM,
+    overflow: "hidden",
+  },
+  backgroundImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
+  },
   safeArea: {
     flex: 1,
-    backgroundColor: CREAM,
   },
   scroll: {
     flexGrow: 1,

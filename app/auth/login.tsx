@@ -22,7 +22,6 @@ import {
   Alert,
   Dimensions,
   Image,
-  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -93,34 +92,38 @@ export default function LoginScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+    <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-          bounces={false}
-          showsVerticalScrollIndicator={false}
+      <Image
+        source={WELCOME_BG}
+        style={styles.backgroundImage}
+        resizeMode="cover"
+      />
+
+      <LinearGradient
+        colors={[
+          "rgba(255,248,244,0.18)",
+          "rgba(255,248,244,0.82)",
+          "#FFF8F4",
+        ]}
+        locations={[0, 0.46, 0.78]}
+        style={StyleSheet.absoluteFill}
+      />
+
+      <SafeAreaView style={styles.safeArea} edges={["top"]}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
         >
-          {/* ── Hero zone — mirrors welcome screen atmosphere ─────── */}
-          <ImageBackground
-            source={WELCOME_BG}
-            style={styles.hero}
-            resizeMode="cover"
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+            showsVerticalScrollIndicator={false}
           >
-            <LinearGradient
-              colors={[
-                "rgba(255,245,240,0.15)",
-                "rgba(180,80,100,0.25)",
-                "rgba(255,251,247,0.97)",
-              ]}
-              locations={[0, 0.5, 1]}
-              style={StyleSheet.absoluteFill}
-            />
+            {/* ── Hero zone — mirrors welcome screen atmosphere ─────── */}
+            <View style={styles.hero}>
 
             {/* Back button */}
             <TouchableOpacity
@@ -144,7 +147,7 @@ export default function LoginScreen() {
             <Text style={styles.dailyQuote}>"{dailyMessage}"</Text>
 
             </View>
-          </ImageBackground>
+            </View>
 
           {/* ── Form card — floats up from the hero ──────────────── */}
           <View style={styles.card}>
@@ -242,16 +245,27 @@ export default function LoginScreen() {
             </View>
 
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    minHeight: "100%",
+    backgroundColor: CREAM,
+    overflow: "hidden",
+  },
+  backgroundImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
+  },
   safeArea: {
     flex: 1,
-    backgroundColor: CREAM,
   },
   scroll: {
     flexGrow: 1,
