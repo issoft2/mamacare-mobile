@@ -115,7 +115,7 @@ export function SocialSignInButtons({
               const target =
                 normalizeClerkTarget(sessionTaskUrl) ??
                 normalizeClerkTarget(redirectUrl) ??
-                (session ? "/tabs/home" : "/auth/welcome");
+                (session ? afterAuthHref : "/auth/welcome");
               router.replace(target as any);
             },
           });
@@ -124,8 +124,6 @@ export function SocialSignInButtons({
             // eslint-disable-next-line no-console
             console.log("Social sign-in setActive completed for session:", createdSessionId);
           }
-
-          goHomeAfterClerkSetActive(router, afterAuthHref);
         } else if (typeof __DEV__ !== "undefined" && __DEV__) {
           // eslint-disable-next-line no-console
           console.warn("Social sign-in did not produce an active session.");
