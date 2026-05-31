@@ -12,7 +12,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth, useUser } from "@clerk/clerk-expo";
 import {
   ApiRequestError,
-  colors,
   postConsentEvents,
   type ConsentEventPayload,
   type ConsentTier,
@@ -20,6 +19,7 @@ import {
   useProfile,
   useUpdateProfile,
 } from "@mumcare/api";
+import { colors } from "@mumcare/ui";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { getActiveLegalDocument, getActiveLegalRoute } from "@/lib/legal";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
