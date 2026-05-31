@@ -13,8 +13,9 @@ import {
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { useAppointments } from "@mumcare/api";
-import { colors, spacing, typography, shadows } from "@mumcare/ui";
+import { colors, spacing, shadows } from "@mumcare/ui";
 import type { Appointment } from "@mumcare/types";
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 export default function AppointmentsScreen() {
   const router = useRouter();
@@ -40,7 +41,7 @@ export default function AppointmentsScreen() {
           </Text>
           {item.location && <Text style={styles.location}>📍 {item.location}</Text>}
           <View style={[styles.statusBadge, item.status === "completed" && styles.statusCompleted]}>
-            <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
+            <Text style={styles.statusText}>{item.status}</Text>
           </View>
         </View>
       </View>
@@ -53,7 +54,7 @@ export default function AppointmentsScreen() {
         <TouchableOpacity
           onPress={() => {
             if (router.canGoBack()) {
-              router.back();
+              router.replace('/tabs/home');
             } else {
               router.replace('/tabs/home');
             }
@@ -62,13 +63,13 @@ export default function AppointmentsScreen() {
           accessibilityLabel="Go back"
           style={{ padding: 4, marginRight: 8 }}
         >
-          <Ionicons name="arrow-back" size={24} color="#1A3A6A" />
+          <Ionicons name="arrow-back" size={24} color={AUTH_UI.linkBerry} />
         </TouchableOpacity>
         <Text style={styles.title}>Appointments</Text>
       </View>
 
       <View style={styles.heroCard}>
-        <Text style={styles.heroTitle}>Upcoming Visits</Text>
+        <Text style={styles.heroTitle}>Upcoming visits</Text>
         <Text style={styles.heroSub}>Only future appointments are shown here, nearest first.</Text>
         <TouchableOpacity
           style={styles.addBtn}
@@ -77,7 +78,7 @@ export default function AppointmentsScreen() {
           accessibilityLabel="Add appointment"
           activeOpacity={0.88}
         >
-          <Ionicons name="add-circle-outline" size={16} color="#FFF" />
+          <Ionicons name="add-circle-outline" size={16} color={AUTH_UI.textWhite} />
           <Text style={styles.addBtnText}>Add appointment</Text>
         </TouchableOpacity>
       </View>
@@ -105,21 +106,21 @@ export default function AppointmentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container:   { flex: 1, backgroundColor: colors.gray[50] },
+  container:   { flex: 1, backgroundColor: AUTH_UI.warmBackground },
   list:        { padding: spacing[4], gap: spacing[3] },
-  title:       { fontSize: typography.fontSize["2xl"], fontWeight: typography.fontWeight.bold, color: colors.navy[700], marginBottom: spacing[4] },
+  title:       { fontSize: 30, fontWeight: "800", color: AUTH_UI.textHeading, marginBottom: spacing[4], fontFamily: FONT_WARM_SERIF, letterSpacing: -0.4 },
   heroCard:    {
     marginHorizontal: spacing[4],
     marginBottom: spacing[2],
-    backgroundColor: "#FFF6F6",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(232,105,124,0.18)",
+    backgroundColor: AUTH_UI.textWhite,
+    borderRadius: AUTH_UI.inputRadius,
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: colors.rose[200],
     padding: spacing[4],
     gap: spacing[2],
   },
-  heroTitle:   { fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, color: colors.navy[700] },
-  heroSub:     { fontSize: typography.fontSize.sm, color: colors.navy[500] },
+  heroTitle:   { fontSize: 22, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF },
+  heroSub:     { fontSize: 15, color: AUTH_UI.textBlack, lineHeight: 22, fontFamily: FONT_FRIENDLY_SANS },
   addBtn: {
     marginTop: spacing[1],
     alignSelf: "flex-start",
@@ -131,20 +132,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing[1],
   },
-  addBtnText: { color: "#FFF", fontWeight: typography.fontWeight.bold, fontSize: typography.fontSize.sm },
+  addBtnText: { color: AUTH_UI.textWhite, fontWeight: "800", fontSize: 15, fontFamily: FONT_FRIENDLY_SANS },
   loadingWrap: { paddingVertical: spacing[3] },
-  card:        { backgroundColor: colors.white, borderRadius: 16, padding: spacing[4], flexDirection: "row", gap: spacing[4], ...shadows.sm },
+  card:        { backgroundColor: colors.white, borderRadius: AUTH_UI.inputRadius, borderWidth: AUTH_UI.borderWidth, borderColor: colors.rose[200], padding: spacing[4], flexDirection: "row", gap: spacing[4], ...shadows.sm },
   cardLeft:    { alignItems: "center", justifyContent: "center", width: 48 },
-  dateDay:     { fontSize: typography.fontSize["2xl"], fontWeight: typography.fontWeight.bold, color: colors.rose[500] },
-  dateMonth:   { fontSize: typography.fontSize.xs, color: colors.gray[500], textTransform: "uppercase" },
+  dateDay:     { fontSize: 28, fontWeight: "800", color: colors.rose[500], fontFamily: FONT_WARM_SERIF },
+  dateMonth:   { fontSize: 12, color: AUTH_UI.textBlack, textTransform: "uppercase", fontFamily: FONT_FRIENDLY_SANS },
   cardRight:   { flex: 1, gap: spacing[1] },
-  appointmentType: { fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semibold, color: colors.gray[900] },
-  appointmentTime: { fontSize: typography.fontSize.sm, color: colors.gray[500] },
-  location:    { fontSize: typography.fontSize.sm, color: colors.gray[500] },
-  statusBadge: { alignSelf: "flex-start", backgroundColor: colors.gray[100], borderRadius: 6, paddingHorizontal: spacing[2], paddingVertical: 2, marginTop: spacing[1] },
+  appointmentType: { fontSize: 17, fontWeight: "700", color: AUTH_UI.textHeading, fontFamily: FONT_FRIENDLY_SANS, textTransform: "capitalize" },
+  appointmentTime: { fontSize: 14, color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
+  location:    { fontSize: 14, color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
+  statusBadge: { alignSelf: "flex-start", backgroundColor: colors.gray[100], borderRadius: 8, paddingHorizontal: spacing[2], paddingVertical: 2, marginTop: spacing[1], borderWidth: 1, borderColor: AUTH_UI.semanticNeutralLine },
   statusCompleted: { backgroundColor: colors.sage[100] },
-  statusText:  { fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.bold, color: colors.gray[600] },
+  statusText:  { fontSize: 12, fontWeight: "700", color: AUTH_UI.textBlack, textTransform: "capitalize", fontFamily: FONT_FRIENDLY_SANS },
   emptyWrap: { alignItems: "center", marginTop: spacing[12], paddingHorizontal: spacing[5] },
-  emptyText:   { textAlign: "center", color: colors.gray[500], fontWeight: typography.fontWeight.semibold },
-  emptySub: { textAlign: "center", color: colors.gray[400], marginTop: spacing[1] },
+  emptyText:   { textAlign: "center", color: AUTH_UI.textBlack, fontWeight: "700", fontFamily: FONT_FRIENDLY_SANS },
+  emptySub: { textAlign: "center", color: AUTH_UI.textBlack, marginTop: spacing[1], fontFamily: FONT_FRIENDLY_SANS },
 });

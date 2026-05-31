@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, Text, View, TextInput, TouchableOpacity } from 
 import { useState } from "react";
 
 import { getActiveLegalContent, getActiveLegalDocument } from "@/lib/legal";
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 export default function LegalDocumentScreen() {
   const router = useRouter();
@@ -56,10 +57,10 @@ export default function LegalDocumentScreen() {
           style={styles.backBtn}
           activeOpacity={0.86}
         >
-          <Ionicons name="chevron-back" size={24} color="#1A237E" />
+          <Ionicons name="chevron-back" size={24} color={AUTH_UI.textHeading} />
         </TouchableOpacity>
         <View style={styles.headerCopy}>
-          <Text style={styles.eyebrow}>LEGAL DOCUMENT</Text>
+          <Text style={styles.eyebrow}>Legal document</Text>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.meta}>
             {active.region.toUpperCase()} · {active.version} · {active.language.toUpperCase()}
@@ -88,7 +89,7 @@ export default function LegalDocumentScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#FFF8F4" },
+  screen: { flex: 1, backgroundColor: AUTH_UI.warmBackground },
   header: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -100,32 +101,38 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#FFF",
+    backgroundColor: AUTH_UI.textWhite,
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: AUTH_UI.legalBorderSoft,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 14,
   },
   headerCopy: { flex: 1 },
-  eyebrow: { fontSize: 11, fontWeight: "800", color: "#E8697C", letterSpacing: 1.1, marginBottom: 4 },
-  title: { fontSize: 24, fontWeight: "800", color: "#1A237E" },
-  meta: { marginTop: 6, fontSize: 12, color: "#6E7890", fontWeight: "600" },
+  eyebrow: { fontSize: 12, fontWeight: "700", color: AUTH_UI.textBlack, marginBottom: 4, fontFamily: FONT_FRIENDLY_SANS },
+  title: { fontSize: 30, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF, letterSpacing: -0.5 },
+  meta: { marginTop: 6, fontSize: 12, color: AUTH_UI.textBlack, fontWeight: "600", fontFamily: FONT_FRIENDLY_SANS },
   searchContainer: { paddingHorizontal: 20, marginBottom: 10 },
   searchBar: {
-    height: 40,
-    borderColor: "#E0E0E0",
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
+    height: 44,
+    borderColor: AUTH_UI.mutedBorder18,
+    borderWidth: AUTH_UI.borderWidth,
+    borderRadius: AUTH_UI.inputRadius,
+    paddingHorizontal: AUTH_UI.fieldPaddingX,
     marginBottom: 10,
+    backgroundColor: AUTH_UI.overlayCard,
+    color: AUTH_UI.textBlack,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   content: { paddingHorizontal: 20, paddingBottom: 34 },
   paragraph: {
     fontSize: 14,
     lineHeight: 22,
-    color: "#344054",
+    color: AUTH_UI.textBlack,
     marginBottom: 14,
-    backgroundColor: "rgba(255,255,255,0.84)",
+    backgroundColor: AUTH_UI.overlayCard84,
     borderRadius: 14,
     padding: 14,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 });

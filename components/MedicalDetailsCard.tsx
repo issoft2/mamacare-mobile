@@ -7,7 +7,10 @@
 
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
-import { colors, spacing, typography } from "@mumcare/ui";
+import { colors, spacing } from "@mumcare/ui";
+import { LinearGradient } from "expo-linear-gradient";
+import { ctaButtonStyles, ctaGradientColors } from "@/components/styles/ctaButton";
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 import type { Profile } from "@mumcare/types";
 
 type Props = {
@@ -56,13 +59,20 @@ export function MedicalDetailsCard({ profile, onDismiss }: Props) {
 
       <View style={styles.actions}>
         <TouchableOpacity
-          style={styles.primaryButton}
+          style={[ctaButtonStyles.button, styles.primaryButton]}
           onPress={() => router.push("/profile/medical")}
           activeOpacity={0.85}
           accessibilityRole="button"
           accessibilityLabel="Complete your medical profile"
         >
-          <Text style={styles.primaryButtonText}>Complete profile</Text>
+          <LinearGradient
+            colors={ctaGradientColors}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={ctaButtonStyles.gradient}
+          >
+            <Text style={ctaButtonStyles.text}>Complete profile</Text>
+          </LinearGradient>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -93,10 +103,12 @@ function countCompletedOptionalFields(profile: Profile): number {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: spacing[5],
-    borderWidth: 1,
-    borderColor: colors.rose[100],
+    borderRadius: AUTH_UI.cardRadius,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 20,
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: colors.rose[200],
     ...Platform.select({
       ios: {
         shadowColor: colors.rose[200],
@@ -120,20 +132,23 @@ const styles = StyleSheet.create({
     marginBottom: spacing[2],
   },
   title: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.navy[700],
+    fontSize: 24,
+    fontWeight: "800",
+    color: AUTH_UI.textHeading,
+    fontFamily: FONT_WARM_SERIF,
   },
   progress: {
-    fontSize: typography.fontSize.xs,
-    color: colors.rose[400],
-    fontWeight: typography.fontWeight.medium,
+    fontSize: 13,
+    color: AUTH_UI.linkBerry,
+    fontWeight: "700",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   body: {
-    fontSize: typography.fontSize.sm,
-    color: colors.navy[600],
-    lineHeight: typography.fontSize.sm * 1.5,
+    fontSize: 15,
+    color: AUTH_UI.textBlack,
+    lineHeight: 22,
     marginBottom: spacing[4],
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   actions: {
     flexDirection: "row",
@@ -141,20 +156,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   primaryButton: {
-    backgroundColor: colors.rose[500],
-    borderRadius: 12,
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[4],
+    borderRadius: 20,
     flex: 1,
-    alignItems: "center",
+    overflow: "hidden",
     ...Platform.select({
       web: { /* @ts-ignore */ cursor: "pointer" },
     }),
   },
   primaryButtonText: {
     color: colors.white,
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
+    fontSize: 16,
+    fontWeight: "800",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   secondaryButton: {
     paddingVertical: spacing[3],
@@ -164,8 +177,9 @@ const styles = StyleSheet.create({
     }),
   },
   secondaryButtonText: {
-    color: colors.navy[400],
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
+    color: AUTH_UI.linkBerry,
+    fontSize: 15,
+    fontWeight: "700",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 });

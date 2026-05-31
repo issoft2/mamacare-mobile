@@ -29,6 +29,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -40,6 +41,7 @@ import { SocialSignInButtons } from "@/components/auth/SocialSignInButtons";
 import { getErrorMessage } from "@/lib/errors";
 import { goHomeAfterClerkSetActive } from "@/lib/goHomeAfterClerkSetActive";
 import { resetClerkForSignIn } from "@/lib/resetClerkForSignIn";
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 import { getTimeBasedGreeting, getDailyMessage } from "../../lib/greetings";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 
@@ -48,13 +50,43 @@ import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaB
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const WELCOME_BG = require("../../assets/welcome-bg.png");
 const APP_LOGO = require("../../assets/mumlogo.png");
-const CREAM = "#FFFBF7";
+const CREAM = AUTH_UI.cream;
 const CARD_RADIUS = 32;
+const TEXT_BLACK = AUTH_UI.textBlack;
+const TEXT_HEADING = AUTH_UI.textHeading;
+const TEXT_WHITE = AUTH_UI.textWhite;
+const LINK_BERRY = AUTH_UI.linkBerry;
+
+function normalizeClerkTarget(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    try {
+      const url = new URL(trimmed);
+      const path = `${url.pathname}${url.search}${url.hash}`;
+      return path || null;
+    } catch {
+      return null;
+    }
+  }
+
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
 
 export default function LoginScreen() {
   const { signIn, setActive, isLoaded } = useSignIn();
   const clerk = useClerk();
   const router = useRouter();
+  const { width, fontScale } = useWindowDimensions();
+  const isCompact = width < 360;
+  const isLargeText = fontScale >= 1.2;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -71,8 +103,34 @@ export default function LoginScreen() {
       await resetClerkForSignIn(clerk);
       const result = await signIn.create({ identifier: email, password });
 
+      if (typeof __DEV__ !== "undefined" && __DEV__) {
+        // eslint-disable-next-line no-console
+        console.log("Login signIn.create result:", {
+          status: result.status,
+          createdSessionId: result.createdSessionId ?? null,
+        });
+      }
+
       if (result.status === "complete" && result.createdSessionId) {
-        await setActive({ session: result.createdSessionId });
+        await setActive({
+          session: result.createdSessionId,
+          navigate: async (params) => {
+            const session = params.session;
+            const sessionTaskUrl = (params as { sessionTaskUrl?: string }).sessionTaskUrl;
+            const redirectUrl = (params as { redirectUrl?: string }).redirectUrl;
+            const target =
+              normalizeClerkTarget(sessionTaskUrl) ??
+              normalizeClerkTarget(redirectUrl) ??
+              (session ? "/tabs/home" : "/auth/welcome");
+            router.replace(target as any);
+          },
+        });
+
+        if (typeof __DEV__ !== "undefined" && __DEV__) {
+          // eslint-disable-next-line no-console
+          console.log("Login setActive completed for session:", result.createdSessionId);
+        }
+
         goHomeAfterClerkSetActive(router);
       } else if (result.status === "needs_second_factor") {
         // TODO: navigate to dedicated MFA screen
@@ -82,6 +140,10 @@ export default function LoginScreen() {
         );
       }
     } catch (err) {
+      if (typeof __DEV__ !== "undefined" && __DEV__) {
+        // eslint-disable-next-line no-console
+        console.warn("Login failed with raw error:", err);
+      }
       Alert.alert(
         "Couldn't sign you in",
         getErrorMessage(err, "Please check your details and try again.")
@@ -103,9 +165,9 @@ export default function LoginScreen() {
 
       <LinearGradient
         colors={[
-          "rgba(255,248,244,0.18)",
-          "rgba(255,248,244,0.82)",
-          "#FFF8F4",
+          AUTH_UI.overlayStart,
+          AUTH_UI.overlayEnd,
+          AUTH_UI.warmBackground,
         ]}
         locations={[0, 0.46, 0.78]}
         style={StyleSheet.absoluteFill}
@@ -123,7 +185,7 @@ export default function LoginScreen() {
             showsVerticalScrollIndicator={false}
           >
             {/* ── Hero zone — mirrors welcome screen atmosphere ─────── */}
-            <View style={styles.hero}>
+            <View style={[styles.hero, isCompact && styles.heroCompact]}>
 
             {/* Back button */}
             <TouchableOpacity
@@ -142,27 +204,27 @@ export default function LoginScreen() {
             </View>
 
             {/* Warm welcome-back message */}
-            <View style={styles.heroText}>
-             <Text style={styles.timeGreeting}>{greeting}, mama</Text>
-            <Text style={styles.dailyQuote}>"{dailyMessage}"</Text>
+            <View style={[styles.heroText, isCompact && styles.heroTextCompact]}>
+             <Text style={[styles.timeGreeting, isCompact && styles.timeGreetingCompact]}>{greeting}, mama</Text>
+            <Text style={[styles.dailyQuote, isCompact && styles.dailyQuoteCompact]}>"{dailyMessage}"</Text>
 
             </View>
             </View>
 
           {/* ── Form card — floats up from the hero ──────────────── */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Sign in</Text>
+          <View style={[styles.card, isCompact && styles.cardCompact, isLargeText && styles.cardLargeText]}>
+            <Text style={[styles.cardTitle, isCompact && styles.cardTitleCompact]}>Sign in</Text>
             <Text style={styles.cardSubtitle}>
           
             </Text>
 
             {/* Email */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>EMAIL ADDRESS</Text>
+              <Text style={styles.label}>Email address</Text>
               <TextInput
                 style={styles.input}
                 placeholder="mama@example.com"
-                placeholderTextColor={colors.navy[300]}
+                placeholderTextColor={TEXT_BLACK}
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
@@ -174,11 +236,11 @@ export default function LoginScreen() {
 
             {/* Password */}
             <View style={styles.inputGroup}>
-              <View style={styles.labelRow}>
-                <Text style={styles.label}>PASSWORD</Text>
+              <View style={[styles.labelRow, isLargeText && styles.labelRowStack]}>
+                <Text style={[styles.label, styles.labelInline]}>Password</Text>
                 <TouchableOpacity
                   // onPress={() => router.push("/auth/forgot-password")}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 >
                   <Text style={styles.forgotText}>Forgot password?</Text>
                 </TouchableOpacity>
@@ -187,7 +249,7 @@ export default function LoginScreen() {
                 <TextInput
                   style={styles.passwordInput}
                   placeholder="Your password"
-                  placeholderTextColor={colors.navy[300]}
+                  placeholderTextColor={TEXT_BLACK}
                   value={password}
                   secureTextEntry={!showPassword}
                   onChangeText={setPassword}
@@ -223,9 +285,9 @@ export default function LoginScreen() {
                 style={ctaButtonStyles.gradient}
               >
                 {loading ? (
-                  <ActivityIndicator color="#FFF" />
+                  <ActivityIndicator color={AUTH_UI.textWhite} />
                 ) : (
-                  <Text style={ctaButtonStyles.text}>Sign In</Text>
+                  <Text style={ctaButtonStyles.text}>Sign in</Text>
                 )}
               </LinearGradient>
             </TouchableOpacity>
@@ -234,11 +296,11 @@ export default function LoginScreen() {
             <SocialSignInButtons afterAuthHref="/tabs/home" />
 
             {/* Footer */}
-            <View style={styles.footer}>
+            <View style={[styles.footer, isLargeText && styles.footerWrap]}>
               <Text style={styles.footerText}>New here? </Text>
               <TouchableOpacity
                 onPress={() => router.push("/auth/register")}
-                hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
               >
                 <Text style={styles.footerLink}>Create an account</Text>
               </TouchableOpacity>
@@ -273,25 +335,28 @@ const styles = StyleSheet.create({
 
   // ── Hero ──────────────────────────────────────────────────────
   hero: {
-    height: SCREEN_HEIGHT * 0.38,
+    height: SCREEN_HEIGHT * 0.5,
     paddingHorizontal: 24,
     paddingTop: 16,
-    paddingBottom: 48,
+    paddingBottom: 32,
     justifyContent: "space-between",
+  },
+  heroCompact: {
+    paddingHorizontal: 20,
   },
 
   backBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255,251,247,0.92)",
+    backgroundColor: AUTH_UI.overlayStart,
     borderWidth: 1,
-    borderColor: "rgba(140, 90, 82, 0.18)",
+    borderColor: AUTH_UI.mutedBorder18,
     justifyContent: "center",
     alignItems: "center",
     ...Platform.select({
       ios: {
-        shadowColor: "#6A4039",
+        shadowColor: AUTH_UI.shadowBrown,
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.16,
         shadowRadius: 6,
@@ -309,7 +374,7 @@ const styles = StyleSheet.create({
     height: 96,
     borderRadius: 48,
     overflow: "hidden",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: AUTH_UI.textWhite,
     justifyContent: "center",
     alignItems: "center",
     ...Platform.select({
@@ -329,15 +394,15 @@ const styles = StyleSheet.create({
 
   heroText: {
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.52)",
+    backgroundColor: AUTH_UI.overlayGlass,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.55)",
+    borderColor: AUTH_UI.overlayGlassBorder,
     paddingHorizontal: 16,
-    paddingVertical: 11,
+    paddingVertical: 13,
     borderRadius: 16,
     ...Platform.select({
       ios: {
-        shadowColor: "#875851",
+        shadowColor: AUTH_UI.shadowCoffee,
         shadowOffset: { width: 0, height: 5 },
         shadowOpacity: 0.14,
         shadowRadius: 10,
@@ -345,21 +410,25 @@ const styles = StyleSheet.create({
       android: { elevation: 2 },
     }),
   },
+  heroTextCompact: {
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+  },
   heroGreeting: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: "700",
-    color: colors.rose[400],
-    letterSpacing: 2,
-    textTransform: "uppercase",
+    color: TEXT_HEADING,
+    letterSpacing: 0.4,
     marginBottom: 10,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   heroQuote: {
-    fontSize: 20,
-    fontStyle: "italic",
-    color: colors.navy[700],
+    fontSize: 22,
+    color: TEXT_HEADING,
     textAlign: "center",
-    lineHeight: 30,
+    lineHeight: 33,
     fontWeight: "500",
+    fontFamily: FONT_WARM_SERIF,
   },
 
   // ── Card ──────────────────────────────────────────────────────
@@ -382,6 +451,13 @@ const styles = StyleSheet.create({
       android: { elevation: 8 },
     }),
   },
+  cardCompact: {
+    paddingHorizontal: 22,
+    paddingTop: 18,
+  },
+  cardLargeText: {
+    paddingBottom: 64,
+  },
   cardHandle: {
     width: 40,
     height: 4,
@@ -393,15 +469,20 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 28,
     fontWeight: "800",
-    color: colors.navy[700],
+    color: TEXT_HEADING,
     letterSpacing: -0.8,
     marginBottom: 4,
+    fontFamily: FONT_WARM_SERIF,
+  },
+  cardTitleCompact: {
+    fontSize: 25,
   },
   cardSubtitle: {
-    fontSize: 15,
-    color: colors.navy[400],
+    fontSize: 16,
+    color: TEXT_BLACK,
     marginBottom: 28,
-    lineHeight: 22,
+    lineHeight: 24,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 
   // ── Inputs ────────────────────────────────────────────────────
@@ -414,37 +495,46 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
+  labelRowStack: {
+    alignItems: "flex-start",
+    rowGap: 8,
+    flexWrap: "wrap",
+  },
   label: {
-    fontSize: 11,
-    fontWeight: "800",
-    color: "#8E5A54",
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
+    fontSize: 14,
+    fontWeight: "600",
+    color: TEXT_BLACK,
+    letterSpacing: 0.2,
     marginBottom: 8,
+    fontFamily: FONT_FRIENDLY_SANS,
+  },
+  labelInline: {
+    marginBottom: 0,
   },
   forgotText: {
-    fontSize: 13,
-    color: colors.rose[400],
+    fontSize: 15,
+    color: LINK_BERRY,
     fontWeight: "600",
-    fontStyle: "italic",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   input: {
-    backgroundColor: "#FFF",
+    backgroundColor: AUTH_UI.textWhite,
     borderRadius: 16,
     paddingHorizontal: 18,
     paddingVertical: 15,
     fontSize: 16,
-    color: colors.navy[700],
+    color: TEXT_BLACK,
     borderWidth: 1.5,
-    borderColor: colors.rose[100],
+    borderColor: colors.rose[200],
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   passwordWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFF",
+    backgroundColor: AUTH_UI.textWhite,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: colors.rose[100],
+    borderColor: colors.rose[200],
     paddingRight: 4,
   },
   passwordInput: {
@@ -452,7 +542,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 15,
     fontSize: 16,
-    color: colors.navy[700],
+    color: TEXT_BLACK,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   eyeBtn: {
     padding: 10,
@@ -468,10 +559,11 @@ const styles = StyleSheet.create({
     ...shadows.md,
   },
   mainBtnText: {
-    color: "#FFF",
+    color: TEXT_WHITE,
     fontSize: 17,
     fontWeight: "700",
     letterSpacing: 0.3,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 
   // ── Footer ────────────────────────────────────────────────────
@@ -481,34 +573,47 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 28,
   },
+  footerWrap: {
+    flexWrap: "wrap",
+    rowGap: 8,
+  },
   footerText: {
-    color: colors.navy[400],
-    fontSize: 15,
+    color: TEXT_BLACK,
+    fontSize: 16,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   footerLink: {
-    color: colors.rose[500],
-    fontSize: 15,
+    color: LINK_BERRY,
+    fontSize: 16,
     fontWeight: "700",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 
   timeGreeting: {
-    fontSize: 13,
-    color: "#7F4E47",
-    textTransform: "uppercase",
-    letterSpacing: 1.8,
-    fontWeight: "800",
+    fontSize: 14,
+    color: TEXT_HEADING,
+    letterSpacing: 0.6,
+    fontWeight: "700",
     marginBottom: 8,
+    fontFamily: FONT_FRIENDLY_SANS,
+  },
+  timeGreetingCompact: {
+    fontSize: 13,
+    marginBottom: 6,
   },
   dailyQuote: {
-    fontSize: 21,
-    color: "#4D3B39",
+    fontSize: 22,
+    color: TEXT_HEADING,
     textAlign: "center",
-    lineHeight: 30,
-    fontStyle: "italic",
-    fontWeight: "600",
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
-    textShadowColor: "rgba(255,255,255,0.45)",
+    lineHeight: 33,
+    fontWeight: "500",
+    fontFamily: FONT_WARM_SERIF,
+    textShadowColor: AUTH_UI.textShadowLight,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+  },
+  dailyQuoteCompact: {
+    fontSize: 20,
+    lineHeight: 30,
   },
 });

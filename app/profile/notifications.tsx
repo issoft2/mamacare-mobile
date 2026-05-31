@@ -25,6 +25,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@clerk/clerk-expo";
@@ -33,6 +34,7 @@ import { apiRequest } from "@mumcare/api";
 import { colors, spacing, typography } from "@mumcare/ui";
 import { getErrorMessage } from "@/lib/errors";
 import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -141,7 +143,7 @@ const DEFAULT_SETTINGS: NotificationSettings = {
   quiet_hours_end: null,
 };
 
-const CREAM = "#FFF8F4";
+const CREAM = AUTH_UI.warmBackground;
 const PREFS_CACHE_KEY = "notificationPreferences";
 const MIN_WEEK_FOR_KICK_REMINDERS = 16;
 let runtimePrefsCache: NotificationSettings | null = null;
@@ -520,13 +522,14 @@ export default function NotificationsScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color={colors.rose[500]} />
+        <ActivityIndicator color={AUTH_UI.linkBerry} />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
+      <LinearGradient colors={[AUTH_UI.overlayStart, AUTH_UI.overlayEnd]} style={styles.bgOverlay}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -535,7 +538,7 @@ export default function NotificationsScreen() {
           accessibilityLabel="Go back"
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.navy[700]} />
+          <Ionicons name="arrow-back" size={24} color={AUTH_UI.textHeading} />
         </TouchableOpacity>
       </View>
 
@@ -555,7 +558,7 @@ export default function NotificationsScreen() {
             <Ionicons
               name="alert-circle"
               size={18}
-              color="#A32D2D"
+              color={AUTH_UI.redAlertText}
               style={{ marginRight: spacing[2] }}
             />
             <Text style={styles.errorText}>{error}</Text>
@@ -578,7 +581,7 @@ export default function NotificationsScreen() {
             <Ionicons
               name="checkmark-circle"
               size={18}
-              color="#1E7E34"
+              color={AUTH_UI.greenSuccessText}
               style={{ marginRight: spacing[2] }}
             />
             <Text style={styles.successText}>Saved</Text>
@@ -718,7 +721,7 @@ export default function NotificationsScreen() {
                   activeOpacity={0.84}
                   disabled={Boolean(savingKey)}
                 >
-                  <Ionicons name="remove" size={18} color="#8E5A54" />
+                  <Ionicons name="remove" size={18} color={AUTH_UI.linkBerry} />
                 </TouchableOpacity>
                 <Text style={styles.hourValue}>{formatHour(prefs.quiet_hours_start)}</Text>
                 <TouchableOpacity
@@ -727,7 +730,7 @@ export default function NotificationsScreen() {
                   activeOpacity={0.84}
                   disabled={Boolean(savingKey)}
                 >
-                  <Ionicons name="add" size={18} color="#8E5A54" />
+                  <Ionicons name="add" size={18} color={AUTH_UI.linkBerry} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -741,7 +744,7 @@ export default function NotificationsScreen() {
                   activeOpacity={0.84}
                   disabled={Boolean(savingKey)}
                 >
-                  <Ionicons name="remove" size={18} color="#8E5A54" />
+                  <Ionicons name="remove" size={18} color={AUTH_UI.linkBerry} />
                 </TouchableOpacity>
                 <Text style={styles.hourValue}>{formatHour(prefs.quiet_hours_end)}</Text>
                 <TouchableOpacity
@@ -750,7 +753,7 @@ export default function NotificationsScreen() {
                   activeOpacity={0.84}
                   disabled={Boolean(savingKey)}
                 >
-                  <Ionicons name="add" size={18} color="#8E5A54" />
+                  <Ionicons name="add" size={18} color={AUTH_UI.linkBerry} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -766,6 +769,7 @@ export default function NotificationsScreen() {
           </View>
         </View>
       </ScrollView>
+      </LinearGradient>
     </View>
   );
 }
@@ -776,6 +780,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: CREAM,
+  },
+  bgOverlay: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,
@@ -792,8 +799,14 @@ const styles = StyleSheet.create({
     paddingBottom: spacing[2],
   },
   backButton: {
-    padding: spacing[2],
-    marginLeft: -spacing[2],
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: colors.rose[200],
+    backgroundColor: AUTH_UI.textWhite,
   },
 
   // Content
@@ -811,33 +824,36 @@ const styles = StyleSheet.create({
 
   // Titles
   title: {
-    fontSize: typography.fontSize["2xl"],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.navy[700],
+    fontSize: 30,
+    fontWeight: "800",
+    color: AUTH_UI.textHeading,
     marginBottom: spacing[2],
     letterSpacing: -0.5,
+    fontFamily: FONT_WARM_SERIF,
   },
   subtitle: {
-    fontSize: typography.fontSize.base,
-    color: colors.navy[500],
+    fontSize: 16,
+    color: AUTH_UI.textBlack,
     marginBottom: spacing[5],
-    lineHeight: typography.fontSize.base * 1.5,
+    lineHeight: 24,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 
   // Banners (reused pattern from medical screen)
   errorBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FCEBEB",
+    backgroundColor: AUTH_UI.redAlertBg,
     padding: spacing[3],
     borderRadius: 12,
     marginBottom: spacing[4],
   },
   errorText: {
     flex: 1,
-    color: "#A32D2D",
+    color: AUTH_UI.redAlertText,
     fontSize: typography.fontSize.sm,
     lineHeight: typography.fontSize.sm * 1.4,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   savingBanner: {
     flexDirection: "row",
@@ -850,22 +866,23 @@ const styles = StyleSheet.create({
     borderColor: colors.rose[100],
   },
   savingText: {
-    color: colors.navy[600],
+    color: AUTH_UI.textBlack,
     fontSize: typography.fontSize.sm,
-    fontStyle: "italic",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   successBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E6F4EA",
+    backgroundColor: AUTH_UI.greenSuccessBg,
     padding: spacing[3],
     borderRadius: 12,
     marginBottom: spacing[4],
   },
   successText: {
-    color: "#1E7E34",
+    color: AUTH_UI.greenSuccessText,
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.medium,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 
   // Pause-all card
@@ -882,15 +899,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   pauseTitle: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.navy[700],
+    fontSize: 16,
+    fontWeight: "700",
+    color: AUTH_UI.textHeading,
     marginBottom: 2,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   pauseHint: {
     fontSize: typography.fontSize.xs,
-    color: colors.navy[400],
+    color: AUTH_UI.textBlack,
     lineHeight: typography.fontSize.xs * 1.5,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 
   // Sections
@@ -898,18 +917,19 @@ const styles = StyleSheet.create({
     marginBottom: spacing[8],
   },
   sectionLabel: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.navy[700],
+    fontSize: 24,
+    fontWeight: "800",
+    color: AUTH_UI.textHeading,
     marginBottom: spacing[1],
     letterSpacing: -0.3,
+    fontFamily: FONT_WARM_SERIF,
   },
   sectionHint: {
     fontSize: typography.fontSize.sm,
-    color: colors.navy[400],
+    color: AUTH_UI.textBlack,
     marginBottom: spacing[3],
-    fontStyle: "italic",
     lineHeight: typography.fontSize.sm * 1.5,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 
   // Group card
@@ -937,21 +957,23 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.navy[700],
+    fontWeight: "700",
+    color: AUTH_UI.textHeading,
     marginBottom: 2,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   rowDescription: {
     fontSize: typography.fontSize.xs,
-    color: colors.navy[400],
+    color: AUTH_UI.textBlack,
     lineHeight: typography.fontSize.xs * 1.5,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   rowNote: {
     fontSize: typography.fontSize.xs,
-    color: "#8E5A54",
+    color: AUTH_UI.linkBerry,
     marginTop: 6,
     lineHeight: typography.fontSize.xs * 1.4,
-    fontStyle: "italic",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   quietHourRow: {
     flexDirection: "row",
@@ -962,8 +984,9 @@ const styles = StyleSheet.create({
   },
   quietHourLabel: {
     fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.navy[700],
+    fontWeight: "700",
+    color: AUTH_UI.textHeading,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   quietHourControls: {
     flexDirection: "row",
@@ -978,14 +1001,15 @@ const styles = StyleSheet.create({
     borderColor: colors.rose[200],
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFF",
+    backgroundColor: AUTH_UI.textWhite,
   },
   hourValue: {
     minWidth: 68,
     textAlign: "center",
     fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
-    color: "#6D4A45",
+    fontWeight: "700",
+    color: AUTH_UI.textBlack,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   clearQuietHoursButton: {
     marginHorizontal: spacing[4],
@@ -997,17 +1021,18 @@ const styles = StyleSheet.create({
     borderColor: colors.rose[200],
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFF",
+    backgroundColor: AUTH_UI.textWhite,
   },
   clearQuietHoursText: {
     fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
-    color: "#8E5A54",
+    fontWeight: "700",
+    color: AUTH_UI.linkBerry,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   quietHourSummary: {
     fontSize: typography.fontSize.xs,
-    color: "#7B6A66",
+    color: AUTH_UI.textBlack,
     marginBottom: spacing[3],
-    fontStyle: "italic",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 });

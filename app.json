@@ -49,6 +49,11 @@
     "experiments": {
       "typedRoutes": true
     },
+    "extra": {
+      "eas": {
+        "projectId": "fddb02b4-179b-4cf3-9cc8-afc29f1d228e"
+      }
+    },
     "sdkVersion": "54.0.0"
   }
 }

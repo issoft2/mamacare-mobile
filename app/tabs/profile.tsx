@@ -13,12 +13,13 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   View,
-  ImageBackground,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from '@expo/vector-icons';
 import { useProfile, useSubscription } from "@mumcare/api";
+import { colors } from "@mumcare/ui";
 import { signOutWithPushCleanup } from "@/lib/pushNotifications";
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 export default function ProfileScreen() {
   const { user } = useUser();
@@ -31,7 +32,7 @@ export default function ProfileScreen() {
 
   const menuItems = [
     { label: "Personal Details", path: "/profile/edit", icon: "person" },
-    { label: "Medical Details", path: "/profile/medical", icon: "medkit", meta: "High Priority" },
+    { label: "Medical Details", path: "/profile/medical", icon: "medkit", meta: "High priority" },
     { label: "Care Team", path: "/profile/care-team", icon: "people" },
     { label: "Subscription", path: "/profile/subscription", icon: "star" },
     ...(!isWide
@@ -41,25 +42,26 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.screen}>
-        <LinearGradient colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)"]} style={styles.bgOverlay}>
+        <LinearGradient colors={[AUTH_UI.overlayStart, AUTH_UI.overlayEnd]} style={styles.bgOverlay}>
           
           <ScrollView
             contentContainerStyle={[styles.content, isWide && styles.contentWide]}
             showsVerticalScrollIndicator={false}
           >
-            
+            <View style={styles.headerArea}>
+              <Text style={styles.screenTitle}>Your profile</Text>
+              <Text style={styles.screenSubtitle}>Manage your care information and account settings.</Text>
+            </View>
+
             <View style={[styles.profileGrid, isWide && styles.profileGridWide]}>
-              {/* High-Depth Profile Card */}
               <View style={[styles.profileCard, isWide && styles.profileCardWide]}>
-                <LinearGradient colors={["#FFF", "#FFF5F5"]} style={styles.cardInner}>
+                <LinearGradient colors={[AUTH_UI.textWhite, AUTH_UI.warmBackground]} style={styles.cardInner}>
                   <View style={styles.avatarContainer}>
                     <View style={styles.avatar}>
-                      <Text style={styles.avatarText}>
-                        {profile?.first_name?.[0] ?? user?.firstName?.[0] ?? "M"}
-                      </Text>
+                      <Ionicons name="person" size={34} color={AUTH_UI.linkBerry} />
                     </View>
-                    <LinearGradient colors={["#C97B6E", "#E7A693"]} style={styles.plusBadge}>
-                      <Ionicons name="camera" size={12} color="#FFF" />
+                    <LinearGradient colors={[colors.rose[500], AUTH_UI.shadowRose]} style={styles.plusBadge}>
+                      <Ionicons name="camera" size={12} color={AUTH_UI.textWhite} />
                     </LinearGradient>
                   </View>
 
@@ -67,13 +69,12 @@ export default function ProfileScreen() {
                   <Text style={styles.email}>{user?.primaryEmailAddress?.emailAddress}</Text>
 
                   <View style={styles.planBadge}>
-                    <Ionicons name="ribbon" size={14} color="#E8697C" />
-                    <Text style={styles.planText}>{subscription?.plan?.toUpperCase() ?? "FREE"} MEMBER</Text>
+                    <Ionicons name="ribbon" size={14} color={colors.rose[500]} />
+                    <Text style={styles.planText}>{(subscription?.plan ?? "Free")} member</Text>
                   </View>
                 </LinearGradient>
               </View>
 
-              {/* Glass Menu Tiles */}
               <View style={[styles.menuContainer, isWide && styles.menuContainerWide]}>
                 {menuItems.map((item) => (
                   <TouchableOpacity 
@@ -83,14 +84,14 @@ export default function ProfileScreen() {
                   >
                     <View style={styles.tileLeft}>
                       <View style={styles.iconBox}>
-                        <Ionicons name={item.icon as any} size={20} color="#6D4A45" />
+                        <Ionicons name={item.icon as any} size={20} color={AUTH_UI.linkBerry} />
                       </View>
                       <View>
                         <Text style={styles.tileLabel}>{item.label}</Text>
                         {item.meta && <Text style={styles.tileMeta}>{item.meta}</Text>}
                       </View>
                     </View>
-                    <Ionicons name="chevron-forward" size={18} color="#BDBDBD" />
+                    <Ionicons name="chevron-forward" size={18} color={AUTH_UI.semanticNeutral} />
                   </TouchableOpacity>
                 ))}
 
@@ -107,7 +108,7 @@ export default function ProfileScreen() {
                 >
                   <View style={styles.tileLeft}>
                     <View style={[styles.iconBox, styles.signOutIconBox]}>
-                      <Ionicons name="log-out-outline" size={20} color="#FF5252" />
+                      <Ionicons name="log-out-outline" size={20} color={AUTH_UI.danger} />
                     </View>
                     <View>
                       <Text style={[styles.tileLabel, styles.signOutLabel]}>
@@ -116,7 +117,7 @@ export default function ProfileScreen() {
                       <Text style={styles.signOutMeta}>Leave this account</Text>
                     </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color="#FFB4B4" />
+                  <Ionicons name="chevron-forward" size={18} color={AUTH_UI.dangerSoftText} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -129,65 +130,81 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  bgImage: { flex: 1 },
+  screen: { flex: 1, backgroundColor: AUTH_UI.cream },
   bgOverlay: { flex: 1 },
-  content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
-  contentWide: { width: "100%", maxWidth: 1120, alignSelf: "center", padding: 32 },
+  content: { paddingHorizontal: 24, paddingTop: 52, paddingBottom: 40 },
+  contentWide: { width: "100%", maxWidth: 1120, alignSelf: "center", paddingHorizontal: 32, paddingTop: 56, paddingBottom: 40 },
+  headerArea: { marginBottom: 20 },
+  screenTitle: {
+    fontSize: 30,
+    fontWeight: "800",
+    color: AUTH_UI.textHeading,
+    fontFamily: FONT_WARM_SERIF,
+    letterSpacing: -0.6,
+  },
+  screenSubtitle: {
+    fontSize: 16,
+    color: AUTH_UI.textBlack,
+    lineHeight: 24,
+    marginTop: 8,
+    fontFamily: FONT_FRIENDLY_SANS,
+  },
   profileGrid: { gap: 0 },
   profileGridWide: { flexDirection: "row", alignItems: "flex-start", gap: 24 },
   profileCard: {
-    borderRadius: 30,
-    backgroundColor: '#FFF',
-    elevation: 15,
-    shadowColor: '#C97B6E',
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
+    borderRadius: AUTH_UI.cardRadius,
+    backgroundColor: AUTH_UI.textWhite,
+    elevation: 10,
+    shadowColor: colors.rose[500],
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
     marginBottom: 30,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.8)'
+    overflow: "hidden",
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: colors.rose[200],
   },
   profileCardWide: { width: 340 },
-  cardInner: { padding: 30, alignItems: 'center' },
-  avatarContainer: { position: 'relative', marginBottom: 15 },
-  avatar: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#FFE4E8', alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: '#FFF' },
-  avatarText: { fontSize: 32, fontWeight: '800', color: '#8E5A54' },
-  plusBadge: { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#FFF' },
-  name: { fontSize: 22, fontWeight: '800', color: '#4D3B39' },
-  email: { fontSize: 14, color: '#757575', marginTop: 4 },
-  planBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(201,123,110,0.14)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, marginTop: 15, gap: 5 },
-  planText: { fontSize: 11, fontWeight: '800', color: '#8E5A54', letterSpacing: 1 },
+  cardInner: { padding: 28, alignItems: "center" },
+  avatarContainer: { position: "relative", marginBottom: 14 },
+  avatar: { width: 90, height: 90, borderRadius: 45, backgroundColor: AUTH_UI.avatarRoseBg, alignItems: "center", justifyContent: "center", borderWidth: 3, borderColor: AUTH_UI.textWhite },
+  avatarText: { fontSize: 32, fontWeight: "800", color: AUTH_UI.linkBerry, fontFamily: FONT_FRIENDLY_SANS },
+  plusBadge: { position: "absolute", bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: AUTH_UI.textWhite },
+  name: { fontSize: 24, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF, letterSpacing: -0.4 },
+  email: { fontSize: 14, color: AUTH_UI.textBlack, marginTop: 6, fontFamily: FONT_FRIENDLY_SANS },
+  planBadge: { flexDirection: "row", alignItems: "center", backgroundColor: AUTH_UI.shadowRoseSoft, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, marginTop: 15, gap: 5, borderWidth: 1, borderColor: colors.rose[200] },
+  planText: { fontSize: 13, fontWeight: "700", color: AUTH_UI.linkBerry, fontFamily: FONT_FRIENDLY_SANS },
   menuContainer: { gap: 12 },
   menuContainerWide: { flex: 1, flexDirection: "row", flexWrap: "wrap" },
   menuTile: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    backgroundColor: 'rgba(255,255,255,0.8)', 
-    padding: 16, 
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.5)'
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "space-between", 
+    backgroundColor: AUTH_UI.textWhite,
+    paddingHorizontal: AUTH_UI.fieldPaddingX,
+    paddingVertical: AUTH_UI.fieldPaddingY,
+    borderRadius: AUTH_UI.inputRadius,
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: colors.rose[200],
   },
   menuTileWide: { width: "48.5%", minHeight: 78 },
-  tileLeft: { flexDirection: 'row', alignItems: 'center', gap: 15 },
-  iconBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', elevation: 2 },
-  tileLabel: { fontSize: 16, fontWeight: '700', color: '#4D3B39' },
-  tileMeta: { fontSize: 12, color: '#8E5A54', fontWeight: '600' },
+  tileLeft: { flexDirection: "row", alignItems: "center", gap: 14 },
+  iconBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: AUTH_UI.warmBackground, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.rose[200] },
+  tileLabel: { fontSize: 16, fontWeight: "700", color: AUTH_UI.textHeading, fontFamily: FONT_FRIENDLY_SANS },
+  tileMeta: { fontSize: 13, color: AUTH_UI.textBlack, fontWeight: "600", fontFamily: FONT_FRIENDLY_SANS },
   signOutTile: {
-    backgroundColor: "rgba(255,82,82,0.06)",
-    borderColor: "rgba(255,82,82,0.14)",
+    backgroundColor: AUTH_UI.dangerSoft06,
+    borderColor: AUTH_UI.dangerSoft14,
   },
   signOutIconBox: {
-    backgroundColor: "rgba(255,82,82,0.1)",
+    backgroundColor: AUTH_UI.dangerSoft10,
   },
   signOutLabel: {
-    color: "#FF5252",
+    color: AUTH_UI.danger,
   },
   signOutMeta: {
-    fontSize: 12,
-    color: "#C86A6A",
+    fontSize: 13,
+    color: AUTH_UI.dangerMutedText,
     fontWeight: "600",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 });

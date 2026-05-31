@@ -20,6 +20,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { Ionicons } from '@expo/vector-icons';
 import { ApiRequestError, useCreateProfile, useProfile, useUpdateProfile } from "@mumcare/api";
+import { colors } from "@mumcare/ui";
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -147,14 +149,14 @@ export default function EditProfileScreen() {
   if (isPending) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#C97B6E" />
+        <ActivityIndicator size="large" color={colors.rose[500]} />
       </View>
     );
   }
 
   return (
     <View style={styles.screen}>
-        <LinearGradient colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)", "#FFFBF7"]} style={styles.bgOverlay}>
+        <LinearGradient colors={[AUTH_UI.overlayStart, AUTH_UI.overlayEnd]} style={styles.bgOverlay}>
           <ScrollView
             contentContainerStyle={[styles.content, isWide && styles.contentWide]}
             keyboardShouldPersistTaps="handled"
@@ -166,11 +168,11 @@ export default function EditProfileScreen() {
                 style={styles.backBtn}
                 activeOpacity={0.82}
               >
-                <Ionicons name="chevron-back" size={24} color="#6D4A45" />
+                <Ionicons name="chevron-back" size={24} color={AUTH_UI.linkBerry} />
               </TouchableOpacity>
               <View style={styles.headerCopy}>
                 <Text style={styles.eyebrow}>
-                  {isNotFound ? "LET'S BEGIN" : "PROFILE DETAILS"}
+                  {isNotFound ? "Let's begin" : "Profile details"}
                 </Text>
                 <Text style={styles.title}>
                   {isNotFound ? "Create your care profile" : "Edit your care profile"}
@@ -184,7 +186,7 @@ export default function EditProfileScreen() {
 
             {formError ? (
               <View style={styles.errorBox}>
-                <Ionicons name="alert-circle" size={18} color="#A32D2D" />
+                <Ionicons name="alert-circle" size={18} color={AUTH_UI.redAlertText} />
                 <Text style={styles.errorText}>{formError}</Text>
               </View>
             ) : null}
@@ -192,7 +194,7 @@ export default function EditProfileScreen() {
             <View style={styles.glassCard}>
               <View style={styles.cardHeader}>
                 <View style={styles.cardIcon}>
-                  <Ionicons name="person-circle-outline" size={24} color="#8E5A54" />
+                  <Ionicons name="person-circle-outline" size={24} color={AUTH_UI.linkBerry} />
                 </View>
                 <View style={styles.cardHeaderCopy}>
                   <Text style={styles.cardTitle}>About you</Text>
@@ -204,28 +206,28 @@ export default function EditProfileScreen() {
 
               <View style={[styles.row, !isWide && styles.rowStack]}>
                 <View style={styles.field}>
-                  <Text style={styles.label}>First Name</Text>
+                  <Text style={styles.label}>First name</Text>
                   <View style={styles.inputShell}>
-                    <Ionicons name="person-outline" size={18} color="#9AA2B4" />
+                    <Ionicons name="person-outline" size={18} color={AUTH_UI.mutedIcon} />
                     <TextInput
                       style={styles.input}
                       value={form.firstName}
                       onChangeText={(v) => setForm({...form, firstName: v})}
                       placeholder="Sarah"
-                      placeholderTextColor="#AEB5C4"
+                      placeholderTextColor={AUTH_UI.textBlack}
                     />
                   </View>
                 </View>
                 <View style={styles.field}>
-                  <Text style={styles.label}>Last Name</Text>
+                  <Text style={styles.label}>Last name</Text>
                   <View style={styles.inputShell}>
-                    <Ionicons name="person-outline" size={18} color="#9AA2B4" />
+                    <Ionicons name="person-outline" size={18} color={AUTH_UI.mutedIcon} />
                     <TextInput
                       style={styles.input}
                       value={form.lastName}
                       onChangeText={(v) => setForm({...form, lastName: v})}
                       placeholder="Thompson"
-                      placeholderTextColor="#AEB5C4"
+                      placeholderTextColor={AUTH_UI.textBlack}
                     />
                   </View>
                 </View>
@@ -235,7 +237,7 @@ export default function EditProfileScreen() {
 
               <View style={styles.cardHeader}>
                 <View style={styles.cardIcon}>
-                  <Ionicons name="heart-outline" size={23} color="#8E5A54" />
+                  <Ionicons name="heart-outline" size={23} color={AUTH_UI.linkBerry} />
                 </View>
                 <View style={styles.cardHeaderCopy}>
                   <Text style={styles.cardTitle}>Pregnancy timeline</Text>
@@ -247,31 +249,31 @@ export default function EditProfileScreen() {
 
               <View style={[styles.row, !isWide && styles.rowStack]}>
                 <View style={styles.field}>
-                  <Text style={styles.label}>Current Week</Text>
+                  <Text style={styles.label}>Current week</Text>
                   <View style={styles.inputShell}>
-                    <Ionicons name="calendar-clear-outline" size={18} color="#9AA2B4" />
+                    <Ionicons name="calendar-clear-outline" size={18} color={AUTH_UI.mutedIcon} />
                     <TextInput
                       style={styles.input}
                       value={form.week}
                       onChangeText={(v) => setForm({...form, week: v})}
                       keyboardType="number-pad"
                       placeholder="24"
-                      placeholderTextColor="#AEB5C4"
+                      placeholderTextColor={AUTH_UI.textBlack}
                     />
                   </View>
                   <Text style={styles.fieldHint}>Enter a week from 1 to 42.</Text>
                 </View>
 
                 <View style={styles.field}>
-                  <Text style={styles.label}>Date of Birth</Text>
+                  <Text style={styles.label}>Date of birth</Text>
                   <View style={styles.inputShell}>
-                    <Ionicons name="calendar-outline" size={18} color="#9AA2B4" />
+                    <Ionicons name="calendar-outline" size={18} color={AUTH_UI.mutedIcon} />
                     <TextInput
                       style={styles.input}
                       value={form.dob}
                       onChangeText={(v) => setForm({...form, dob: v})}
                       placeholder="1994-04-12"
-                      placeholderTextColor="#AEB5C4"
+                      placeholderTextColor={AUTH_UI.textBlack}
                     />
                   </View>
                   <Text style={styles.fieldHint}>Use YYYY-MM-DD.</Text>
@@ -279,15 +281,15 @@ export default function EditProfileScreen() {
               </View>
 
               <View style={styles.field}>
-                <Text style={styles.label}>Estimated Due Date</Text>
+                <Text style={styles.label}>Estimated due date</Text>
                 <View style={styles.inputShell}>
-                  <Ionicons name="calendar-number-outline" size={18} color="#9AA2B4" />
+                  <Ionicons name="calendar-number-outline" size={18} color={AUTH_UI.mutedIcon} />
                   <TextInput
                     style={styles.input}
                     value={form.edd}
                     onChangeText={handleEddChange}
                     placeholder="2026-08-20"
-                    placeholderTextColor="#AEB5C4"
+                    placeholderTextColor={AUTH_UI.textBlack}
                   />
                 </View>
                 <Text style={styles.fieldHint}>
@@ -302,11 +304,11 @@ export default function EditProfileScreen() {
               >
                 <LinearGradient colors={ctaGradientColors} start={{x:0, y:0}} end={{x:1, y:0}} style={ctaButtonStyles.gradient}>
                   {isSaving ? (
-                    <ActivityIndicator color="#FFF" />
+                    <ActivityIndicator color={AUTH_UI.textWhite} />
                   ) : (
                     <>
-                      <Text style={ctaButtonStyles.text}>Save Changes</Text>
-                      <Ionicons name="checkmark-circle-outline" size={20} color="#FFF" />
+                        <Text style={ctaButtonStyles.text}>Save changes</Text>
+                      <Ionicons name="checkmark-circle-outline" size={20} color={AUTH_UI.textWhite} />
                     </>
                   )}
                 </LinearGradient>
@@ -319,39 +321,41 @@ export default function EditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#FFF8F4' },
+  screen: { flex: 1, backgroundColor: AUTH_UI.warmBackground },
   bgOverlay: { flex: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  content: { padding: 22, paddingTop: 56, paddingBottom: 40 },
+  content: { paddingHorizontal: 24, paddingTop: 56, paddingBottom: 40 },
   contentWide: { width: "100%", maxWidth: 860, alignSelf: "center", paddingTop: 64 },
   header: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 24 },
   backBtn: {
     width: 42,
     height: 42,
     borderRadius: 14,
-    backgroundColor: '#FFF',
+    backgroundColor: AUTH_UI.textWhite,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
-    shadowColor: '#6A4039',
+    shadowColor: AUTH_UI.shadowBrown,
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 5 },
     elevation: 3
   },
   headerCopy: { flex: 1 },
-  eyebrow: { fontSize: 11, fontWeight: "800", color: "#8E5A54", letterSpacing: 1.2, marginBottom: 7 },
-  title: { fontSize: 28, lineHeight: 34, fontWeight: "800", color: "#4D3B39" },
-  subtitle: { color: "#667085", fontSize: 14, lineHeight: 20, marginTop: 8 },
-  errorBox: { flexDirection: 'row', backgroundColor: '#FCEBEB', padding: 15, borderRadius: 15, marginBottom: 20, alignItems: 'center', gap: 10 },
-  errorText: { flex: 1, color: '#A32D2D', fontSize: 13, fontWeight: '600' },
+  eyebrow: { fontSize: 13, fontWeight: "700", color: AUTH_UI.textBlack, marginBottom: 7, fontFamily: FONT_FRIENDLY_SANS },
+  title: { fontSize: 30, lineHeight: 36, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF, letterSpacing: -0.5 },
+  subtitle: { color: AUTH_UI.textBlack, fontSize: 16, lineHeight: 24, marginTop: 8, fontFamily: FONT_FRIENDLY_SANS },
+  errorBox: { flexDirection: 'row', backgroundColor: AUTH_UI.redAlertBg, padding: 15, borderRadius: 15, marginBottom: 20, alignItems: 'center', gap: 10 },
+  errorText: { flex: 1, color: AUTH_UI.redAlertText, fontSize: 14, fontWeight: '600', fontFamily: FONT_FRIENDLY_SANS },
   glassCard: {
-    backgroundColor: "rgba(255,255,255,0.86)",
-    borderRadius: 24,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.74)",
-    shadowColor: '#C97B6E',
+    backgroundColor: AUTH_UI.textWhite,
+    borderRadius: AUTH_UI.cardRadius,
+    paddingHorizontal: 22,
+    paddingTop: 20,
+    paddingBottom: 24,
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: colors.rose[200],
+    shadowColor: AUTH_UI.shadowRose,
     shadowOpacity: 0.12,
     shadowRadius: 22,
     shadowOffset: { width: 0, height: 12 },
@@ -362,31 +366,31 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 15,
-    backgroundColor: "rgba(201,123,110,0.14)",
+    backgroundColor: AUTH_UI.shadowRoseSoft,
     alignItems: "center",
     justifyContent: "center",
   },
   cardHeaderCopy: { flex: 1 },
-  cardTitle: { color: "#4D3B39", fontSize: 18, fontWeight: "800" },
-  cardHint: { color: "#667085", fontSize: 13, lineHeight: 18, marginTop: 3 },
-  sectionDivider: { height: 1, backgroundColor: "rgba(154,162,180,0.18)", marginVertical: 22 },
+  cardTitle: { color: AUTH_UI.textHeading, fontSize: 22, fontWeight: "800", fontFamily: FONT_WARM_SERIF },
+  cardHint: { color: AUTH_UI.textBlack, fontSize: 14, lineHeight: 21, marginTop: 3, fontFamily: FONT_FRIENDLY_SANS },
+  sectionDivider: { height: 1, backgroundColor: AUTH_UI.borderTealSoft, marginVertical: 22 },
   row: { flexDirection: 'row', gap: 14 },
   rowStack: { flexDirection: "column" },
   field: { flex: 1, minWidth: 0, marginBottom: 16 },
-  label: { fontSize: 12, fontWeight: '800', color: '#6D4A45', textTransform: 'uppercase', marginBottom: 8, marginLeft: 4 },
+  label: { fontSize: 14, fontWeight: '600', color: AUTH_UI.textBlack, marginBottom: 8, marginLeft: 2, fontFamily: FONT_FRIENDLY_SANS },
   inputShell: {
     minHeight: 54,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(154,162,180,0.18)'
+    backgroundColor: AUTH_UI.textWhite,
+    borderRadius: AUTH_UI.inputRadius,
+    paddingHorizontal: AUTH_UI.fieldPaddingX,
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: colors.rose[200]
   },
-  input: { flex: 1, minWidth: 0, paddingVertical: 14, fontSize: 16, color: '#4D3B39' },
-  fieldHint: { color: "#8A93A6", fontSize: 12, lineHeight: 17, marginTop: 7, marginLeft: 4 },
+  input: { flex: 1, minWidth: 0, paddingVertical: AUTH_UI.fieldPaddingY, fontSize: 16, color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
+  fieldHint: { color: AUTH_UI.textBlack, fontSize: 13, lineHeight: 19, marginTop: 7, marginLeft: 2, fontFamily: FONT_FRIENDLY_SANS },
   submitBtn: { marginTop: 30 },
   submitBtnDisabled: { opacity: 0.72 },
 });

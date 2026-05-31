@@ -16,6 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -48,6 +49,7 @@ import { colors } from "@mumcare/ui";
 import { getTimeBasedGreeting } from "../../lib/greetings";
 import { WeeklyContentCard } from "@/components/home/WeeklyContentCard";
 import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 import type { DailyTrackerReminderItem, Mood, Severity, UrgencyTier } from "@mumcare/types";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 
@@ -55,6 +57,7 @@ import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaB
 
 type CareIconName = "chat" | "symptoms" | "water" | "mood" | "sleep";
 type Feeling = "steady" | "tired" | "anxious" | "hopeful";
+type FeelingChoice = Feeling | "other";
 type SleepQuality = "poor" | "fair" | "great";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -64,6 +67,20 @@ const FEELINGS: { key: Feeling; label: string; emoji: string }[] = [
   { key: "tired",   label: "Tired",   emoji: "😔" },
   { key: "anxious", label: "Anxious", emoji: "😨" },
   { key: "hopeful", label: "Hopeful", emoji: "😊" },
+];
+
+const FEELING_CHOICES: { key: FeelingChoice; label: string; emoji: string }[] = [
+  ...FEELINGS,
+  { key: "other", label: "More", emoji: "+" },
+];
+
+const EXTRA_FEELING_OPTIONS: { label: string; mappedFeeling: Feeling }[] = [
+  { label: "Nauseous", mappedFeeling: "tired" },
+  { label: "Excited", mappedFeeling: "hopeful" },
+  { label: "Overwhelmed", mappedFeeling: "anxious" },
+  { label: "Calm", mappedFeeling: "steady" },
+  { label: "Emotional", mappedFeeling: "anxious" },
+  { label: "Energetic", mappedFeeling: "hopeful" },
 ];
 
 const FEELING_TO_MOOD: Record<Feeling, Mood> = {
@@ -81,10 +98,10 @@ const MOOD_TO_FEELING: Record<Mood, Feeling> = {
 };
 
 const CARE_CARD_COLORS = {
-  water:    { icon: colors.rose[400],  bg: "rgba(232,105,124,0.10)" },
-  folic:    { icon: "#6B7BB8",         bg: "rgba(107,123,184,0.12)" },
-  mood:     { icon: "#8E5A54",         bg: "rgba(142,90,84,0.12)" },
-  symptoms: { icon: colors.rose[300],  bg: "rgba(232,105,124,0.08)" },
+  water:    { icon: colors.rose[400],  bg: AUTH_UI.semanticSevereBgSoft },
+  folic:    { icon: AUTH_UI.linkBerry,  bg: colors.rose[50] },
+  mood:     { icon: AUTH_UI.linkBerry,  bg: colors.rose[50] },
+  symptoms: { icon: colors.rose[300],  bg: AUTH_UI.semanticSevereBgSubtle },
 };
 
 const KICK_COUNTER_MIN_WEEK = 16;
@@ -108,13 +125,13 @@ interface SeverityInfo {
 function getSeverityInfo(severity: Severity | undefined): SeverityInfo {
   switch (severity) {
     case "mild":
-      return { color: "#6DBF8C", bg: "rgba(109,191,140,0.12)", label: "Mild" };
+      return { color: AUTH_UI.semanticMild, bg: AUTH_UI.semanticMildBg, label: "Mild" };
     case "moderate":
-      return { color: "#F4A460", bg: "rgba(244,164,96,0.12)",  label: "Moderate" };
+      return { color: AUTH_UI.semanticModerate, bg: AUTH_UI.semanticModerateBg,  label: "Moderate" };
     case "severe":
-      return { color: "#E8697C", bg: "rgba(232,105,124,0.12)", label: "Severe" };
+      return { color: colors.rose[500], bg: AUTH_UI.semanticSevereBg, label: "Severe" };
     default:
-      return { color: "#BDBDBD", bg: "rgba(189,189,189,0.12)", label: "Unspecified" };
+      return { color: AUTH_UI.semanticNeutral, bg: AUTH_UI.semanticNeutralBg, label: "Unspecified" };
   }
 }
 
@@ -131,23 +148,23 @@ interface SleepQualityInfo {
 
 function getSleepQuality(band: string | undefined): SleepQualityInfo {
   if (!band) {
-    return { quality: "poor", qualityLabel: "Not logged", color: "#BDBDBD", bgColor: "rgba(189,189,189,0.12)", progress: 0 };
+    return { quality: "poor", qualityLabel: "Not logged", color: AUTH_UI.semanticNeutral, bgColor: AUTH_UI.semanticNeutralBg, progress: 0 };
   }
   const n = band.toLowerCase().replace(/\s/g, "");
 
   if (n.includes("<4") || n.startsWith("0") || n.startsWith("1") || n.startsWith("2") || n.startsWith("3")) {
-    return { quality: "poor",  qualityLabel: "Poor",  color: "#E8697C", bgColor: "rgba(232,105,124,0.12)", progress: 28 };
+    return { quality: "poor",  qualityLabel: "Poor",  color: colors.rose[500], bgColor: AUTH_UI.semanticSevereBg, progress: 28 };
   }
   if (n.includes("4_6") || n.includes("4-6") || n.startsWith("4") || n.startsWith("5")) {
-    return { quality: "fair",  qualityLabel: "Fair",  color: "#F4A460", bgColor: "rgba(244,164,96,0.12)",  progress: 58 };
+    return { quality: "fair",  qualityLabel: "Fair",  color: AUTH_UI.semanticModerate, bgColor: AUTH_UI.semanticModerateBg,  progress: 58 };
   }
   if (n.includes("8+") || n.includes("+") || n.startsWith("9") || n.startsWith("10")) {
-    return { quality: "great", qualityLabel: "Great", color: "#6DBF8C", bgColor: "rgba(109,191,140,0.12)", progress: 100 };
+    return { quality: "great", qualityLabel: "Great", color: AUTH_UI.semanticMild, bgColor: AUTH_UI.semanticMildBg, progress: 100 };
   }
   if (n.includes("6_8") || n.includes("6-8") || n.startsWith("6") || n.startsWith("7") || n.startsWith("8")) {
-    return { quality: "great", qualityLabel: "Great", color: "#6DBF8C", bgColor: "rgba(109,191,140,0.12)", progress: 82 };
+    return { quality: "great", qualityLabel: "Great", color: AUTH_UI.semanticMild, bgColor: AUTH_UI.semanticMildBg, progress: 82 };
   }
-  return { quality: "fair", qualityLabel: "Fair", color: "#F4A460", bgColor: "rgba(244,164,96,0.12)", progress: 50 };
+  return { quality: "fair", qualityLabel: "Fair", color: AUTH_UI.semanticModerate, bgColor: AUTH_UI.semanticModerateBg, progress: 50 };
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -252,7 +269,7 @@ function NextVisitBanner({
   return (
     <TouchableOpacity onPress={onTap} activeOpacity={0.88} style={styles.banner}>
       <LinearGradient
-        colors={["#FFF0F3", "#FFF5F0"]}
+        colors={[colors.rose[50], AUTH_UI.warmBackground]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.bannerGradient}
@@ -303,13 +320,13 @@ function TrackerReminderBanner({
   return (
     <TouchableOpacity onPress={onTap} activeOpacity={0.88} style={[styles.trackerBanner, style]}>
       <LinearGradient
-        colors={["#FFF6E8", "#FFFAF3"]}
+        colors={[AUTH_UI.cream, AUTH_UI.warmBackground]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.bannerGradient}
       >
         <View style={styles.trackerBannerIconWrap}>
-          <Ionicons name="notifications-outline" size={18} color="#C97B6E" />
+          <Ionicons name="notifications-outline" size={18} color={colors.rose[500]} />
         </View>
 
         <View style={styles.bannerText}>
@@ -337,14 +354,17 @@ function TrackerReminderBanner({
 export default function HomeScreen() {
   const { user } = useUser();
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const { width, fontScale } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 980;
+  const isCompact = width < 380;
+  const isLargeText = fontScale >= 1.2;
   const [feeling, setFeeling] = useState<Feeling | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [appointmentRemindersEnabled, setAppointmentRemindersEnabled] = useState(true);
   const [dailyTrackerRemindersEnabled, setDailyTrackerRemindersEnabled] = useState(true);
   const [trackerBannerDismissed, setTrackerBannerDismissed] = useState(false);
   const [folicTakenLocal, setFolicTakenLocal] = useState(false);
+  const [showMoodSheet, setShowMoodSheet] = useState(false);
 
   const { data: profile }      = useProfile();
   // const { data: patterns }     = useSymptomPatterns();
@@ -632,7 +652,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.screen}>
       <LinearGradient
-        colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)"]}
+        colors={[AUTH_UI.overlayStart, AUTH_UI.overlayEnd]}
         style={styles.bgOverlay}
       >
         {/* ── Next Visit Banner ─────────────────────────────────── */}
@@ -657,38 +677,50 @@ export default function HomeScreen() {
           contentContainerStyle={[
             styles.content,
             isWide && styles.contentWide,
+            isCompact && styles.contentCompact,
+            isLargeText && styles.contentLargeText,
           ]}
           showsVerticalScrollIndicator={false}
         >
           {/* ── Hero ─────────────────────────────────────────────── */}
-          <View style={styles.heroHeader}>
-            <Text style={styles.greetingText}>
-              {greeting}, {firstName} <Text style={styles.sparkle}>✨</Text>
-            </Text>
-           
-          </View>
+          <Text
+            style={[
+              styles.greetingText,
+              styles.greetingTextStandalone,
+              isLargeText && styles.greetingTextStandaloneLarge,
+            ]}
+          >
+            {greeting}, {firstName} <Text style={styles.sparkle}>✨</Text>
+          </Text>
 
           {/* ── Weekly content card ───────────────────────────────── */}
           <WeeklyContentCard />
 
           {/* ── How are you feeling? ──────────────────────────────── */}
-          <View style={styles.section}>
+          <View style={[styles.section, isLargeText && styles.sectionLarge]}>
             <Text style={styles.sectionTitle}>How are you feeling?</Text>
-            <View style={styles.feelingRow}>
-              {FEELINGS.map((f) => (
+            <View style={[styles.feelingRow, isLargeText && styles.feelingRowWrap]}>
+              {FEELING_CHOICES.map((f) => (
                 <TouchableOpacity
                   key={f.key}
-                    onPress={() => handleFeelingSelect(f.key)}
+                    onPress={() => {
+                      if (f.key === "other") {
+                        setShowMoodSheet(true);
+                        return;
+                      }
+                      void handleFeelingSelect(f.key);
+                    }}
                     disabled={logMood.isPending}
-                  style={[styles.feelingCol, isWide && styles.feelingColWide]}
+                  style={[styles.feelingCol, isWide && styles.feelingColWide, isLargeText && styles.feelingColLarge]}
                 >
                   <View
                     style={[
                       styles.moodCircle,
-                        activeFeeling === f.key && styles.moodCircleActive,
+                      f.key === "other" && styles.moodCircleMore,
+                      activeFeeling === f.key && styles.moodCircleActive,
                     ]}
                   >
-                    <Text style={styles.moodEmoji}>{f.emoji}</Text>
+                    <Text style={[styles.moodEmoji, f.key === "other" && styles.moodEmojiMore]}>{f.emoji}</Text>
                   </View>
                   <Text
                     style={[
@@ -704,7 +736,7 @@ export default function HomeScreen() {
           </View>
 
           {/* ── Today's care ──────────────────────────────────────── */}
-          <View style={styles.section}>
+          <View style={[styles.section, isLargeText && styles.sectionLarge]}>
             <Text style={styles.sectionTitle}>Today's care</Text>
             <View style={styles.careGrid}>
 
@@ -781,11 +813,13 @@ export default function HomeScreen() {
                     <Text style={styles.careCardVal} numberOfLines={1} adjustsFontSizeToFit>
                       {formatSleepDuration(sleepBand)}
                     </Text>
-                    <View style={[styles.qualityBadge, { backgroundColor: sleepQuality.bgColor }]}>
-                      <Text style={[styles.qualityBadgeText, { color: sleepQuality.color }]}>
-                        {sleepQuality.qualityLabel}
-                      </Text>
-                    </View>
+                      {sleepBand ? (
+                        <View style={[styles.qualityBadge, { backgroundColor: sleepQuality.bgColor }]}> 
+                          <Text style={[styles.qualityBadgeText, { color: sleepQuality.color }]}> 
+                            {sleepQuality.qualityLabel}
+                          </Text>
+                        </View>
+                      ) : null}
                     {sleepQuality.progress > 0 && (
                       <View style={styles.miniTrack}>
                         <View style={[styles.miniFill, { width: `${sleepQuality.progress}%`, backgroundColor: sleepQuality.color }]} />
@@ -890,8 +924,21 @@ export default function HomeScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Kick Counter card"
               >
-                <View style={[styles.iconBox, { backgroundColor: "rgba(232,105,124,0.10)" }]}>
-                  <Ionicons name="heart" size={18} color={colors.rose[400]} />
+                <View
+                  style={[
+                    styles.iconBox,
+                    {
+                      backgroundColor: canUseKickCounter
+                        ? colors.rose[50]
+                        : AUTH_UI.semanticNeutralBg,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="heart"
+                    size={18}
+                    color={canUseKickCounter ? colors.rose[400] : AUTH_UI.mutedIcon}
+                  />
                 </View>
                 <Text style={styles.careCardLabel}>Kick Counter</Text>
                 <Text style={styles.careCardVal} numberOfLines={1} adjustsFontSizeToFit>
@@ -901,13 +948,13 @@ export default function HomeScreen() {
                   {canUseKickCounter ? formatKickDuration(todayKickDurationMinutes) : `Current week ${gestationalWeek}`}
                 </Text>
                 <View style={styles.miniTrackPlaceholder} />
-                <View style={styles.cardHintRow}>
+                <View style={[styles.cardHintRow, !canUseKickCounter && styles.cardHintRowMuted]}>
                   <Ionicons
                     name={canUseKickCounter ? "timer-outline" : "lock-closed-outline"}
                     size={12}
-                    color={colors.navy[300]}
+                    color={canUseKickCounter ? colors.navy[300] : AUTH_UI.mutedText}
                   />
-                  <Text style={styles.cardHintText}>
+                  <Text style={[styles.cardHintText, !canUseKickCounter && styles.cardHintTextMuted]}>
                     {canUseKickCounter ? "Tap to open counter" : "Counter unlocks from week 16"}
                   </Text>
                 </View>
@@ -921,7 +968,7 @@ export default function HomeScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Appointment card"
               >
-                <View style={[styles.iconBox, { backgroundColor: "rgba(232,105,124,0.10)" }]}>
+                <View style={[styles.iconBox, { backgroundColor: colors.rose[50] }]}> 
                   <Ionicons name="calendar-outline" size={18} color={colors.rose[400]} />
                 </View>
                 <Text style={styles.careCardLabel}>Appointment</Text>
@@ -941,6 +988,40 @@ export default function HomeScreen() {
             </View>
           </View>
         </ScrollView>
+
+        <Modal
+          visible={showMoodSheet}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowMoodSheet(false)}
+        >
+          <View style={styles.moodSheetBackdrop}>
+            <TouchableOpacity
+              style={styles.moodSheetScrim}
+              activeOpacity={1}
+              onPress={() => setShowMoodSheet(false)}
+            />
+            <View style={styles.moodSheetCard}>
+              <Text style={styles.moodSheetTitle}>How are you feeling today?</Text>
+              <Text style={styles.moodSheetSubtitle}>Pick what feels closest right now.</Text>
+              <View style={styles.moodSheetGrid}>
+                {EXTRA_FEELING_OPTIONS.map((option) => (
+                  <TouchableOpacity
+                    key={option.label}
+                    style={styles.moodSheetOption}
+                    activeOpacity={0.86}
+                    onPress={() => {
+                      setShowMoodSheet(false);
+                      void handleFeelingSelect(option.mappedFeeling);
+                    }}
+                  >
+                    <Text style={styles.moodSheetOptionText}>{option.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </View>
+        </Modal>
       </LinearGradient>
     </View>
   );
@@ -952,12 +1033,12 @@ const CARD_GAP = 12;
 const CARD_WIDTH = `${(100 - CARD_GAP * 0.5) / 2}%` as const;
 
 const styles = StyleSheet.create({
-  screen:    { flex: 1 },
+  screen:    { flex: 1, backgroundColor: AUTH_UI.warmBackground },
   bgOverlay: { flex: 1 },
   content: {
     padding: 20,
     paddingTop: 16,
-    paddingBottom: 32,
+    paddingBottom: 56,
   },
   contentWide: {
     width: "100%",
@@ -965,6 +1046,12 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     padding: 32,
     paddingTop: 28,
+  },
+  contentCompact: {
+    paddingHorizontal: 16,
+  },
+  contentLargeText: {
+    paddingBottom: 40,
   },
 
   // ── Next Visit Banner ──────────────────────────────────────
@@ -975,9 +1062,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(140,90,82,0.18)",
+    borderColor: colors.rose[200],
     elevation: 3,
-    shadowColor: "#C97B6E",
+    shadowColor: colors.rose[500],
     shadowOpacity: 0.1,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
@@ -993,23 +1080,24 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: "rgba(232,105,124,0.10)",
+    backgroundColor: colors.rose[50],
     alignItems: "center",
     justifyContent: "center",
   },
   bannerText: { flex: 1 },
   bannerTitle: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: "600",
-    color: "#8E5A54",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    color: AUTH_UI.linkBerry,
+    letterSpacing: 0.2,
     marginBottom: 2,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   bannerDate: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "700",
-    color: "#4D3B39",
+    color: AUTH_UI.textHeading,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   bannerActions: {
     flexDirection: "row",
@@ -1017,7 +1105,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   bannerDismiss: {
-    padding: 4,
+    padding: 8,
   },
   trackerBanner: {
     marginHorizontal: 16,
@@ -1026,9 +1114,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(201,123,110,0.24)",
+    borderColor: colors.rose[200],
     elevation: 2,
-    shadowColor: "#C97B6E",
+    shadowColor: colors.rose[500],
     shadowOpacity: 0.08,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
@@ -1040,46 +1128,35 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: "rgba(201,123,110,0.12)",
+    backgroundColor: colors.rose[50],
     alignItems: "center",
     justifyContent: "center",
   },
   trackerBannerTitle: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: "600",
-    color: "#8E5A54",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    color: AUTH_UI.linkBerry,
+    letterSpacing: 0.2,
     marginBottom: 2,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   trackerBannerDate: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "700",
-    color: "#4D3B39",
+    color: AUTH_UI.textHeading,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 
   // ── Hero ────────────────────────────────────────────────────
-  heroHeader: {
-    marginBottom: 20,
+  greetingText: { fontSize: 30, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF, letterSpacing: -0.5 },
+  greetingTextStandalone: {
     marginTop: 8,
+    marginBottom: 16,
     alignSelf: "flex-start",
-    backgroundColor: "rgba(255,255,255,0.52)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.55)",
-    paddingHorizontal: 16,
-    paddingVertical: 11,
-    borderRadius: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#875851",
-        shadowOffset: { width: 0, height: 5 },
-        shadowOpacity: 0.14,
-        shadowRadius: 10,
-      },
-      android: { elevation: 2 },
-    }),
   },
-  greetingText: { fontSize: 28, fontWeight: "700", color: "#4D3B39" },
+  greetingTextStandaloneLarge: {
+    marginBottom: 20,
+  },
   sparkle:      { fontSize: 20 },
   weekRow: {
     flexDirection: "row",
@@ -1087,10 +1164,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 5,
   },
-  weekText: { fontSize: 16, fontWeight: "600", color: "#3949AB", flex: 1 },
+  weekText: { fontSize: 16, fontWeight: "600", color: AUTH_UI.linkBerry, flex: 1, fontFamily: FONT_FRIENDLY_SANS },
   eggContainer: {
     width: 50, height: 50, borderRadius: 25,
-    backgroundColor: "#FFF",
+    backgroundColor: AUTH_UI.textWhite,
     alignItems: "center", justifyContent: "center",
     elevation: 4, shadowOpacity: 0.1,
   },
@@ -1098,31 +1175,43 @@ const styles = StyleSheet.create({
 
   // ── Sections ────────────────────────────────────────────────
   section: { marginTop: 28 },
+  sectionLarge: { marginTop: 32 },
   sectionTitle: {
-    fontSize: 20, fontWeight: "700",
-    color: "#4D3B39", marginBottom: 14,
+    fontSize: 22, fontWeight: "700",
+    color: AUTH_UI.textHeading, marginBottom: 14, fontFamily: FONT_WARM_SERIF,
   },
 
   // ── Feeling row ─────────────────────────────────────────────
   feelingRow: { flexDirection: "row", justifyContent: "space-between" },
+  feelingRowWrap: {
+    flexWrap: "wrap",
+    rowGap: 14,
+  },
   feelingCol:  { alignItems: "center", width: "22%" },
+  feelingColLarge: {
+    width: "47%",
+  },
   feelingColWide: {
     width: "auto",
     minWidth: 110,
   },
   moodCircle: {
     width: 55, height: 55, borderRadius: 28,
-    backgroundColor: "#FFF",
+    backgroundColor: AUTH_UI.textWhite,
     alignItems: "center", justifyContent: "center",
     elevation: 2, shadowOpacity: 0.05,
   },
   moodCircleActive: {
-    borderWidth: 2, borderColor: "#E8697C",
+    borderWidth: 2, borderColor: colors.rose[500],
     transform: [{ scale: 1.1 }],
   },
+  moodCircleMore: {
+    backgroundColor: colors.rose[50],
+  },
   moodEmoji:       { fontSize: 24 },
-  moodLabel:       { fontSize: 12, marginTop: 8, color: "#8B7B76" },
-  moodLabelActive: { color: "#8E5A54", fontWeight: "700" },
+  moodEmojiMore: { color: AUTH_UI.linkBerry, fontWeight: "700", fontFamily: FONT_FRIENDLY_SANS },
+  moodLabel:       { fontSize: 14, marginTop: 8, color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
+  moodLabelActive: { color: AUTH_UI.linkBerry, fontWeight: "700", fontFamily: FONT_FRIENDLY_SANS },
 
   // ── Care grid ───────────────────────────────────────────────
   careGrid: {
@@ -1132,16 +1221,16 @@ const styles = StyleSheet.create({
   },
   careCard: {
     width: CARD_WIDTH,
-    minHeight: 140,
-    backgroundColor: "#FFFDF9",
+    minHeight: 156,
+    backgroundColor: AUTH_UI.cream,
     borderRadius: 20,
     padding: 14,
     flexDirection: "column",
     justifyContent: "flex-start",
     borderWidth: 1,
-    borderColor: "rgba(140,90,82,0.14)",
+    borderColor: colors.rose[200],
     elevation: 3,
-    shadowColor: "#C97B6E",
+    shadowColor: colors.rose[500],
     shadowOpacity: 0.06,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
@@ -1156,23 +1245,26 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   careCardLabel: {
-    fontSize: 12,
-    color: "#7B5A53",
+    fontSize: 14,
+    color: AUTH_UI.textBlack,
     fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
     marginBottom: 4,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   careCardVal: {
     fontSize: 16,
-    fontWeight: "800",
-    color: "#4D3B39",
+    fontWeight: "700",
+    color: AUTH_UI.textHeading,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   careCardSubtle: {
     marginTop: 2,
-    fontSize: 12,
+    fontSize: 14,
+    lineHeight: 20,
     fontWeight: "700",
-    color: "#6D5A55",
+    color: AUTH_UI.textBlack,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   careCardDisabled: {
     opacity: 0.65,
@@ -1187,7 +1279,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   qualityBadgeText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "800",
     letterSpacing: 0.3,
   },
@@ -1198,39 +1290,100 @@ const styles = StyleSheet.create({
     top: -2, right: -2,
     width: 8, height: 8,
     borderRadius: 4,
-    backgroundColor: "#E8697C",
+    backgroundColor: colors.rose[500],
     borderWidth: 1.5,
-    borderColor: "#FFFBF7",
+    borderColor: AUTH_UI.cream,
   },
 
   // Progress bar
   miniTrack: {
-    height: 5,
-    backgroundColor: "rgba(140,90,82,0.14)",
+    height: 6,
+    backgroundColor: colors.rose[100],
     borderRadius: 3,
     overflow: "hidden",
     marginTop: "auto",
   },
   miniFill: { height: "100%", borderRadius: 3 },
-  miniTrackPlaceholder: { height: 5, marginTop: "auto" },
+  miniTrackPlaceholder: { height: 6, marginTop: "auto" },
   cardHintRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     marginTop: 7,
     alignSelf: "flex-start",
-    backgroundColor: "rgba(140,90,82,0.12)",
+    backgroundColor: colors.rose[50],
     borderRadius: 999,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    minHeight: 28,
+  },
+  cardHintRowMuted: {
+    backgroundColor: AUTH_UI.semanticNeutralBg,
   },
   cardHintText: {
-    fontSize: 11,
-    color: "#6D4A45",
+    fontSize: 13,
+    color: AUTH_UI.linkBerry,
     fontWeight: "700",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
-  widgetBtn: { backgroundColor: 'rgba(255,255,255,0.8)', paddingVertical: 5, borderRadius: 15, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
-  widgetBtnText: { fontWeight: "700", color: "#4D3B39" },
+  cardHintTextMuted: {
+    color: AUTH_UI.mutedText,
+  },
+  moodSheetBackdrop: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  moodSheetScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: AUTH_UI.overlayScrim,
+  },
+  moodSheetCard: {
+    backgroundColor: AUTH_UI.cream,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 28,
+    gap: 10,
+  },
+  moodSheetTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: AUTH_UI.textHeading,
+    fontFamily: FONT_WARM_SERIF,
+  },
+  moodSheetSubtitle: {
+    fontSize: 15,
+    color: AUTH_UI.textBlack,
+    lineHeight: 22,
+    marginBottom: 2,
+    fontFamily: FONT_FRIENDLY_SANS,
+  },
+  moodSheetGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  moodSheetOption: {
+    width: "48%",
+    minHeight: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.rose[200],
+    backgroundColor: AUTH_UI.textWhite,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+  },
+  moodSheetOptionText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: AUTH_UI.linkBerry,
+    fontFamily: FONT_FRIENDLY_SANS,
+  },
+  widgetBtn: { backgroundColor: AUTH_UI.overlayCard80, paddingVertical: 5, borderRadius: 15, alignItems: 'center', borderWidth: 1, borderColor: AUTH_UI.lineFaint },
+  widgetBtnText: { fontWeight: "700", color: AUTH_UI.textHeading, fontFamily: FONT_FRIENDLY_SANS },
 
 
 });

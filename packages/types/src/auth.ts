@@ -4,8 +4,8 @@
 
 import type { UUID, ISODateString, Jurisdiction, Language } from "./common";
 
-export type Plan = "free" | "standard" | "premium";
-export type PlanStatus = "active" | "trialing" | "past_due" | "cancelled" | "paused";
+export type Plan = "Free" | "Standard" | "Premium";
+export type PlanStatus = "Active" | "Trialing" | "Past_due" | "Cancelled" | "Paused";
 
 export interface ClerkTokenData {
   clerk_user_id: string;
@@ -18,7 +18,7 @@ export interface User {
   clerk_user_id: string;
   jurisdiction: Jurisdiction;
   preferred_language: Language;
-  account_status: "active" | "suspended" | "pending_deletion";
+  account_status: "Active" | "Suspended" | "Pending_deletion";
   created_at: ISODateString;
   updated_at: ISODateString;
 }

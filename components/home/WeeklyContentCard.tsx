@@ -26,6 +26,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -42,6 +43,10 @@ import {
 import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
 import { ctaButtonStyles, ctaGradientColors } from "../styles/ctaButton";
 
+const TEXT_BLACK = "#111111";
+const FONT_WARM_SERIF = Platform.OS === "ios" ? "Georgia" : "serif";
+const FONT_FRIENDLY_SANS = Platform.OS === "ios" ? "Avenir Next" : "sans-serif";
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getDailyTip(tips: string[]): string {
@@ -57,6 +62,13 @@ function trimesterLabel(t: number): string {
   if (t === 1) return "1st trimester";
   if (t === 2) return "2nd trimester";
   return "3rd trimester";
+}
+
+function getTrimesterWelcomeTitle(trimester: number): string {
+  if (trimester === 1) return "Welcome to Trimester 1";
+  if (trimester === 2) return "Welcome to Trimester 2";
+  if (trimester === 3) return "Welcome to Trimester 3";
+  return "Your weekly update";
 }
 
 /**
@@ -103,6 +115,9 @@ function buildWeeklyPrompt(content: WeeklyContent, week: number): string {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function WeeklyContentCard() {
+  const { width, fontScale } = useWindowDimensions();
+  const isCompact = width < 380;
+  const isLargeText = fontScale >= 1.2;
   const router = useRouter();
   const { data: profile, isLoading: isProfileLoading } = useProfile();
   const currentWeek = useMemo(() => resolveCurrentGestationalWeek(profile), [profile]);
@@ -157,7 +172,7 @@ export function WeeklyContentCard() {
   // ── Loading ────────────────────────────────────────────────────────────────
   if (isProfileLoading || (currentWeek != null && isWeekLoading)) {
     return (
-      <View style={[styles.card, styles.loadingCard]}>
+      <View style={[styles.card, isCompact && styles.cardCompact, isLargeText && styles.cardLargeText, styles.loadingCard]}>
         <ActivityIndicator color={colors.rose[300]} size="small" />
         <Text style={styles.loadingText}>Loading your weekly update…</Text>
       </View>
@@ -168,7 +183,7 @@ export function WeeklyContentCard() {
   if (!currentWeek || !content) {
     return (
       <TouchableOpacity
-        style={styles.card}
+        style={[styles.card, isCompact && styles.cardCompact, isLargeText && styles.cardLargeText]}
         onPress={() => router.push("/onboarding/profile-setup")}
         activeOpacity={0.88}
       >
@@ -176,7 +191,7 @@ export function WeeklyContentCard() {
           colors={["#FFF7F2", "#FFFBF7"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.gradient}
+          style={[styles.gradient, isLargeText && styles.gradientLargeText]}
         >
           <View style={styles.noWeekIconWrap}>
             <Ionicons name="calendar-outline" size={28} color={colors.rose[300]} />
@@ -200,7 +215,7 @@ export function WeeklyContentCard() {
 
   return (
     <TouchableOpacity
-      style={styles.card}
+      style={[styles.card, isCompact && styles.cardCompact, isLargeText && styles.cardLargeText]}
       onPress={handleTap}
       activeOpacity={0.88}
       disabled={opening}
@@ -209,11 +224,11 @@ export function WeeklyContentCard() {
         colors={["#FFF4EE", "#FFFBF7"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.gradient}
+        style={[styles.gradient, isLargeText && styles.gradientLargeText]}
       >
         {/* ── Top row ─────────────────────────────────────────── */}
-        <View style={styles.topRow}>
-          <View style={styles.weekBadge}>
+        <View style={[styles.topRow, isCompact && styles.topRowCompact, isLargeText && styles.topRowWrap]}>
+          <View style={[styles.weekBadge, isCompact && styles.weekBadgeCompact]}>
               
             <Text style={styles.weekBadgeNumber}>{current_week}</Text>
             <Text style={styles.weekBadgeLabel}>weeks</Text>
@@ -223,8 +238,8 @@ export function WeeklyContentCard() {
             <Text style={styles.trimesterLabel}>
               {trimesterLabel(content.trimester)}
             </Text>
-            <Text style={styles.contentTitle} numberOfLines={1}>
-              {content.title}
+            <Text style={[styles.contentTitle, isCompact && styles.contentTitleCompact]} numberOfLines={1}>
+              {getTrimesterWelcomeTitle(content.trimester)}
             </Text>
           </View>
           <Ionicons name="heart" size={18} color={colors.rose[200]} style={styles.heartAccent} />
@@ -248,7 +263,7 @@ export function WeeklyContentCard() {
         ) : null}
 
         {/* ── Overview ────────────────────────────────────────── */}
-        <Text style={styles.overview} numberOfLines={3}>
+        <Text style={[styles.overview, isCompact && styles.overviewCompact]} numberOfLines={4}>
           {content.overview}
         </Text>
 
@@ -256,7 +271,7 @@ export function WeeklyContentCard() {
         {dailyTip ? (
           <View style={styles.tipBox}>
             <Ionicons name="sparkles" size={14} color={colors.rose[400]} />
-            <Text style={styles.tipText} numberOfLines={2}>
+            <Text style={styles.tipText} numberOfLines={isLargeText ? 3 : 2}>
               {dailyTip}
             </Text>
           </View>
@@ -289,7 +304,9 @@ export function WeeklyContentCard() {
                   Tap for a warm breakdown of what to expect.
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#FFF" />
+              <View style={styles.chatPromptChevronWrap}>
+                <Ionicons name="chevron-forward" size={18} color="#FFF" />
+              </View>
             </>
           )}
           </LinearGradient>
@@ -318,7 +335,16 @@ const styles = StyleSheet.create({
       android: { elevation: 4 },
     }),
   },
+  cardCompact: {
+    borderRadius: 20,
+  },
+  cardLargeText: {
+    marginBottom: 20,
+  },
   gradient: { padding: 20 },
+  gradientLargeText: {
+    padding: 22,
+  },
 
   loadingCard: {
     flexDirection: "row",
@@ -329,9 +355,9 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   loadingText: {
-    fontSize: 14,
-    color: colors.navy[300],
-    fontStyle: "italic",
+    fontSize: 16,
+    color: TEXT_BLACK,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 
   noWeekIconWrap: {
@@ -341,20 +367,26 @@ const styles = StyleSheet.create({
     marginBottom: 12, alignSelf: "center",
   },
   noWeekTitle: {
-    fontSize: 17, fontWeight: "700", color: colors.navy[700],
+    fontSize: 18, fontWeight: "700", color: TEXT_BLACK,
     textAlign: "center", marginBottom: 8,
+    fontFamily: FONT_WARM_SERIF,
   },
   noWeekSubtitle: {
-    fontSize: 14, color: colors.navy[400],
-    textAlign: "center", lineHeight: 21, marginBottom: 16,
+    fontSize: 16, color: TEXT_BLACK,
+    textAlign: "center", lineHeight: 24, marginBottom: 16,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   noWeekCta: {
     flexDirection: "row", alignItems: "center",
     justifyContent: "center", gap: 4,
   },
-  noWeekCtaText: { fontSize: 14, fontWeight: "700", color: colors.rose[400] },
+  noWeekCtaText: { fontSize: 15, fontWeight: "700", color: colors.rose[400], fontFamily: FONT_FRIENDLY_SANS },
 
   topRow: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 14 },
+  topRowCompact: { gap: 10, marginBottom: 12 },
+  topRowWrap: {
+    alignItems: "flex-start",
+  },
   weekBadge: {
     width: 54, height: 54, borderRadius: 27,
     justifyContent: "center", alignItems: "center",
@@ -370,37 +402,43 @@ const styles = StyleSheet.create({
     backgroundColor: "#C97B6E",
   },
   weekBadgeNumber: { fontSize: 20, fontWeight: "800", color: "#FFF", lineHeight: 22 },
+  weekBadgeCompact: { width: 50, height: 50, borderRadius: 25 },
   weekBadgeLabel: {
-    fontSize: 9, fontWeight: "600",
+    fontSize: 11, fontWeight: "600",
     color: "rgba(255,255,255,0.8)",
-    textTransform: "uppercase", letterSpacing: 0.5,
+    letterSpacing: 0.2,
   },
   topRight: { flex: 1, gap: 3 },
   trimesterLabel: {
-    fontSize: 11, fontWeight: "700", color: "#8E5A54",
-    textTransform: "uppercase", letterSpacing: 1,
+    fontSize: 13, fontWeight: "700", color: "#8E5A54",
+    letterSpacing: 0.2,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
-  contentTitle: { fontSize: 16, fontWeight: "700", color: colors.navy[700] },
+  contentTitle: { fontSize: 18, fontWeight: "700", color: TEXT_BLACK, fontFamily: FONT_WARM_SERIF },
+  contentTitleCompact: { fontSize: 17 },
   heartAccent: { alignSelf: "flex-start", marginTop: 2 },
 
   divider: { height: 1, backgroundColor: colors.rose[100], marginBottom: 14 },
 
   babySizeRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
   babySizeEmoji: { fontSize: 18 },
-  babySizeText: { fontSize: 13, color: colors.navy[400], flex: 1, lineHeight: 19 },
-  babySizeHighlight: { color: "#8E5A54", fontWeight: "700" },
+  babySizeText: { fontSize: 15, color: TEXT_BLACK, flex: 1, lineHeight: 22, fontFamily: FONT_FRIENDLY_SANS },
+  babySizeHighlight: { color: "#8E5A54", fontWeight: "700", fontFamily: FONT_FRIENDLY_SANS },
 
-  overview: { fontSize: 14, color: colors.navy[500], lineHeight: 22, marginBottom: 14 },
+  overview: { fontSize: 16, color: TEXT_BLACK, lineHeight: 26, marginBottom: 14, fontWeight: "500", fontFamily: FONT_FRIENDLY_SANS },
+  overviewCompact: { fontSize: 15, lineHeight: 24, marginBottom: 12 },
 
   tipBox: {
-    flexDirection: "row", alignItems: "flex-start", gap: 8,
+    flexDirection: "row", alignItems: "center", gap: 8,
     backgroundColor: "rgba(201,123,110,0.10)",
-    borderRadius: 12, padding: 12, marginBottom: 14,
+    borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, marginBottom: 14,
     borderLeftWidth: 3, borderLeftColor: "#C97B6E",
   },
   tipText: {
-    flex: 1, fontSize: 13, color: colors.navy[600],
-    lineHeight: 20, fontStyle: "italic",
+    flex: 1, fontSize: 15, color: TEXT_BLACK,
+    lineHeight: 21,
+    marginTop: -1,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 
   chatPrompt: {
@@ -413,14 +451,17 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   chatPromptIcon: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
     borderRadius: 12,
     backgroundColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
   },
-  chatPromptCopy: { flex: 1 },
+  chatPromptCopy: { flex: 1, marginLeft: 7, paddingRight: 32, justifyContent: "center" },
+  chatPromptChevronWrap: {
+    paddingLeft: 4,
+  },
   chatPromptTitle: {
     color: "#FFF",
     fontSize: 14,

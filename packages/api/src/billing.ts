@@ -3,7 +3,13 @@
  * TanStack Query hooks for billing_service endpoints.
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseMutationResult,
+  type UseQueryResult,
+} from "@tanstack/react-query";
 import { apiRequest } from "./client";
 import type { Plan, SubscriptionResponse, UsageResponse } from "@mumcare/types";
 
@@ -12,14 +18,14 @@ export const billingKeys = {
   usage: () => ["billing", "usage"] as const,
 };
 
-export function useSubscription() {
+export function useSubscription(): UseQueryResult<SubscriptionResponse> {
   return useQuery({
     queryKey: billingKeys.subscription(),
     queryFn: () => apiRequest<SubscriptionResponse>("/billing/subscription"),
   });
 }
 
-export function useSubscriptionLive() {
+export function useSubscriptionLive(): UseQueryResult<SubscriptionResponse> {
   return useQuery({
     queryKey: [...billingKeys.subscription(), "live"],
     queryFn: () => apiRequest<SubscriptionResponse>("/billing/subscription/refresh"),
@@ -27,14 +33,14 @@ export function useSubscriptionLive() {
   });
 }
 
-export function useUsage() {
+export function useUsage(): UseQueryResult<UsageResponse> {
   return useQuery({
     queryKey: billingKeys.usage(),
     queryFn: () => apiRequest<UsageResponse>("/billing/usage"),
   });
 }
 
-export function useUpgradePlan() {
+export function useUpgradePlan(): UseMutationResult<unknown, unknown, Plan, unknown> {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (plan: Plan) =>

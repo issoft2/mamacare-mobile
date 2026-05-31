@@ -11,6 +11,7 @@ import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaB
 import { Ionicons } from '@expo/vector-icons';
 import { useLogSleep } from "@mumcare/api";
 import type { SleepDurationBand, SleepQuality } from "@mumcare/types";
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 const BANDS: { value: SleepDurationBand; label: string }[] = [
   { value: "under_4h", label: "< 4h" },
@@ -48,15 +49,15 @@ export default function SleepLogScreen() {
 
   return (
     <View style={styles.screen}>
-        <LinearGradient colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)"]} style={styles.bgOverlay}>
+        <LinearGradient colors={[AUTH_UI.overlayStart, AUTH_UI.overlayEnd]} style={styles.bgOverlay}>
           <ScrollView contentContainerStyle={styles.content}>
             
             <View style={styles.header}>
               <TouchableOpacity onPress={() => router.push("/tabs/tracker")} style={styles.backBtn}>
-                <Ionicons name="chevron-back" size={24} color="#6D4A45" />
+                <Ionicons name="chevron-back" size={24} color={AUTH_UI.linkBerry} />
               </TouchableOpacity>
               <View style={styles.headerCopy}>
-                <Text style={styles.eyebrow}>NIGHT REST</Text>
+                <Text style={styles.eyebrow}>Night rest</Text>
                 <Text style={styles.title}>Sleep Journal</Text>
                 <Text style={styles.subtitle}>Track your rest with care so MumCare can better support your energy and wellbeing.</Text>
               </View>
@@ -76,11 +77,11 @@ export default function SleepLogScreen() {
                 ))}
               </View>
 
-              <Text style={styles.label}>Quality of Rest</Text>
+              <Text style={styles.label}>Quality of rest</Text>
               <View style={styles.qualityGrid}>
 
               <View style={styles.supportBox}>
-                <Ionicons name="moon" size={14} color="#8E5A54" />
+                <Ionicons name="moon" size={14} color={AUTH_UI.linkBerry} />
                 <Text style={styles.supportText}>{getSleepAffirmation(quality)}</Text>
               </View>
                 {QUALITIES.map(q => (
@@ -99,7 +100,7 @@ export default function SleepLogScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Any vivid dreams or interruptions?"
-                placeholderTextColor="#9E9E9E"
+                placeholderTextColor={AUTH_UI.placeholder}
                 value={notes}
                 onChangeText={setNotes}
                 multiline
@@ -113,11 +114,11 @@ export default function SleepLogScreen() {
               >
                 <LinearGradient colors={ctaGradientColors} style={ctaButtonStyles.gradient}>
                   {logSleep.isPending ? (
-                    <ActivityIndicator color="#FFF" />
+                    <ActivityIndicator color={AUTH_UI.textWhite} />
                   ) : (
                     <>
-                      <Ionicons name="checkmark-circle-outline" size={18} color="#FFF" />
-                      <Text style={ctaButtonStyles.text}>Save Log</Text>
+                      <Ionicons name="checkmark-circle-outline" size={18} color={AUTH_UI.textWhite} />
+                      <Text style={ctaButtonStyles.text}>Save log</Text>
                     </>
                   )}
                 </LinearGradient>
@@ -130,7 +131,7 @@ export default function SleepLogScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
+  screen: { flex: 1, backgroundColor: AUTH_UI.warmBackground },
   bgOverlay: { flex: 1 },
   content: { padding: 20, paddingTop: 56, paddingBottom: 32 },
   header: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 24 },
@@ -138,13 +139,15 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FFF',
+    backgroundColor: AUTH_UI.textWhite,
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: AUTH_UI.semanticSevereBorder20,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
     ...Platform.select({
       ios: {
-        shadowColor: '#1A2E4A',
+        shadowColor: AUTH_UI.shadowNavy,
         shadowOffset: { width: 0, height: 5 },
         shadowOpacity: 0.1,
         shadowRadius: 12,
@@ -153,18 +156,18 @@ const styles = StyleSheet.create({
     }),
   },
   headerCopy: { flex: 1 },
-  eyebrow: { fontSize: 11, fontWeight: '800', color: '#8E5A54', letterSpacing: 1.1, marginBottom: 6 },
-  title: { fontSize: 26, fontWeight: "800", color: "#4D3B39" },
-  subtitle: { marginTop: 6, fontSize: 13, lineHeight: 19, color: '#6E7890' },
+  eyebrow: { fontSize: 12, fontWeight: '700', color: AUTH_UI.textBlack, marginBottom: 6, fontFamily: FONT_FRIENDLY_SANS },
+  title: { fontSize: 30, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF, letterSpacing: -0.5 },
+  subtitle: { marginTop: 6, fontSize: 13, lineHeight: 19, color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
   glassCard: {
-    backgroundColor: "rgba(255,255,255,0.84)",
-    borderRadius: 28,
+    backgroundColor: AUTH_UI.textWhite,
+    borderRadius: AUTH_UI.cardRadius,
     padding: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.74)",
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: AUTH_UI.semanticSevereBorder20,
     ...Platform.select({
       ios: {
-        shadowColor: '#C97B6E',
+        shadowColor: AUTH_UI.shadowRose,
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.1,
         shadowRadius: 18,
@@ -172,41 +175,43 @@ const styles = StyleSheet.create({
       android: { elevation: 4 },
     }),
   },
-  label: { fontSize: 11, fontWeight: '800', color: '#8E5A54', textTransform: 'uppercase', letterSpacing: 1.1, marginBottom: 12, marginLeft: 4 },
+  label: { fontSize: 14, fontWeight: '600', color: AUTH_UI.textBlack, marginBottom: 12, marginLeft: 2, fontFamily: FONT_FRIENDLY_SANS },
   bandRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 25 },
-  bandBtn: { flex: 1, marginHorizontal: 4, paddingVertical: 12, borderRadius: 14, backgroundColor: '#FFF', alignItems: 'center', borderWidth: 1.2, borderColor: 'rgba(140,90,82,0.16)' },
-  bandActive: { borderColor: '#C97B6E', backgroundColor: 'rgba(201, 123, 110, 0.10)' },
-  bandText: { color: '#757575', fontWeight: '700' },
-  bandTextActive: { color: '#6D4A45' },
+  bandBtn: { flex: 1, marginHorizontal: 4, paddingVertical: 12, borderRadius: AUTH_UI.inputRadius, backgroundColor: AUTH_UI.textWhite, alignItems: 'center', borderWidth: AUTH_UI.borderWidth, borderColor: AUTH_UI.semanticSevereBorder20 },
+  bandActive: { borderColor: AUTH_UI.shadowRose, backgroundColor: AUTH_UI.shadowRoseSoft10 },
+  bandText: { color: AUTH_UI.textBlack, fontWeight: '700', fontFamily: FONT_FRIENDLY_SANS },
+  bandTextActive: { color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
   qualityGrid: { flexDirection: 'row', gap: 10, marginBottom: 25 },
-  qualityCard: { flex: 1, backgroundColor: '#FFF', padding: 15, borderRadius: 20, alignItems: 'center', borderWidth: 1.2, borderColor: 'rgba(140,90,82,0.16)' },
-  qualityActive: { borderColor: '#C97B6E', backgroundColor: 'rgba(201, 123, 110, 0.10)' },
+  qualityCard: { flex: 1, backgroundColor: AUTH_UI.textWhite, padding: 15, borderRadius: AUTH_UI.inputRadius, alignItems: 'center', borderWidth: AUTH_UI.borderWidth, borderColor: AUTH_UI.semanticSevereBorder20 },
+  qualityActive: { borderColor: AUTH_UI.shadowRose, backgroundColor: AUTH_UI.shadowRoseSoft10 },
   qualityEmoji: { fontSize: 30, marginBottom: 5 },
-  qualityLabel: { fontSize: 13, color: '#757575', fontWeight: '700' },
-  qualityLabelActive: { color: '#6D4A45' },
+  qualityLabel: { fontSize: 13, color: AUTH_UI.textBlack, fontWeight: '700', fontFamily: FONT_FRIENDLY_SANS },
+  qualityLabelActive: { color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
   supportBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
-    backgroundColor: 'rgba(201, 123, 110, 0.10)',
+    backgroundColor: AUTH_UI.shadowRoseSoft10,
     borderRadius: 14,
     padding: 12,
     marginTop: -6,
     marginBottom: 20,
     borderLeftWidth: 3,
-    borderLeftColor: '#C97B6E',
+    borderLeftColor: AUTH_UI.shadowRose,
   },
-  supportText: { flex: 1, fontSize: 12.5, lineHeight: 18, color: '#6D4A45' },
+  supportText: { flex: 1, fontSize: 12.5, lineHeight: 18, color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
   input: {
-    backgroundColor: '#FFF',
-    borderRadius: 18,
-    padding: 15,
+    backgroundColor: AUTH_UI.textWhite,
+    borderRadius: AUTH_UI.inputRadius,
+    paddingHorizontal: AUTH_UI.fieldPaddingX,
+    paddingVertical: AUTH_UI.fieldPaddingY,
     minHeight: 90,
     textAlignVertical: 'top',
     fontSize: 15,
-    color: '#4D3B39',
-    borderWidth: 1.2,
-    borderColor: 'rgba(140,90,82,0.16)',
+    color: AUTH_UI.textBlack,
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: AUTH_UI.semanticSevereBorder20,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   submitBtn: { marginTop: 30 },
   submitBtnDisabled: { opacity: 0.72 },

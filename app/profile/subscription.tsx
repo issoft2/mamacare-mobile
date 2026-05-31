@@ -21,10 +21,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSubscription, useUsage } from "@mumcare/api";
 import { colors, shadows } from "@mumcare/ui";
 import { ctaButtonStyles, ctaGradientColors } from "@/components/styles/ctaButton";
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 import { getActiveLegalDocument, getActiveLegalRoute } from "@/lib/legal";
 
 const WHATSAPP_NUMBER = "2349059691747";
-const WHATSAPP_GREEN = "#25D366";
+const WHATSAPP_GREEN = AUTH_UI.successWhatsapp;
 
 export default function SubscriptionScreen() {
   const router = useRouter();
@@ -53,14 +54,14 @@ export default function SubscriptionScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={["#FFF8F4", "#F8FAFF"]} style={styles.bgOverlay}>
+      <LinearGradient colors={[AUTH_UI.overlayStart, AUTH_UI.overlayEnd]} style={styles.bgOverlay}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backCircle}>
           <Ionicons name="chevron-back" size={24} color={colors.navy[700]} />
         </TouchableOpacity>
         <View style={styles.headerCopy}>
-          <Text style={styles.headerEyebrow}>MEMBERSHIP</Text>
-          <Text style={styles.headerTitle}>Plans & Access</Text>
+          <Text style={styles.headerEyebrow}>Membership</Text>
+          <Text style={styles.headerTitle}>Plans and access</Text>
           <Text style={styles.headerSubtext}>Choose the support level that feels right for your journey.</Text>
         </View>
       </View>
@@ -76,21 +77,21 @@ export default function SubscriptionScreen() {
         {/* Current Plan & Usage Status */}
         <View style={styles.statusCard}>
           <View style={styles.statusHeader}>
-            <Text style={styles.statusLabel}>ACTIVE PLAN</Text>
+            <Text style={styles.statusLabel}>Active plan</Text>
             <View style={styles.activeBadge}>
-              <Text style={styles.activeBadgeText}>Free Forever</Text>
+              <Text style={styles.activeBadgeText}>Free forever</Text>
             </View>
           </View>
           
           <View style={styles.usageRow}>
             <View style={styles.usageItem}>
               <Text style={styles.usageVal}>{usage?.usage?.care_team_members?.current ?? 0}</Text>
-              <Text style={styles.usageSub}>Team Members</Text>
+              <Text style={styles.usageSub}>Team members</Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.usageItem}>
               <Text style={styles.usageVal}>10</Text>
-              <Text style={styles.usageSub}>Daily Messages</Text>
+              <Text style={styles.usageSub}>Daily messages</Text>
             </View>
           </View>
           <Text style={styles.statusFootnote}>Your free plan is active and fully available while new plans are prepared.</Text>
@@ -103,7 +104,7 @@ export default function SubscriptionScreen() {
           {/* Standard Plan */}
           <View style={[styles.planCard, styles.lockedCard]}>
             <View style={styles.planBadge}>
-              <Text style={styles.planBadgeText}>COMING SOON</Text>
+              <Text style={styles.planBadgeText}>Coming soon</Text>
             </View>
             <Text style={styles.planName}>Standard</Text>
             <Text style={styles.planPrice}>₦-- <Text style={styles.period}>/ month</Text></Text>
@@ -129,14 +130,14 @@ export default function SubscriptionScreen() {
                 style={ctaButtonStyles.gradient}
               >
                 <Ionicons name="logo-whatsapp" size={20} color={colors.white} />
-                <Text style={ctaButtonStyles.text}>Inquire for Access</Text>
+                <Text style={ctaButtonStyles.text}>Inquire for access</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
 
           {/* Premium Plan */}
           <LinearGradient 
-            colors={[colors.white, '#FFF0F3']} 
+            colors={[colors.white, AUTH_UI.surfaceTint2]} 
             style={[styles.planCard, styles.lockedCard, styles.premiumCard]}
           >
             <View style={[styles.planBadge, { backgroundColor: colors.rose[500] }]}>
@@ -166,7 +167,7 @@ export default function SubscriptionScreen() {
                 style={ctaButtonStyles.gradient}
               >
                 <Ionicons name="logo-whatsapp" size={20} color={colors.white} />
-                <Text style={ctaButtonStyles.text}>Inquire for Access</Text>
+                <Text style={ctaButtonStyles.text}>Inquire for access</Text>
               </LinearGradient>
             </TouchableOpacity>
           </LinearGradient>
@@ -201,7 +202,7 @@ export default function SubscriptionScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F4' },
+  container: { flex: 1, backgroundColor: AUTH_UI.warmBackground },
   bgOverlay: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { 
@@ -222,56 +223,60 @@ const styles = StyleSheet.create({
     ...shadows.sm 
   },
   headerCopy: { flex: 1 },
-  headerEyebrow: { fontSize: 11, fontWeight: '800', color: colors.rose[500], letterSpacing: 1.2, marginBottom: 4 },
-  headerTitle: { fontSize: 24, fontWeight: '800', color: colors.navy[700] },
-  headerSubtext: { marginTop: 6, fontSize: 13, lineHeight: 19, color: colors.navy[400] },
+  headerEyebrow: { fontSize: 13, fontWeight: '700', color: AUTH_UI.textBlack, marginBottom: 4, fontFamily: FONT_FRIENDLY_SANS },
+  headerTitle: { fontSize: 30, fontWeight: '800', color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF, letterSpacing: -0.5 },
+  headerSubtext: { marginTop: 8, fontSize: 16, lineHeight: 24, color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
   heroSection: { marginBottom: 24 },
-  title: { fontSize: 28, fontWeight: '800', color: colors.navy[700], marginBottom: 8 },
-  subtitle: { fontSize: 15, color: colors.navy[400], lineHeight: 22 },
+  title: { fontSize: 30, fontWeight: '800', color: AUTH_UI.textHeading, marginBottom: 8, fontFamily: FONT_WARM_SERIF, letterSpacing: -0.5 },
+  subtitle: { fontSize: 16, color: AUTH_UI.textBlack, lineHeight: 24, fontFamily: FONT_FRIENDLY_SANS },
   statusCard: { 
-    backgroundColor: 'rgba(255,255,255,0.92)', 
-    borderRadius: 24, 
-    padding: 20, 
+    backgroundColor: AUTH_UI.textWhite, 
+    borderRadius: AUTH_UI.cardRadius, 
+    paddingHorizontal: 22,
+    paddingTop: 20,
+    paddingBottom: 24,
     marginBottom: 30,
-    borderWidth: 1,
-    borderColor: colors.rose[100],
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: colors.rose[200],
     ...shadows.md
   },
   statusHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  statusLabel: { fontSize: 12, fontWeight: '800', color: colors.navy[300], letterSpacing: 1 },
-  activeBadge: { backgroundColor: colors.rose[50], paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
-  activeBadgeText: { color: colors.rose[600], fontWeight: '700', fontSize: 12 },
+  statusLabel: { fontSize: 14, fontWeight: '600', color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
+  activeBadge: { backgroundColor: colors.rose[50], borderWidth: 1, borderColor: colors.rose[200], paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
+  activeBadgeText: { color: AUTH_UI.linkBerry, fontWeight: '700', fontSize: 13, fontFamily: FONT_FRIENDLY_SANS },
   usageRow: { flexDirection: 'row', alignItems: 'center' },
   usageItem: { flex: 1, alignItems: 'center' },
-  usageVal: { fontSize: 24, fontWeight: '800', color: colors.navy[700] },
-  usageSub: { fontSize: 12, color: colors.navy[400], marginTop: 4 },
+  usageVal: { fontSize: 30, fontWeight: '800', color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF },
+  usageSub: { fontSize: 13, color: AUTH_UI.textBlack, marginTop: 4, fontFamily: FONT_FRIENDLY_SANS },
   divider: { width: 1, height: 30, backgroundColor: colors.gray[100] },
-  statusFootnote: { marginTop: 14, textAlign: 'center', fontSize: 12, color: colors.navy[300], lineHeight: 18 },
+  statusFootnote: { marginTop: 14, textAlign: 'center', fontSize: 13, color: AUTH_UI.textBlack, lineHeight: 20, fontFamily: FONT_FRIENDLY_SANS },
   planSection: { marginBottom: 20 },
-  sectionTitle: { fontSize: 20, fontWeight: '700', color: colors.navy[700], marginBottom: 15 },
+  sectionTitle: { fontSize: 24, fontWeight: '800', color: AUTH_UI.textHeading, marginBottom: 15, fontFamily: FONT_WARM_SERIF },
   planCard: { 
-    backgroundColor: 'rgba(255,255,255,0.93)', 
-    borderRadius: 24, 
-    padding: 24, 
+    backgroundColor: AUTH_UI.textWhite, 
+    borderRadius: AUTH_UI.cardRadius, 
+    paddingHorizontal: 22,
+    paddingTop: 20,
+    paddingBottom: 24,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.gray[100],
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: colors.rose[200],
     ...shadows.sm,
   },
   premiumCard: { borderColor: colors.rose[200] },
-  planBadge: { alignSelf: 'flex-start', backgroundColor: colors.gray[100], paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, marginBottom: 12 },
-  planBadgeText: { fontSize: 10, fontWeight: '800', color: colors.gray[500] },
-  planName: { fontSize: 22, fontWeight: '700', color: colors.navy[700], marginBottom: 4 },
-  planPrice: { fontSize: 28, fontWeight: '800', color: colors.navy[700], marginBottom: 20 },
-  period: { fontSize: 14, color: colors.navy[300], fontWeight: '400' },
+  planBadge: { alignSelf: 'flex-start', backgroundColor: colors.gray[100], borderWidth: 1, borderColor: colors.rose[200], paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginBottom: 12 },
+  planBadgeText: { fontSize: 11, fontWeight: '700', color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
+  planName: { fontSize: 24, fontWeight: '800', color: AUTH_UI.textHeading, marginBottom: 4, fontFamily: FONT_WARM_SERIF },
+  planPrice: { fontSize: 30, fontWeight: '800', color: AUTH_UI.textHeading, marginBottom: 20, fontFamily: FONT_WARM_SERIF },
+  period: { fontSize: 14, color: AUTH_UI.textBlack, fontWeight: '400', fontFamily: FONT_FRIENDLY_SANS },
   featureList: { gap: 12, marginBottom: 25 },
   featureRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  featureText: { fontSize: 14, color: colors.navy[500] },
+  featureText: { fontSize: 15, color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
   waButtonShell: {
     marginTop: 2,
   },
-  footerNote: { textAlign: 'center', fontSize: 12, color: colors.navy[300], marginTop: 20, lineHeight: 18 },
+  footerNote: { textAlign: 'center', fontSize: 13, color: AUTH_UI.textBlack, marginTop: 20, lineHeight: 20, fontFamily: FONT_FRIENDLY_SANS },
   legalLinksRow: {
     marginTop: 10,
     flexDirection: "row",
@@ -282,9 +287,10 @@ const styles = StyleSheet.create({
   legalLinkText: {
     fontSize: 12,
     fontWeight: "700",
-    color: colors.navy[500],
+    color: AUTH_UI.linkBerry,
     textDecorationLine: "underline",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
-  legalDot: { fontSize: 12, color: colors.navy[300] },
+  legalDot: { fontSize: 12, color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
   lockedCard: { opacity: 0.9 }
 });

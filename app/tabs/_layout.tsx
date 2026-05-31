@@ -31,6 +31,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
 import { usePwaInstallPrompt } from "@/lib/usePwaInstallPrompt";
 import { signOutWithPushCleanup } from "@/lib/pushNotifications";
+import { AUTH_UI } from "@/lib/authUiTokens";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -39,8 +40,9 @@ const SIDEBAR_WIDTH = 248;
 const DRAWER_WIDTH = 292;
 const MOBILE_HEADER_HEIGHT = 64;
 const DESKTOP_BREAKPOINT = 900;
-const ROSE = "#E8697C";
+const ROSE = AUTH_UI.semanticSevere;
 const BRAND_LOGO = require("../../assets/mumlogo.png");
+const NARROW_MOBILE_BREAKPOINT = 360;
 
 // ── Tab icon ──────────────────────────────────────────────────────────────────
 
@@ -48,10 +50,12 @@ function TabIcon({
   name,
   color,
   focused,
+  compact = false,
 }: {
   name: string;
   color: string;
   focused: boolean;
+  compact?: boolean;
 }) {
   const common = {
     stroke: color,
@@ -61,7 +65,7 @@ function TabIcon({
   };
 
   return (
-    <View style={[styles.iconShell, focused && styles.iconShellActive]}>
+    <View style={[styles.iconShell, compact && styles.iconShellCompact, focused && styles.iconShellActive]}>
       <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
         {name === "home" && (
           <Path
@@ -96,7 +100,7 @@ function TabIcon({
       </Svg>
 
       {/* Active dot below icon */}
-      {focused && <View style={styles.activeDot} />}
+      {focused && <View style={[styles.activeDot, compact && styles.activeDotCompact]} />}
     </View>
   );
 }
@@ -126,7 +130,7 @@ export default function TabsLayout() {
       )}
       screenOptions={{
         tabBarActiveTintColor: ROSE,
-        tabBarInactiveTintColor: "#BDBDBD",
+        tabBarInactiveTintColor: AUTH_UI.semanticNeutral,
         headerShown: false,
         tabBarShowLabel: true,
         tabBarHideOnKeyboard: true,
@@ -200,12 +204,14 @@ function ResponsiveTabBar({
   const privacyActive = pathname.startsWith("/profile/privacy");
   const notificationsActive = pathname.startsWith("/profile/notifications");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { width } = useWindowDimensions();
+  const isNarrowMobile = width <= NARROW_MOBILE_BREAKPOINT;
 
   const items = state.routes.map((route: any, index: number) => {
     const focused = state.index === index;
     const options = descriptors[route.key]?.options ?? {};
     const label = options.title ?? route.name;
-    const color = focused ? ROSE : isDesktop ? "#7B8498" : "#BDBDBD";
+    const color = focused ? ROSE : isDesktop ? AUTH_UI.mutedText : AUTH_UI.semanticNeutral;
 
     const onPress = () => {
       const event = navigation.emit({
@@ -244,7 +250,7 @@ function ResponsiveTabBar({
     const focused = state.index === index;
     const options = descriptors[route.key]?.options ?? {};
     const label = options.title ?? route.name;
-    const color = focused ? ROSE : "#9AA2B4";
+    const color = focused ? ROSE : AUTH_UI.mutedIcon;
 
     const onPress = () => {
       const event = navigation.emit({
@@ -265,9 +271,13 @@ function ResponsiveTabBar({
         style={styles.quickNavItem}
         activeOpacity={0.82}
       >
-        <TabIcon name={route.name} color={color} focused={focused} />
+        <TabIcon name={route.name} color={color} focused={focused} compact={isNarrowMobile} />
         <Text
-          style={[styles.quickNavLabel, focused && styles.activeLabel]}
+          style={[
+            styles.quickNavLabel,
+            isNarrowMobile && styles.quickNavLabelCompact,
+            focused && styles.activeLabel,
+          ]}
           numberOfLines={1}
           adjustsFontSizeToFit
         >
@@ -312,7 +322,7 @@ function ResponsiveTabBar({
                 <Ionicons
                   name="notifications-outline"
                   size={21}
-                  color={notificationsActive ? ROSE : "#7B8498"}
+                  color={notificationsActive ? ROSE : AUTH_UI.mutedText}
                 />
               </View>
               <Text
@@ -339,7 +349,7 @@ function ResponsiveTabBar({
                 <Ionicons
                   name="shield-checkmark-outline"
                   size={21}
-                  color={privacyActive ? ROSE : "#7B8498"}
+                  color={privacyActive ? ROSE : AUTH_UI.mutedText}
                 />
               </View>
               <Text
@@ -382,7 +392,7 @@ function ResponsiveTabBar({
           onPress={() => setDrawerOpen(true)}
           activeOpacity={0.82}
         >
-          <Ionicons name="menu" size={24} color="#1A237E" />
+          <Ionicons name="menu" size={24} color={AUTH_UI.brandNavy} />
         </TouchableOpacity>
         <View style={styles.mobileBrand}>
           <View style={styles.mobileLogoPlate}>
@@ -424,7 +434,7 @@ function ResponsiveTabBar({
                 onPress={() => setDrawerOpen(false)}
                 activeOpacity={0.82}
               >
-                <Ionicons name="close" size={22} color="#7B8498" />
+                <Ionicons name="close" size={22} color={AUTH_UI.mutedText} />
               </TouchableOpacity>
             </View>
 
@@ -446,7 +456,7 @@ function ResponsiveTabBar({
                   <Ionicons
                     name="notifications-outline"
                     size={21}
-                    color={notificationsActive ? ROSE : "#7B8498"}
+                    color={notificationsActive ? ROSE : AUTH_UI.mutedText}
                   />
                 </View>
                 <Text
@@ -476,7 +486,7 @@ function ResponsiveTabBar({
                   <Ionicons
                     name="shield-checkmark-outline"
                     size={21}
-                    color={privacyActive ? ROSE : "#7B8498"}
+                    color={privacyActive ? ROSE : AUTH_UI.mutedText}
                   />
                 </View>
                 <Text
@@ -498,7 +508,7 @@ function ResponsiveTabBar({
                 activeOpacity={0.82}
               >
                 <View style={styles.sidebarExtraIcon}>
-                  <Ionicons name="log-out-outline" size={21} color="#FF5252" />
+                  <Ionicons name="log-out-outline" size={21} color={AUTH_UI.danger} />
                 </View>
                 <Text style={[styles.drawerLabel, styles.drawerDangerLabel]}>
                   Sign out
@@ -528,9 +538,10 @@ function ResponsiveTabBar({
       <View
         style={[
           styles.quickNav,
+          isNarrowMobile && styles.quickNavCompact,
           {
             height: tabBarHeight,
-            paddingBottom: bottomInset > 0 ? bottomInset : 8,
+            paddingBottom: bottomInset > 0 ? bottomInset : isNarrowMobile ? 6 : 8,
           },
         ]}
       >
@@ -553,13 +564,13 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: AUTH_UI.textWhite,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1E4DE",
+    borderBottomColor: AUTH_UI.lineSoftWarm,
     paddingHorizontal: 16,
     ...Platform.select({
       ios: {
-        shadowColor: "#000",
+        shadowColor: AUTH_UI.textBlack,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08,
         shadowRadius: 12,
@@ -574,7 +585,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 14,
-    backgroundColor: "rgba(201,123,110,0.12)",
+    backgroundColor: AUTH_UI.semanticSevereBg,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -590,13 +601,13 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: AUTH_UI.textWhite,
     borderWidth: 1.5,
-    borderColor: "rgba(140, 90, 82, 0.2)",
+    borderColor: AUTH_UI.mutedBorder20,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-    shadowColor: "#6A4039",
+    shadowColor: AUTH_UI.shadowBrown,
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.16,
     shadowRadius: 10,
@@ -609,7 +620,7 @@ const styles = StyleSheet.create({
   },
 
   mobileBrandText: {
-    color: "#4D3B39",
+    color: AUTH_UI.textWarmStrong,
     fontSize: 19,
     fontWeight: "800",
   },
@@ -621,16 +632,16 @@ const styles = StyleSheet.create({
 
   drawerBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(58, 35, 29, 0.25)",
+    backgroundColor: AUTH_UI.overlayDark25,
   },
 
   mobileDrawer: {
     width: DRAWER_WIDTH,
     height: "100%",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: AUTH_UI.textWhite,
     paddingHorizontal: 18,
     justifyContent: "flex-start",
-    shadowColor: "#6A4039",
+    shadowColor: AUTH_UI.shadowBrown,
     shadowOpacity: 0.18,
     shadowRadius: 28,
     shadowOffset: { width: 10, height: 0 },
@@ -654,7 +665,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F8EEE9",
+    backgroundColor: AUTH_UI.surfaceTint,
   },
 
   drawerNav: {
@@ -663,7 +674,7 @@ const styles = StyleSheet.create({
 
   drawerSubNav: {
     borderTopWidth: 1,
-    borderTopColor: "#EEF1F6",
+    borderTopColor: AUTH_UI.lineCoolAlt,
     marginTop: 10,
     paddingTop: 10,
     gap: 6,
@@ -685,7 +696,7 @@ const styles = StyleSheet.create({
 
   drawerLabel: {
     flex: 1,
-    color: "#6D4A45",
+    color: AUTH_UI.textWarm,
     fontSize: 15,
     fontWeight: "700",
     lineHeight: 20,
@@ -697,7 +708,7 @@ const styles = StyleSheet.create({
   },
 
   drawerDangerLabel: {
-    color: "#FF5252",
+    color: AUTH_UI.danger,
   },
 
   quickNav: {
@@ -705,18 +716,22 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: AUTH_UI.textWhite,
     borderTopWidth: 1,
-    borderTopColor: "#F1E4DE",
+    borderTopColor: AUTH_UI.lineSoftWarm,
     flexDirection: "row",
     alignItems: "center",
     paddingTop: 6,
     paddingHorizontal: 4,
-    shadowColor: "#000",
+    shadowColor: AUTH_UI.textBlack,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 16,
+  },
+  quickNavCompact: {
+    paddingTop: 4,
+    paddingHorizontal: 2,
   },
 
   quickNavItem: {
@@ -724,16 +739,22 @@ const styles = StyleSheet.create({
     minWidth: 0,
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 2,
+    rowGap: 1,
   },
 
   quickNavLabel: {
     width: "100%",
     textAlign: "center",
-    color: "#9A7F79",
+    color: AUTH_UI.textWarmMuted,
     fontSize: 10,
     fontWeight: "700",
-    marginTop: 1,
+    marginTop: 0,
     paddingHorizontal: 1,
+  },
+  quickNavLabelCompact: {
+    fontSize: 9,
+    marginTop: 0,
   },
 
   sidebar: {
@@ -742,12 +763,12 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: SIDEBAR_WIDTH,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: AUTH_UI.textWhite,
     borderRightWidth: 1,
-    borderRightColor: "#F1E4DE",
+    borderRightColor: AUTH_UI.lineSoftWarm,
     padding: 22,
     justifyContent: "space-between",
-    shadowColor: "#6A4039",
+    shadowColor: AUTH_UI.shadowBrown,
     shadowOpacity: 0.06,
     shadowRadius: 24,
     shadowOffset: { width: 8, height: 0 },
@@ -764,13 +785,13 @@ const styles = StyleSheet.create({
     width: 66,
     height: 66,
     borderRadius: 33,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: AUTH_UI.textWhite,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
     borderWidth: 1.5,
-    borderColor: "rgba(140, 90, 82, 0.2)",
-    shadowColor: "#6A4039",
+    borderColor: AUTH_UI.mutedBorder20,
+    shadowColor: AUTH_UI.shadowBrown,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.18,
     shadowRadius: 12,
@@ -783,13 +804,13 @@ const styles = StyleSheet.create({
   },
 
   brandName: {
-    color: "#4D3B39",
+    color: AUTH_UI.textWarmStrong,
     fontSize: 21,
     fontWeight: "800",
   },
 
   brandSub: {
-    color: "#8E5A54",
+    color: AUTH_UI.shadowRose,
     fontSize: 12,
     marginTop: 2,
   },
@@ -801,7 +822,7 @@ const styles = StyleSheet.create({
 
   sidebarSubNav: {
     borderTopWidth: 1,
-    borderTopColor: "#F1E4DE",
+    borderTopColor: AUTH_UI.lineSoftWarm,
     marginTop: 8,
     paddingTop: 8,
     gap: 6,
@@ -817,7 +838,7 @@ const styles = StyleSheet.create({
   },
 
   sidebarLabel: {
-    color: "#6D4A45",
+    color: AUTH_UI.textWarm,
     fontSize: 15,
     fontWeight: "700",
   },
@@ -835,7 +856,7 @@ const styles = StyleSheet.create({
   },
 
   sidebarExtraIconActive: {
-    backgroundColor: "rgba(232,105,124,0.12)",
+    backgroundColor: AUTH_UI.semanticSevereBg,
   },
 
   sidebarFooter: {
@@ -843,20 +864,20 @@ const styles = StyleSheet.create({
   },
 
   installButton: {
-    backgroundColor: "#1A237E",
+    backgroundColor: AUTH_UI.brandNavy,
     borderRadius: 16,
     padding: 14,
   },
 
   installTitle: {
-    color: "#FFFFFF",
+    color: AUTH_UI.textWhite,
     fontSize: 14,
     fontWeight: "800",
     marginBottom: 3,
   },
 
   installHint: {
-    color: "rgba(255,255,255,0.76)",
+    color: AUTH_UI.overlayWhite76,
     fontSize: 12,
     lineHeight: 16,
   },
@@ -865,42 +886,53 @@ const styles = StyleSheet.create({
     minHeight: 42,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "rgba(255,82,82,0.18)",
-    backgroundColor: "rgba(255,82,82,0.06)",
+    borderColor: AUTH_UI.dangerSoft18,
+    backgroundColor: AUTH_UI.dangerSoft06,
     alignItems: "center",
     justifyContent: "center",
   },
 
   signOutText: {
-    color: "#FF5252",
+    color: AUTH_UI.danger,
     fontSize: 14,
     fontWeight: "800",
   },
 
   sidebarFootnote: {
-    color: "#9AA2B4",
+    color: AUTH_UI.mutedIcon,
     fontSize: 12,
     lineHeight: 17,
   },
 
   iconShell: {
-    width: 46,
+    width: 44,
     height: 30,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 14,
+    borderRadius: 12,
+  },
+  iconShellCompact: {
+    width: 40,
+    height: 28,
+    borderRadius: 11,
   },
 
   iconShellActive: {
-    backgroundColor: "rgba(232,105,124,0.12)",
+    backgroundColor: AUTH_UI.semanticSevereBg,
   },
 
   activeDot: {
     position: "absolute",
-    bottom: -2,
+    bottom: 1,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: ROSE,
+  },
+  activeDotCompact: {
+    bottom: 1,
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: ROSE,
   },
 });

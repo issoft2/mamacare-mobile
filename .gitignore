@@ -10,12 +10,12 @@ node_modules
 
 .expo
 dist/
-
+.idea*
 # Block node_modules everywhere (root and inside packages/)
 **/node_modules/
 .pnpm-store/
 
-
+android/
 
 build/
 .next/
