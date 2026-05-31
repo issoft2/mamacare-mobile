@@ -130,8 +130,6 @@ export default function LoginScreen() {
           // eslint-disable-next-line no-console
           console.log("Login setActive completed for session:", result.createdSessionId);
         }
-
-        goHomeAfterClerkSetActive(router);
       } else if (result.status === "needs_second_factor") {
         // TODO: navigate to dedicated MFA screen
         Alert.alert(
