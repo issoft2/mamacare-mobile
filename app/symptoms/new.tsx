@@ -8,6 +8,7 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -22,6 +23,7 @@ import { useProfile, useSubmitSymptom } from "@mumcare/api";
 import { colors } from "@mumcare/ui";
 import type { Severity } from "@mumcare/types";
 import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 // ── Symptom options ───────────────────────────────────────────────────────────
 
@@ -37,9 +39,9 @@ const SYMPTOMS = [
 ];
 
 const SEVERITIES: { key: Severity; label: string; color: string; bg: string }[] = [
-  { key: "mild",     label: "Mild",     color: "#6DBF8C", bg: "rgba(109,191,140,0.10)" },
-  { key: "moderate", label: "Moderate", color: "#F4A460", bg: "rgba(244,164,96,0.10)"  },
-  { key: "severe",   label: "Severe",   color: "#E8697C", bg: "rgba(232,105,124,0.10)" },
+  { key: "mild",     label: "Mild",     color: AUTH_UI.semanticMild, bg: AUTH_UI.semanticMildBgSoft },
+  { key: "moderate", label: "Moderate", color: AUTH_UI.semanticModerate, bg: AUTH_UI.semanticModerateBgSoft  },
+  { key: "severe",   label: "Severe",   color: colors.rose[500], bg: AUTH_UI.semanticSevereBgSoft },
 ];
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -111,7 +113,7 @@ export default function NewSymptomScreen() {
   return (
     <View style={styles.screen}>
       <LinearGradient
-        colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)"]}
+        colors={[AUTH_UI.overlayStart, AUTH_UI.overlayEnd]}
         style={styles.bgOverlay}
       >
         <ScrollView
@@ -130,7 +132,7 @@ export default function NewSymptomScreen() {
 
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>How are you feeling?</Text>
+            <Text style={styles.title}>How are you feeling today?</Text>
             <Text style={styles.subtitle}>
               Log your symptoms — every detail helps us support you better.
             </Text>
@@ -140,7 +142,7 @@ export default function NewSymptomScreen() {
           <View style={styles.formCard}>
 
             {/* Symptom chips */}
-            <Text style={styles.label}>Select Symptoms</Text>
+            <Text style={styles.label}>Select symptoms</Text>
             <View style={styles.chips}>
               {SYMPTOMS.map((s) => {
                 const active = selected.includes(s.code);
@@ -215,9 +217,9 @@ export default function NewSymptomScreen() {
                 style={ctaButtonStyles.gradient}
               >
                 {submitSymptom.isPending ? (
-                  <ActivityIndicator color="#FFF" />
+                  <ActivityIndicator color={AUTH_UI.textWhite} />
                 ) : (
-                  <Text style={ctaButtonStyles.text}>Save Journal Entry</Text>
+                  <Text style={ctaButtonStyles.text}>Save journal entry</Text>
                 )}
               </LinearGradient>
             </TouchableOpacity>
@@ -241,45 +243,57 @@ export default function NewSymptomScreen() {
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  screen:    { flex: 1 },
+  screen:    { flex: 1, backgroundColor: AUTH_UI.cream },
   bgOverlay: { flex: 1 },
   content: {
-    padding: 20,
+    paddingHorizontal: 24,
     paddingTop: 56,
     paddingBottom: 48,
   },
 
   backBtn: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: "rgba(255,251,247,0.92)",
-    borderWidth: 1,
-    borderColor: "rgba(140,90,82,0.18)",
+    backgroundColor: AUTH_UI.overlayStart,
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: colors.rose[200],
     justifyContent: "center", alignItems: "center",
     marginBottom: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: AUTH_UI.shadowBrown,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.12,
+        shadowRadius: 6,
+      },
+      android: { elevation: 2 },
+    }),
   },
 
   header: { marginBottom: 28 },
-  title: { fontSize: 26, fontWeight: "700", color: "#4D3B39" },
-  subtitle: { fontSize: 15, color: "#7B6A66", marginTop: 6, lineHeight: 22 },
+  title: { fontSize: 30, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF, letterSpacing: -0.6 },
+  subtitle: { fontSize: 16, color: AUTH_UI.textBlack, marginTop: 8, lineHeight: 24, fontFamily: FONT_FRIENDLY_SANS },
 
   formCard: {
-    backgroundColor: "rgba(255,255,255,0.82)",
-    borderRadius: 30,
-    padding: 24,
-    elevation: 10,
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    shadowColor: "#C97B6E",
+    backgroundColor: AUTH_UI.textWhite,
+    borderRadius: AUTH_UI.cardRadius,
+    paddingHorizontal: 22,
+    paddingTop: 20,
+    paddingBottom: 24,
+    elevation: 8,
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    shadowColor: colors.rose[500],
     shadowOffset: { width: 0, height: 4 },
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: colors.rose[200],
   },
 
   label: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#8E5A54",
+    fontSize: 14,
+    fontWeight: "600",
+    color: AUTH_UI.textBlack,
     marginBottom: 12,
-    textTransform: "uppercase",
-    letterSpacing: 1.2,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 
   // Symptom chips
@@ -287,17 +301,17 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: "#FFF",
-    borderWidth: 1.5,
-    borderColor: colors.rose[100],
+    borderRadius: AUTH_UI.inputRadius,
+    backgroundColor: AUTH_UI.textWhite,
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: colors.rose[200],
   },
   chipActive: {
-    backgroundColor: "#C97B6E",
-    borderColor: "#C97B6E",
+    backgroundColor: colors.rose[500],
+    borderColor: colors.rose[500],
   },
-  chipText:       { color: colors.navy[400], fontSize: 14 },
-  chipTextActive: { color: "#FFF", fontWeight: "700" },
+  chipText:       { color: AUTH_UI.textBlack, fontSize: 14, fontFamily: FONT_FRIENDLY_SANS },
+  chipTextActive: { color: AUTH_UI.textWhite, fontWeight: "700", fontFamily: FONT_FRIENDLY_SANS },
 
   // Severity
   severityRow: { flexDirection: "row", gap: 10 },
@@ -308,28 +322,30 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 6,
     paddingVertical: 12,
-    borderRadius: 15,
-    backgroundColor: "#FFF",
-    borderWidth: 1.5,
-    borderColor: colors.rose[100],
+    borderRadius: AUTH_UI.inputRadius,
+    backgroundColor: AUTH_UI.textWhite,
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: colors.rose[200],
   },
   sevDot: {
     width: 8, height: 8, borderRadius: 4,
   },
-  sevText: { color: colors.navy[400], textTransform: "capitalize", fontSize: 14 },
+  sevText: { color: AUTH_UI.textBlack, textTransform: "capitalize", fontSize: 14, fontFamily: FONT_FRIENDLY_SANS },
 
   // Notes input
   input: {
-    backgroundColor: "#FFF",
+    backgroundColor: AUTH_UI.textWhite,
     borderRadius: 16,
-    padding: 16,
+    paddingHorizontal: AUTH_UI.fieldPaddingX,
+    paddingVertical: AUTH_UI.fieldPaddingY,
     minHeight: 110,
     marginTop: 4,
-    color: colors.navy[700],
-    fontSize: 15,
+    color: AUTH_UI.textBlack,
+    fontSize: 16,
     lineHeight: 22,
-    borderWidth: 1.5,
-    borderColor: colors.rose[100],
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: colors.rose[200],
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 
   // Submit
@@ -339,5 +355,5 @@ const styles = StyleSheet.create({
 
   // Cancel
   cancel: { marginTop: 16, alignItems: "center" },
-  cancelText: { color: colors.navy[300], fontSize: 15 },
+  cancelText: { color: AUTH_UI.linkBerry, fontSize: 16, fontWeight: "700", fontFamily: FONT_FRIENDLY_SANS },
 });

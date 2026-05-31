@@ -34,6 +34,7 @@ import {
 } from "@/lib/pushNotifications";
 import { registerServiceWorker } from "@/lib/registerServiceWorker";
 import { checkConsentVersion } from "@/lib/legal";
+import { AUTH_UI } from "@/lib/authUiTokens";
 
 /** Must run before any fetch from @mumcare/api — see configureApiBaseUrl in packages/api. */
 configureApiBaseUrl(API_BASE_URL);
@@ -236,7 +237,7 @@ function AppReconsentCheck() {
 }
 
 function PushTokenSync() {
-  const { isLoaded, isSignedIn, userId, getToken } = useAuth();
+  const { isLoaded, isSignedIn, userId, sessionId, getToken } = useAuth();
 
   useEffect(() => {
     if (Platform.OS === "web") {
@@ -248,6 +249,13 @@ function PushTokenSync() {
     }
     if (!isLoaded || !isSignedIn || !userId) {
       if (typeof __DEV__ !== "undefined" && __DEV__) {
+        // eslint-disable-next-line no-console
+        console.log("Push token sync auth snapshot:", {
+          isLoaded,
+          isSignedIn,
+          userId: userId ?? null,
+          sessionId: sessionId ?? null,
+        });
         const reason = !isLoaded
           ? "auth not loaded"
           : !isSignedIn
@@ -318,7 +326,7 @@ function PushTokenSync() {
     return () => {
       cancelled = true;
     };
-  }, [getToken, isLoaded, isSignedIn, userId]);
+  }, [getToken, isLoaded, isSignedIn, sessionId, userId]);
 
   return null;
 }
@@ -500,6 +508,31 @@ function PushNotificationRuntimeHandlers() {
 }
 
 export default function RootLayout() {
+  const router = useRouter();
+
+  function normalizeClerkTarget(to: string | null | undefined): string | null {
+    if (!to || typeof to !== "string") {
+      return null;
+    }
+
+    const trimmed = to.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+      try {
+        const url = new URL(trimmed);
+        const path = `${url.pathname}${url.search}${url.hash}`;
+        return path || null;
+      } catch {
+        return null;
+      }
+    }
+
+    return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  }
+
   useEffect(() => {
     registerServiceWorker();
     if (Platform.OS !== "web") {
@@ -520,6 +553,15 @@ export default function RootLayout() {
     <ClerkProvider
       publishableKey={EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY}
       tokenCache={tokenCache}
+      navigate={async ({ session, sessionTaskUrl, redirectUrl }) => {
+        const target =
+          normalizeClerkTarget(sessionTaskUrl ?? null) ??
+          normalizeClerkTarget(redirectUrl ?? null) ??
+          (session ? "/tabs/home" : "/auth/welcome");
+
+        // Use replace to avoid back-navigation loops during auth/task completion.
+        router.replace(target as any);
+      }}
     >
       <QueryClientProvider client={queryClient}>
         <PushNotificationRuntimeHandlers />
@@ -536,7 +578,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: "100%",
     width: "100%",
-    backgroundColor: "#F7F8FC",
+    backgroundColor: AUTH_UI.semanticPanel,
   },
   pushBannerRoot: {
     position: "absolute",
@@ -549,23 +591,23 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    backgroundColor: "#FFF8EF",
+    backgroundColor: AUTH_UI.warmBackgroundSoft,
     borderWidth: 1,
-    borderColor: "rgba(201,123,110,0.24)",
-    shadowColor: "#8E5A54",
+    borderColor: AUTH_UI.shadowRoseSoft24,
+    shadowColor: AUTH_UI.shadowRose,
     shadowOpacity: 0.14,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 5,
   },
   pushBannerTitle: {
-    color: "#4D3B39",
+    color: AUTH_UI.textWarmStrong,
     fontWeight: "800",
     fontSize: 14,
     marginBottom: 2,
   },
   pushBannerBody: {
-    color: "#6D4A45",
+    color: AUTH_UI.textWarm,
     fontSize: 12,
     lineHeight: 17,
   },

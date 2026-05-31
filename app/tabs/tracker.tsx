@@ -13,7 +13,6 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   View,
-  ImageBackground,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from '@expo/vector-icons';
@@ -25,8 +24,10 @@ import {
   useSleepLogs, useStartKickSession,
   useProfile
 } from "@mumcare/api";
+import { colors } from "@mumcare/ui";
 import { ctaGradientColors } from "../../components/styles/ctaButton";
 import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 const KICK_COUNTER_MIN_WEEK = 16;
 
@@ -82,20 +83,20 @@ export default function TrackerScreen() {
 
   return (
     <View style={styles.screen}>
-        <LinearGradient colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)"]} style={styles.bgOverlay}>
+      <LinearGradient colors={[AUTH_UI.overlayStart, AUTH_UI.overlayEnd]} style={styles.bgOverlay}>
           
           <ScrollView
             contentContainerStyle={[styles.content, isWide && styles.contentWide]}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.screenTitle}>Daily Wellness</Text>
+            <Text style={styles.screenTitle}>Daily wellness</Text>
 
             <View style={[styles.dashboardGrid, isWide && styles.dashboardGridWide]}>
               {/* Hydration Widget */}
               <View style={[styles.glassCard, isWide && styles.glassCardWide]}>
                 <View style={styles.cardHeader}>
-                  <View style={[styles.iconCircle, { backgroundColor: 'rgba(107, 123, 184, 0.12)' }]}>
-                    <Ionicons name="water" size={20} color="#6B7BB8" />
+                  <View style={[styles.iconCircle, { backgroundColor: AUTH_UI.semanticBlueSoft }]}>
+                    <Ionicons name="water" size={20} color={AUTH_UI.semanticBlue} />
                   </View>
                   <Text style={styles.cardTitle}>Hydration</Text>
                 </View>
@@ -108,7 +109,7 @@ export default function TrackerScreen() {
                   />
                 </View>
                 <TouchableOpacity 
-                  style={[styles.widgetBtn, { backgroundColor: '#C97B6E' }]}
+                  style={[styles.widgetBtn, { backgroundColor: AUTH_UI.shadowRose }]}
                   onPress={() =>
                     logWater.mutateAsync({
                       glasses_count: glassesCount + 1,
@@ -117,15 +118,15 @@ export default function TrackerScreen() {
                     })
                   }
                 >
-                  <Text style={[styles.widgetBtnText, { color: '#FFF' }]}>Add a Glass</Text>
+                    <Text style={[styles.widgetBtnText, { color: AUTH_UI.textWhite }]}>Add a glass</Text>
                 </TouchableOpacity>
               </View>
 
               {/* Folic Acid Widget */}
               <View style={[styles.glassCard, isWide && styles.glassCardWide]}>
                 <View style={styles.cardHeader}>
-                  <View style={[styles.iconCircle, { backgroundColor: 'rgba(107, 123, 184, 0.12)' }]}>
-                    <Ionicons name="medkit-outline" size={20} color="#6B7BB8" />
+                  <View style={[styles.iconCircle, { backgroundColor: AUTH_UI.semanticBlueSoft }]}>
+                    <Ionicons name="medkit-outline" size={20} color={AUTH_UI.semanticBlue} />
                   </View>
                   <Text style={styles.cardTitle}>Folic Acid</Text>
                 </View>
@@ -133,7 +134,7 @@ export default function TrackerScreen() {
                 <TouchableOpacity
                   style={[
                     styles.widgetBtn,
-                    { backgroundColor: '#C97B6E' },
+                    { backgroundColor: AUTH_UI.shadowRose },
                     (folicTakenToday || logFolicAcid.isPending) && styles.widgetBtnDisabled,
                   ]}
                   disabled={folicTakenToday || logFolicAcid.isPending}
@@ -147,7 +148,7 @@ export default function TrackerScreen() {
                     }
                   }}
                 >
-                  <Text style={[styles.widgetBtnText, { color: '#FFF' }]}>
+                  <Text style={[styles.widgetBtnText, { color: AUTH_UI.textWhite }]}>
                     {folicTakenToday ? "Already logged" : "Log intake"}
                   </Text>
                 </TouchableOpacity>
@@ -156,8 +157,8 @@ export default function TrackerScreen() {
               {/* Kick Counter Widget */}
               <View style={[styles.glassCard, isWide && styles.glassCardWide]}>
                 <View style={styles.cardHeader}>
-                  <View style={[styles.iconCircle, { backgroundColor: 'rgba(232, 105, 124, 0.1)' }]}>
-                    <Ionicons name="heart" size={20} color="#E8697C" />
+                  <View style={[styles.iconCircle, { backgroundColor: AUTH_UI.semanticSevereBgSoft }]}>
+                    <Ionicons name="heart" size={20} color={colors.rose[500]} />
                   </View>
                   <Text style={styles.cardTitle}>Kick Counter</Text>
                 </View>
@@ -165,7 +166,7 @@ export default function TrackerScreen() {
                 <TouchableOpacity 
                   style={[
                     styles.widgetBtn,
-                    { backgroundColor: '#C97B6E' },
+                    { backgroundColor: AUTH_UI.shadowRose },
                     !canUseKickCounter && styles.widgetBtnDisabled,
                   ]}
                   disabled={!canUseKickCounter}
@@ -178,9 +179,9 @@ export default function TrackerScreen() {
                      }
                   }}
                 >
-                  <Text style={[styles.widgetBtnText, { color: '#FFF' }]}>
+                  <Text style={[styles.widgetBtnText, { color: AUTH_UI.textWhite }]}>
                     {canUseKickCounter
-                      ? (activeKick ? "Continue Session" : "Start Counting")
+                      ? (activeKick ? "Continue session" : "Start counting")
                       : "Available from week 16"}
                   </Text>
                 </TouchableOpacity>
@@ -189,16 +190,16 @@ export default function TrackerScreen() {
               {/* Sleep & Mood Row */}
               <View style={[styles.row, isWide && styles.rowWide]}>
                 <TouchableOpacity style={[styles.halfCard]} onPress={() => router.push("/tracker/sleep" as any)}>
-                  <View style={[styles.iconCircle, { backgroundColor: 'rgba(107, 123, 184, 0.1)' }]}>
-                     <Ionicons name="moon" size={18} color="#6B7BB8" />
+                  <View style={[styles.iconCircle, { backgroundColor: AUTH_UI.semanticBlueSoft10 }]}>
+                     <Ionicons name="moon" size={18} color={AUTH_UI.semanticBlue} />
                   </View>
                   <Text style={styles.halfTitle}>Sleep</Text>
                   <Text style={styles.halfValue}>{sleep?.[0] ? sleep[0].quality : "Log rest"}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={[styles.halfCard]} onPress={() => router.push("/tracker/mood" as any)}>
-                  <View style={[styles.iconCircle, { backgroundColor: 'rgba(232, 105, 124, 0.1)' }]}>
-                     <Ionicons name="happy" size={18} color="#E8697C" />
+                  <View style={[styles.iconCircle, { backgroundColor: AUTH_UI.semanticSevereBgSoft }]}>
+                     <Ionicons name="happy" size={18} color={colors.rose[500]} />
                   </View>
                   <Text style={styles.halfTitle}>Mood</Text>
                   <Text style={styles.halfValue}>{mood?.[0] ? mood[0].mood : "Set mood"}</Text>
@@ -213,41 +214,41 @@ export default function TrackerScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  bgImage: { flex: 1 },
+  screen: { flex: 1, backgroundColor: AUTH_UI.cream },
   bgOverlay: { flex: 1 },
-  content: { padding: 20, paddingTop: 60, paddingBottom: 32 },
+  content: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 32 },
   contentWide: { width: "100%", maxWidth: 1180, alignSelf: "center", padding: 32 },
-  screenTitle: { fontSize: 28, fontWeight: "700", color: "#4D3B39", marginBottom: 25 },
+  screenTitle: { fontSize: 30, fontWeight: "800", color: AUTH_UI.textHeading, marginBottom: 25, fontFamily: FONT_WARM_SERIF, letterSpacing: -0.6 },
   dashboardGrid: { gap: 15 },
   dashboardGridWide: { flexDirection: "row", flexWrap: "wrap", alignItems: "stretch" },
   glassCard: {
-    backgroundColor: "rgba(255,255,255,0.82)",
-    borderRadius: 24,
-    padding: 20,
+    backgroundColor: AUTH_UI.textWhite,
+    borderRadius: AUTH_UI.inputRadius,
+    paddingHorizontal: AUTH_UI.fieldPaddingX,
+    paddingVertical: AUTH_UI.fieldPaddingY,
     marginBottom: 15,
-    borderWidth: 1,
-    borderColor: "rgba(140,90,82,0.14)",
-    elevation: 4,
-    shadowColor: "#C97B6E",
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: AUTH_UI.legalBorderSoft,
+    elevation: 3,
+    shadowColor: colors.rose[500],
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 3 },
   },
   glassCardWide: { width: "48.5%", minWidth: 320 },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
-  iconCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  cardTitle: { fontSize: 14, fontWeight: "700", color: "#7B6A66", textTransform: 'uppercase', letterSpacing: 1 },
-  cardValue: { fontSize: 28, fontWeight: "800", color: "#4D3B39", marginBottom: 15 },
-  unit: { fontSize: 16, fontWeight: "400", color: "#9E9E9E" },
-  progressTrack: { height: 8, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 4, marginBottom: 20, overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 4 },
-  widgetBtn: { backgroundColor: 'rgba(255,255,255,0.8)', paddingVertical: 12, borderRadius: 15, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  cardHeader: { flexDirection: "row", alignItems: "center", marginBottom: 15 },
+  iconCircle: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", marginRight: 12 },
+  cardTitle: { fontSize: 14, fontWeight: "700", color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
+  cardValue: { fontSize: 30, fontWeight: "800", color: AUTH_UI.textHeading, marginBottom: 15, fontFamily: FONT_WARM_SERIF, letterSpacing: -0.4 },
+  unit: { fontSize: 16, fontWeight: "400", color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
+  progressTrack: { height: 8, backgroundColor: AUTH_UI.borderTrackSoft, borderRadius: 4, marginBottom: 20, overflow: "hidden" },
+  progressFill: { height: "100%", borderRadius: 4 },
+  widgetBtn: { backgroundColor: AUTH_UI.overlayCard80, paddingVertical: 12, borderRadius: AUTH_UI.inputRadius, alignItems: "center", borderWidth: AUTH_UI.borderWidth, borderColor: AUTH_UI.legalBorderSoft },
   widgetBtnDisabled: { opacity: 0.6 },
-  widgetBtnText: { fontWeight: "700", color: "#4D3B39" },
-  row: { flexDirection: 'row', gap: 15 },
+  widgetBtnText: { fontWeight: "800", color: AUTH_UI.textHeading, fontSize: 16, fontFamily: FONT_FRIENDLY_SANS },
+  row: { flexDirection: "row", gap: 15 },
   rowWide: { width: "48.5%", minWidth: 320 },
-  halfCard: { flex: 1, backgroundColor: "rgba(255,255,255,0.82)", borderRadius: 24, padding: 15, borderWidth: 1, borderColor: "rgba(140,90,82,0.14)" },
-  halfTitle: { fontSize: 12, fontWeight: "700", color: "#9E9E9E", marginTop: 10 },
-  halfValue: { fontSize: 16, fontWeight: "700", color: "#4D3B39", marginTop: 2, textTransform: 'capitalize' }
+  halfCard: { flex: 1, backgroundColor: AUTH_UI.textWhite, borderRadius: AUTH_UI.inputRadius, padding: 15, borderWidth: AUTH_UI.borderWidth, borderColor: AUTH_UI.legalBorderSoft },
+  halfTitle: { fontSize: 13, fontWeight: "700", color: AUTH_UI.textBlack, marginTop: 10, fontFamily: FONT_FRIENDLY_SANS },
+  halfValue: { fontSize: 16, fontWeight: "700", color: AUTH_UI.textHeading, marginTop: 2, textTransform: "capitalize", fontFamily: FONT_FRIENDLY_SANS },
 });

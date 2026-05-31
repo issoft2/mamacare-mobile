@@ -18,11 +18,13 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { apiRequest } from "@mumcare/api";
 import { colors, spacing, typography, shadows } from "@mumcare/ui";
 import { getActiveLegalDocument, getActiveLegalRoute } from "@/lib/legal";
 import { signOutWithPushCleanup } from "@/lib/pushNotifications";
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 export default function PrivacyScreen() {
   const { signOut, userId } = useAuth();
@@ -78,6 +80,7 @@ export default function PrivacyScreen() {
 
   return (
     <View style={styles.container}>
+      <LinearGradient colors={[AUTH_UI.overlayStart, AUTH_UI.overlayEnd]} style={styles.bgOverlay}>
       {/* Subtle Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.push("/tabs/home")} style={styles.backBtn}>
@@ -202,6 +205,7 @@ export default function PrivacyScreen() {
           MumCare complies with UK GDPR and NDPA. Health records are legally retained for 7 years post-due date per DCB0129 standards.
         </Text>
       </ScrollView>
+      </LinearGradient>
     </View>
   );
 }
@@ -224,8 +228,8 @@ function ConsentRow({ title, desc, value, required = false, onToggle, loading }:
           value={value} 
           onValueChange={onToggle} 
           disabled={required}
-          trackColor={{ false: '#E0E0E0', true: colors.rose[200] }}
-          thumbColor={value ? colors.rose[500] : '#F5F5F5'}
+          trackColor={{ false: AUTH_UI.semanticNeutralSoft, true: colors.rose[200] }}
+          thumbColor={value ? colors.rose[500] : AUTH_UI.semanticNeutralLight}
         />
       )}
     </View>
@@ -235,11 +239,11 @@ function ConsentRow({ title, desc, value, required = false, onToggle, loading }:
 function ActionRow({ icon, title, desc, onPress, danger }: any) {
   return (
     <TouchableOpacity style={styles.row} onPress={onPress}>
-      <View style={[styles.iconCircle, danger && { backgroundColor: '#FFF0F0' }]}>
-        <Ionicons name={icon} size={20} color={danger ? '#FF4D4F' : colors.navy[600]} />
+      <View style={[styles.iconCircle, danger && { backgroundColor: AUTH_UI.dangerSoftBg }]}>
+        <Ionicons name={icon} size={20} color={danger ? AUTH_UI.dangerSoft : colors.navy[600]} />
       </View>
       <View style={styles.rowText}>
-        <Text style={[styles.rowTitle, danger && { color: '#FF4D4F' }]}>{title}</Text>
+        <Text style={[styles.rowTitle, danger && { color: AUTH_UI.dangerSoft }]}>{title}</Text>
         <Text style={styles.rowDesc}>{desc}</Text>
       </View>
       <Ionicons name="chevron-forward" size={16} color={colors.navy[100]} />
@@ -270,31 +274,32 @@ function getWithdrawalCopy(tier: string) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFBF7' },
+  container: { flex: 1, backgroundColor: AUTH_UI.warmBackground },
+  bgOverlay: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 60, paddingHorizontal: 20, paddingBottom: 20 },
-  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', ...shadows.sm },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.navy[700] },
+  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: AUTH_UI.textWhite, borderWidth: AUTH_UI.borderWidth, borderColor: colors.rose[200], justifyContent: 'center', alignItems: 'center', ...shadows.sm },
+  headerTitle: { fontSize: 30, fontWeight: '800', color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF, letterSpacing: -0.5 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
   
-  securityBanner: { flexDirection: 'row', backgroundColor: '#FFF', padding: 20, borderRadius: 24, marginBottom: 30, borderWidth: 1, borderColor: colors.rose[50], ...shadows.sm },
+  securityBanner: { flexDirection: 'row', backgroundColor: AUTH_UI.textWhite, padding: 20, borderRadius: 24, marginBottom: 30, borderWidth: 1, borderColor: colors.rose[50], ...shadows.sm },
   shieldIcon: { marginRight: 15, paddingTop: 5 },
   securityText: { flex: 1 },
-  securityTitle: { fontSize: 18, fontWeight: '800', color: colors.navy[700], marginBottom: 4 },
-  securitySub: { fontSize: 13, color: colors.navy[400], lineHeight: 18 },
+  securityTitle: { fontSize: 20, fontWeight: '800', color: AUTH_UI.textHeading, marginBottom: 4, fontFamily: FONT_WARM_SERIF },
+  securitySub: { fontSize: 13, color: AUTH_UI.textBlack, lineHeight: 18, fontFamily: FONT_FRIENDLY_SANS },
 
   section: { marginBottom: 30 },
-  sectionTitle: { fontSize: 14, fontWeight: '800', color: colors.navy[300], letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12, marginLeft: 5 },
-  groupCard: { backgroundColor: '#FFF', borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: '#F0F0F0' },
+  sectionTitle: { fontSize: 24, fontWeight: '800', color: AUTH_UI.textHeading, marginBottom: 12, marginLeft: 2, fontFamily: FONT_WARM_SERIF },
+  groupCard: { backgroundColor: AUTH_UI.textWhite, borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: AUTH_UI.semanticNeutralSofter },
   row: { flexDirection: 'row', alignItems: 'center', padding: 20 },
   rowText: { flex: 1, paddingRight: 15 },
   titleLine: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  rowTitle: { fontSize: 16, fontWeight: '700', color: colors.navy[700] },
-  rowDesc: { fontSize: 13, color: colors.navy[400], lineHeight: 18 },
-  divider: { height: 1, backgroundColor: '#F8F8F8', marginHorizontal: 20 },
+  rowTitle: { fontSize: 16, fontWeight: '700', color: AUTH_UI.textHeading, fontFamily: FONT_FRIENDLY_SANS },
+  rowDesc: { fontSize: 13, color: AUTH_UI.textBlack, lineHeight: 18, fontFamily: FONT_FRIENDLY_SANS },
+  divider: { height: 1, backgroundColor: AUTH_UI.semanticPanel, marginHorizontal: 20 },
   reqBadge: { backgroundColor: colors.navy[50], paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
   reqText: { fontSize: 10, fontWeight: '800', color: colors.navy[500] },
-  iconCircle: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#F4F7FF', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-  footerNote: { textAlign: 'center', fontSize: 12, color: colors.navy[200], lineHeight: 18, paddingHorizontal: 20 }
+  iconCircle: { width: 40, height: 40, borderRadius: 12, backgroundColor: AUTH_UI.semanticBluePale, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+  footerNote: { textAlign: 'center', fontSize: 12, color: AUTH_UI.textBlack, lineHeight: 18, paddingHorizontal: 20, fontFamily: FONT_FRIENDLY_SANS }
 });
 
 const enhancedStyles = StyleSheet.create({
@@ -304,9 +309,9 @@ const enhancedStyles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderRadius: 10,
-    backgroundColor: "#FFF",
+    backgroundColor: AUTH_UI.textWhite,
     marginBottom: 10,
-    shadowColor: "#000",
+    shadowColor: AUTH_UI.textBlack,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -315,15 +320,15 @@ const enhancedStyles = StyleSheet.create({
   consentTitle: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#1A237E",
+    color: AUTH_UI.brandNavy,
   },
   consentDesc: {
     fontSize: 12,
-    color: "#757575",
+    color: AUTH_UI.mutedTextSoft,
     marginTop: 4,
   },
   learnMore: {
-    color: "#E8697C",
+    color: colors.rose[500],
     textDecorationLine: "underline",
   },
 });

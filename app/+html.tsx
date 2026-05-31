@@ -1,5 +1,6 @@
 import type { PropsWithChildren } from "react";
 import { ScrollViewStyleReset } from "expo-router/html";
+import { AUTH_UI } from "@/lib/authUiTokens";
 
 export default function RootHtml({ children }: PropsWithChildren) {
   return (
@@ -11,7 +12,7 @@ export default function RootHtml({ children }: PropsWithChildren) {
           name="viewport"
           content="width=device-width, initial-scale=1, viewport-fit=cover"
         />
-        <meta name="theme-color" content="#1A2E4A" />
+        <meta name="theme-color" content={AUTH_UI.shadowNavy} />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="MumCare" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />

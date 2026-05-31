@@ -1,7 +1,10 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { getActiveLegalDocument, getActiveLegalRoute } from "@/lib/legal";
+import { colors } from "@mumcare/ui";
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 export default function ReconsentScreen() {
   const router = useRouter();
@@ -58,13 +61,17 @@ export default function ReconsentScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>We’ve Updated Our Terms</Text>
-      <Text style={styles.description}>
-        Our Privacy Policy and Terms of Service have been updated. Please review and accept the new terms to continue using the app.
-      </Text>
+      <LinearGradient
+        colors={[AUTH_UI.overlayStart, AUTH_UI.overlayEnd]}
+        style={styles.gradient}
+      >
+        <Text style={styles.title}>We updated our terms</Text>
+        <Text style={styles.description}>
+          Our Privacy Policy and Terms of Service have changed. Please review both documents to continue.
+        </Text>
 
-      <View style={styles.reviewCard}>
-        <Text style={styles.reviewTitle}>Review updated documents</Text>
+        <View style={styles.reviewCard}>
+          <Text style={styles.reviewTitle}>Review updated documents</Text>
 
         <TouchableOpacity style={styles.linkRow} onPress={openPrivacy} activeOpacity={0.86}>
           <Text style={styles.linkText}>
@@ -79,21 +86,22 @@ export default function ReconsentScreen() {
           </Text>
           <Text style={styles.statusText}>{reviewedTerms ? "Reviewed" : "Open"}</Text>
         </TouchableOpacity>
-      </View>
+        </View>
 
-      <TouchableOpacity
-        style={[styles.button, !canAccept && styles.buttonDisabled]}
-        onPress={handleAccept}
-        disabled={!canAccept}
-      >
-        <Text style={styles.buttonText}>
-          {loading ? "Updating..." : "Accept and Continue"}
-        </Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, !canAccept && styles.buttonDisabled]}
+          onPress={handleAccept}
+          disabled={!canAccept}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? "Updating..." : "Accept and continue"}
+          </Text>
+        </TouchableOpacity>
 
-      {!canAccept ? (
-        <Text style={styles.helperText}>Please open both updated documents before continuing.</Text>
-      ) : null}
+        {!canAccept ? (
+          <Text style={styles.helperText}>Please open both updated documents before continuing.</Text>
+        ) : null}
+      </LinearGradient>
     </View>
   );
 }
@@ -101,35 +109,44 @@ export default function ReconsentScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: AUTH_UI.warmBackground,
+  },
+  gradient: {
+    flex: 1,
     justifyContent: "center",
-    alignItems: "center",
     padding: 20,
-    backgroundColor: "#FFF8F4",
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#4D3B39",
+    fontSize: 30,
+    fontWeight: "800",
+    color: AUTH_UI.textHeading,
     marginBottom: 10,
+    textAlign: "center",
+    fontFamily: FONT_WARM_SERIF,
   },
   description: {
-    fontSize: 16,
-    color: "#757575",
+    fontSize: 15,
+    color: AUTH_UI.textBlack,
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: 22,
+    lineHeight: 22,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   reviewCard: {
     width: "100%",
-    backgroundColor: "#FFF",
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 16,
+    backgroundColor: AUTH_UI.overlayCard,
+    borderRadius: AUTH_UI.cardRadius,
+    padding: 16,
+    marginBottom: 18,
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: AUTH_UI.legalBorderSoft,
   },
   reviewTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#4D3B39",
+    color: AUTH_UI.textHeading,
     marginBottom: 8,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   linkRow: {
     paddingVertical: 10,
@@ -137,39 +154,43 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     borderTopWidth: 1,
-    borderTopColor: "#F2F2F2",
+    borderTopColor: AUTH_UI.lineSubtle,
   },
   linkText: {
     fontSize: 13,
-    color: "#6D4A45",
+    color: AUTH_UI.linkBerry,
     fontWeight: "700",
     textDecorationLine: "underline",
     flex: 1,
     paddingRight: 10,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   statusText: {
     fontSize: 12,
-    color: "#8E5A54",
+    color: AUTH_UI.textBlack,
     fontWeight: "700",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   button: {
-    backgroundColor: "#C97B6E",
-    paddingVertical: 12,
+    backgroundColor: colors.rose[500],
+    paddingVertical: 14,
     paddingHorizontal: 24,
-    borderRadius: 8,
+    borderRadius: 14,
   },
   buttonDisabled: {
     opacity: 0.7,
   },
   buttonText: {
-    color: "#FFF",
+    color: AUTH_UI.textWhite,
     fontSize: 16,
     fontWeight: "bold",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   helperText: {
     marginTop: 10,
     fontSize: 12,
-    color: "#757575",
+    color: AUTH_UI.textBlack,
     textAlign: "center",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 });

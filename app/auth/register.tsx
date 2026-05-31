@@ -30,6 +30,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -42,14 +43,42 @@ import { SocialSignInButtons } from "@/components/auth/SocialSignInButtons";
 import { getErrorMessage, isClerkSessionExistsError } from "@/lib/errors";
 import { getActiveLegalContent, getActiveLegalDocument } from "@/lib/legal";
 import { resetClerkForSignIn } from "@/lib/resetClerkForSignIn";
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 // ── Module-level constants ────────────────────────────────────────────────────
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const WELCOME_BG = require("../../assets/welcome-bg.png");
 const APP_LOGO = require("../../assets/mumlogo.png");
-const CREAM = "#FFFBF7";
+const CREAM = AUTH_UI.cream;
 const CARD_RADIUS = 32;
+const TEXT_BLACK = AUTH_UI.textBlack;
+const TEXT_HEADING = AUTH_UI.textHeading;
+const TEXT_WHITE = AUTH_UI.textWhite;
+const LINK_BERRY = AUTH_UI.linkBerry;
+
+function normalizeClerkTarget(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    try {
+      const url = new URL(trimmed);
+      const path = `${url.pathname}${url.search}${url.hash}`;
+      return path || null;
+    } catch {
+      return null;
+    }
+  }
+
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -57,6 +86,9 @@ export default function RegisterScreen() {
   const { signUp, setActive, isLoaded } = useSignUp();
   const clerk = useClerk();
   const router = useRouter();
+  const { width, fontScale } = useWindowDimensions();
+  const isCompact = width < 360;
+  const isLargeText = fontScale >= 1.2;
 
   const activePrivacy = getActiveLegalDocument("privacy");
   const activeTerms = getActiveLegalDocument("terms");
@@ -118,11 +150,42 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       const result = await signUp.attemptEmailAddressVerification({ code });
+
+      if (typeof __DEV__ !== "undefined" && __DEV__) {
+        // eslint-disable-next-line no-console
+        console.log("Register verify result:", {
+          status: result.status,
+          createdSessionId: result.createdSessionId ?? null,
+        });
+      }
+
       if (result.status === "complete") {
-        await setActive({ session: result.createdSessionId });
+        await setActive({
+          session: result.createdSessionId,
+          navigate: async (params) => {
+            const session = params.session;
+            const sessionTaskUrl = (params as { sessionTaskUrl?: string }).sessionTaskUrl;
+            const redirectUrl = (params as { redirectUrl?: string }).redirectUrl;
+            const target =
+              normalizeClerkTarget(sessionTaskUrl) ??
+              normalizeClerkTarget(redirectUrl) ??
+              (session ? "/onboarding/profile-setup" : "/auth/welcome");
+            router.replace(target as any);
+          },
+        });
+
+        if (typeof __DEV__ !== "undefined" && __DEV__) {
+          // eslint-disable-next-line no-console
+          console.log("Register setActive completed for session:", result.createdSessionId ?? null);
+        }
+
         router.replace("/onboarding/profile-setup");
       }
     } catch (err: unknown) {
+      if (typeof __DEV__ !== "undefined" && __DEV__) {
+        // eslint-disable-next-line no-console
+        console.warn("Register verify failed with raw error:", err);
+      }
       Alert.alert(
         "That code didn't work",
         getErrorMessage(err, "Please check the code and try again.")
@@ -146,9 +209,9 @@ export default function RegisterScreen() {
 
         <LinearGradient
           colors={[
-            "rgba(255,248,244,0.18)",
-            "rgba(255,248,244,0.82)",
-            "#FFF8F4",
+            AUTH_UI.overlayStart,
+            AUTH_UI.overlayEnd,
+            AUTH_UI.warmBackground,
           ]}
           locations={[0, 0.46, 0.78]}
           style={StyleSheet.absoluteFill}
@@ -166,7 +229,7 @@ export default function RegisterScreen() {
               showsVerticalScrollIndicator={false}
             >
               {/* Hero — warm envelope moment */}
-              <View style={styles.hero}>
+              <View style={[styles.hero, isCompact && styles.heroCompact]}>
 
               {/* Brand */}
               <View style={styles.brandRow}>
@@ -176,19 +239,19 @@ export default function RegisterScreen() {
               </View>
 
               {/* Envelope icon + warm message */}
-              <View style={styles.heroText}>
+              <View style={[styles.heroText, isCompact && styles.heroTextCompact]}>
                 <View style={styles.verifyIconWrap}>
                   <Ionicons name="mail" size={32} color={colors.rose[400]} />
                 </View>
                 <Text style={styles.heroGreeting}>CHECK YOUR INBOX</Text>
-                <Text style={styles.heroQuote}>
+                <Text style={[styles.heroQuote, isCompact && styles.heroQuoteCompact]}>
                   "We sent a little code{"\n"}to {email}"
                 </Text>
               </View>
               </View>
 
             {/* Card */}
-            <View style={styles.card}>
+            <View style={[styles.card, isCompact && styles.cardCompact, isLargeText && styles.cardLargeText]}>
               <View style={styles.cardHandle} />
 
               <Text style={styles.cardTitle}>Almost there</Text>
@@ -197,11 +260,11 @@ export default function RegisterScreen() {
               </Text>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>VERIFICATION CODE</Text>
+                <Text style={styles.label}>Verification code</Text>
                 <TextInput
                   style={[styles.input, styles.codeInput]}
                   placeholder="• • • • • •"
-                  placeholderTextColor={colors.rose[200]}
+                  placeholderTextColor={TEXT_BLACK}
                   value={code}
                   onChangeText={setCode}
                   keyboardType="number-pad"
@@ -224,7 +287,7 @@ export default function RegisterScreen() {
                   style={ctaButtonStyles.gradient}
                 >
                   {loading ? (
-                    <ActivityIndicator color="#FFF" />
+                    <ActivityIndicator color={AUTH_UI.textWhite} />
                   ) : (
                     <Text style={ctaButtonStyles.text}>Confirm my email</Text>
                   )}
@@ -236,7 +299,7 @@ export default function RegisterScreen() {
                 <Text style={styles.footerText}>Didn't receive it? </Text>
                 <TouchableOpacity
                   onPress={handleRegister}
-                  hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                  hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
                 >
                   <Text style={styles.footerLink}>Resend code</Text>
                 </TouchableOpacity>
@@ -262,9 +325,9 @@ export default function RegisterScreen() {
 
       <LinearGradient
         colors={[
-          "rgba(255,248,244,0.18)",
-          "rgba(255,248,244,0.82)",
-          "#FFF8F4",
+          AUTH_UI.overlayStart,
+          AUTH_UI.overlayEnd,
+          AUTH_UI.warmBackground,
         ]}
         locations={[0, 0.46, 0.78]}
         style={StyleSheet.absoluteFill}
@@ -282,7 +345,7 @@ export default function RegisterScreen() {
             showsVerticalScrollIndicator={false}
           >
             {/* ── Hero zone ──────────────────────────────────────────── */}
-            <View style={styles.hero}>
+            <View style={[styles.hero, isCompact && styles.heroCompact]}>
 
             {/* Back button */}
             <TouchableOpacity
@@ -301,28 +364,28 @@ export default function RegisterScreen() {
             </View>
 
             {/* Warm opening message */}
-            <View style={styles.heroText}>
-              <Text style={styles.heroGreetingLight}>YOUR JOURNEY BEGINS HERE</Text>
-              <Text style={styles.heroQuoteLight}>
+            <View style={[styles.heroText, isCompact && styles.heroTextCompact]}>
+              <Text style={[styles.heroGreetingLight, isCompact && styles.heroGreetingLightCompact]}>Your journey begins here</Text>
+              <Text style={[styles.heroQuoteLight, isCompact && styles.heroQuoteLightCompact]}>
                 "You don't have to navigate{"\n"}this alone."
               </Text>
             </View>
             </View>
 
           {/* ── Form card ──────────────────────────────────────────── */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Create your account</Text>
+          <View style={[styles.card, isCompact && styles.cardCompact, isLargeText && styles.cardLargeText]}>
+            <Text style={[styles.cardTitle, isCompact && styles.cardTitleCompact]}>Create your account</Text>
             <Text style={styles.cardSubtitle}>
               A safe space for every step of your pregnancy.
             </Text>
 
             {/* Email */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>EMAIL ADDRESS</Text>
+              <Text style={styles.label}>Email address</Text>
               <TextInput
                 style={styles.input}
                 placeholder="mama@example.com"
-                placeholderTextColor={colors.navy[300]}
+                placeholderTextColor={TEXT_BLACK}
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
@@ -334,12 +397,12 @@ export default function RegisterScreen() {
 
             {/* Password */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>PASSWORD</Text>
+              <Text style={styles.label}>Password</Text>
               <View style={styles.passwordWrapper}>
                 <TextInput
                   style={styles.passwordInput}
                   placeholder="Create a password"
-                  placeholderTextColor={colors.navy[300]}
+                  placeholderTextColor={TEXT_BLACK}
                   value={password}
                   secureTextEntry={!showPassword}
                   onChangeText={setPassword}
@@ -350,7 +413,7 @@ export default function RegisterScreen() {
                 <TouchableOpacity
                   onPress={() => setShowPassword((v) => !v)}
                   style={styles.eyeBtn}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 >
                   <Ionicons
                     name={showPassword ? "eye-off-outline" : "eye-outline"}
@@ -364,7 +427,7 @@ export default function RegisterScreen() {
               </Text>
             </View>
 
-            <Text style={styles.legalText}>
+            <Text style={[styles.legalText, isCompact && styles.legalTextCompact]}>
               By creating an account or continuing with social sign-in, you agree to our{" "}
               <Text style={styles.legalLink} onPress={() => setLegalPreview("terms")}>Terms of Use</Text>
               {" "}and acknowledge that your data will be handled in accordance with our{" "}
@@ -385,9 +448,9 @@ export default function RegisterScreen() {
                 style={ctaButtonStyles.gradient}
               >
                 {loading ? (
-                  <ActivityIndicator color="#FFF" />
+                  <ActivityIndicator color={AUTH_UI.textWhite} />
                 ) : (
-                  <Text style={ctaButtonStyles.text}>Create Account</Text>
+                  <Text style={ctaButtonStyles.text}>Create account</Text>
                 )}
               </LinearGradient>
             </TouchableOpacity>
@@ -396,11 +459,11 @@ export default function RegisterScreen() {
             <SocialSignInButtons afterAuthHref="/onboarding/profile-setup" />
 
             {/* Footer */}
-            <View style={styles.footer}>
+            <View style={[styles.footer, isLargeText && styles.footerWrap]}>
               <Text style={styles.footerText}>Already a member? </Text>
               <TouchableOpacity
                 onPress={() => router.push("/auth/login")}
-                hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
               >
                 <Text style={styles.footerLink}>Sign in</Text>
               </TouchableOpacity>
@@ -465,25 +528,28 @@ const styles = StyleSheet.create({
 
   // ── Hero ────────────────────────────────────────────────────
   hero: {
-    height: SCREEN_HEIGHT * 0.38,
+    height: SCREEN_HEIGHT * 0.5,
     paddingHorizontal: 24,
     paddingTop: 16,
-    paddingBottom: 48,
+    paddingBottom: 32,
     justifyContent: "space-between",
+  },
+  heroCompact: {
+    paddingHorizontal: 20,
   },
 
   backBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255,251,247,0.92)",
+    backgroundColor: AUTH_UI.overlayStart,
     borderWidth: 1,
-    borderColor: "rgba(140, 90, 82, 0.18)",
+    borderColor: AUTH_UI.mutedBorder18,
     justifyContent: "center",
     alignItems: "center",
     ...Platform.select({
       ios: {
-        shadowColor: "#6A4039",
+        shadowColor: AUTH_UI.shadowBrown,
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.16,
         shadowRadius: 6,
@@ -501,7 +567,7 @@ const styles = StyleSheet.create({
     height: 96,
     borderRadius: 48,
     overflow: "hidden",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: AUTH_UI.textWhite,
     justifyContent: "center",
     alignItems: "center",
     ...shadows.md,
@@ -514,7 +580,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "rgba(255,255,255,0.9)",
+    backgroundColor: AUTH_UI.overlayCard90,
     justifyContent: "center",
     alignItems: "center",
     ...Platform.select({
@@ -536,15 +602,15 @@ const styles = StyleSheet.create({
 
   heroText: {
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.52)",
+    backgroundColor: AUTH_UI.overlayGlass,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.55)",
+    borderColor: AUTH_UI.overlayGlassBorder,
     paddingHorizontal: 16,
     paddingVertical: 11,
     borderRadius: 16,
     ...Platform.select({
       ios: {
-        shadowColor: "#875851",
+        shadowColor: AUTH_UI.shadowCoffee,
         shadowOffset: { width: 0, height: 5 },
         shadowOpacity: 0.14,
         shadowRadius: 10,
@@ -552,11 +618,15 @@ const styles = StyleSheet.create({
       android: { elevation: 2 },
     }),
   },
+  heroTextCompact: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
   verifyIconWrap: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "rgba(255,255,255,0.85)",
+    backgroundColor: AUTH_UI.overlayCard85,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
@@ -571,46 +641,57 @@ const styles = StyleSheet.create({
     }),
   },
   heroGreeting: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: "800",
-    color: "#FDE7EC",
+    color: TEXT_BLACK,
     letterSpacing: 2,
-    textTransform: "uppercase",
     marginBottom: 10,
-    textShadowColor: "rgba(0,0,0,0.35)",
+    textShadowColor: AUTH_UI.textShadowDark35,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   heroQuote: {
-    fontSize: 20,
-    fontStyle: "italic",
-    color: "#FFFFFF",
+    fontSize: 21,
+    color: TEXT_HEADING,
     textAlign: "center",
-    lineHeight: 30,
+    lineHeight: 33,
     fontWeight: "600",
-    textShadowColor: "rgba(0,0,0,0.4)",
+    textShadowColor: AUTH_UI.textShadowDark40,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+    fontFamily: FONT_WARM_SERIF,
+  },
+  heroQuoteCompact: {
+    fontSize: 19,
+    lineHeight: 30,
   },
   heroGreetingLight: {
-    fontSize: 11,
-    fontWeight: "800",
-    color: "#7F4E47",
-    letterSpacing: 2,
-    textTransform: "uppercase",
+    fontSize: 14,
+    fontWeight: "700",
+    color: TEXT_HEADING,
+    letterSpacing: 0.6,
     marginBottom: 10,
+    fontFamily: FONT_FRIENDLY_SANS,
+  },
+  heroGreetingLightCompact: {
+    fontSize: 13,
+    marginBottom: 8,
   },
   heroQuoteLight: {
-    fontSize: 20,
-    fontStyle: "italic",
-    color: "#4D3B39",
+    fontSize: 21,
+    color: TEXT_HEADING,
     textAlign: "center",
-    lineHeight: 30,
-    fontWeight: "600",
-    textShadowColor: "rgba(255,255,255,0.45)",
+    lineHeight: 33,
+    fontWeight: "500",
+    textShadowColor: AUTH_UI.textShadowLight,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    fontFamily: FONT_WARM_SERIF,
+  },
+  heroQuoteLightCompact: {
+    fontSize: 19,
+    lineHeight: 30,
   },
 
   // ── Card ────────────────────────────────────────────────────
@@ -633,6 +714,13 @@ const styles = StyleSheet.create({
       android: { elevation: 8 },
     }),
   },
+  cardCompact: {
+    paddingHorizontal: 22,
+    paddingTop: 18,
+  },
+  cardLargeText: {
+    paddingBottom: 64,
+  },
   cardHandle: {
     width: 40,
     height: 4,
@@ -644,15 +732,20 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 28,
     fontWeight: "800",
-    color: colors.navy[700],
+    color: TEXT_HEADING,
     letterSpacing: -0.8,
     marginBottom: 4,
+    fontFamily: FONT_WARM_SERIF,
+  },
+  cardTitleCompact: {
+    fontSize: 25,
   },
   cardSubtitle: {
-    fontSize: 15,
-    color: colors.navy[400],
+    fontSize: 16,
+    color: TEXT_BLACK,
     marginBottom: 28,
-    lineHeight: 22,
+    lineHeight: 24,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 
   // ── Inputs ──────────────────────────────────────────────────
@@ -660,38 +753,39 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    fontSize: 11,
-    fontWeight: "800",
-    color: "#8E5A54",
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
+    fontSize: 14,
+    fontWeight: "600",
+    color: TEXT_BLACK,
+    letterSpacing: 0.2,
     marginBottom: 8,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   input: {
-    backgroundColor: "#FFF",
+    backgroundColor: AUTH_UI.textWhite,
     borderRadius: 16,
     paddingHorizontal: 18,
     paddingVertical: 15,
     fontSize: 16,
-    color: colors.navy[700],
+    color: TEXT_BLACK,
     borderWidth: 1.5,
-    borderColor: colors.rose[100],
+    borderColor: colors.rose[200],
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   codeInput: {
     fontSize: 24,
     fontWeight: "700",
     letterSpacing: 8,
-    color: colors.rose[500],
+    color: TEXT_BLACK,
     textAlign: "center",
     paddingVertical: 18,
   },
   passwordWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFF",
+    backgroundColor: AUTH_UI.textWhite,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: colors.rose[100],
+    borderColor: colors.rose[200],
     paddingRight: 4,
   },
   passwordInput: {
@@ -699,34 +793,43 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 15,
     fontSize: 16,
-    color: colors.navy[700],
+    color: TEXT_BLACK,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   eyeBtn: {
     padding: 10,
   },
   passwordHint: {
-    fontSize: 12,
-    color: colors.navy[300],
-    fontStyle: "italic",
-    marginTop: 6,
+    fontSize: 14,
+    color: TEXT_BLACK,
+    marginTop: 12,
     marginLeft: 4,
+    lineHeight: 20,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   legalText: {
-    color: colors.navy[400],
-    fontSize: 12,
-    lineHeight: 18,
+    color: TEXT_BLACK,
+    fontSize: 16,
+    lineHeight: 26,
+    fontFamily: FONT_FRIENDLY_SANS,
     marginBottom: 14,
     marginTop: -4,
   },
+  legalTextCompact: {
+    fontSize: 15,
+    lineHeight: 24,
+  },
   legalLink: {
-    color: colors.rose[500],
+    color: LINK_BERRY,
     textDecorationLine: "underline",
     fontWeight: "700",
+    fontSize: 16,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 
   modalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(20,24,35,0.45)",
+    backgroundColor: AUTH_UI.overlayScrimDark,
     justifyContent: "flex-end",
   },
   modalCard: {
@@ -747,22 +850,25 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 19,
     fontWeight: "800",
-    color: colors.navy[700],
+    color: TEXT_HEADING,
+    fontFamily: FONT_WARM_SERIF,
   },
   modalMeta: {
-    fontSize: 12,
-    color: colors.navy[300],
+    fontSize: 14,
+    color: TEXT_BLACK,
     marginBottom: 10,
     fontWeight: "700",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   modalBody: {
     maxHeight: "100%",
   },
   modalContent: {
-    color: colors.navy[600],
-    fontSize: 13,
-    lineHeight: 20,
+    color: TEXT_BLACK,
+    fontSize: 16,
+    lineHeight: 24,
     paddingBottom: 16,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 
   // ── Footer ──────────────────────────────────────────────────
@@ -772,6 +878,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 28,
   },
+  footerWrap: {
+    flexWrap: "wrap",
+    rowGap: 8,
+  },
   resendRow: {
     flexDirection: "row",
     justifyContent: "center",
@@ -779,12 +889,14 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   footerText: {
-    color: colors.navy[400],
-    fontSize: 15,
+    color: TEXT_BLACK,
+    fontSize: 16,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   footerLink: {
-    color: colors.rose[500],
-    fontSize: 15,
+    color: LINK_BERRY,
+    fontSize: 16,
     fontWeight: "700",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 });

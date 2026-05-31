@@ -11,6 +11,7 @@ import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaB
 import { useLogMood, useMoodLogs } from "@mumcare/api";
 import type { Mood } from "@mumcare/types";
 import { Ionicons } from '@expo/vector-icons';
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 
 const MOODS: { value: Mood; emoji: string; label: string }[] = [
@@ -81,15 +82,15 @@ export default function MoodLogScreen() {
 
   return (
     <View style={styles.screen}>
-        <LinearGradient colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)"]} style={styles.bgOverlay}>
+      <LinearGradient colors={[AUTH_UI.overlayStart, AUTH_UI.overlayEnd]} style={styles.bgOverlay}>
           <ScrollView contentContainerStyle={styles.content}>
         
             <View style={styles.header}>
               <TouchableOpacity onPress={() => router.push("/tabs/tracker")} style={styles.backBtn}>
-                   <Ionicons name="chevron-back" size={24} color="#6D4A45" />
+                   <Ionicons name="chevron-back" size={24} color={AUTH_UI.linkBerry} />
               </TouchableOpacity>
               <View style={styles.headerCopy}>
-                <Text style={styles.eyebrow}>EMOTIONAL CARE</Text>
+                <Text style={styles.eyebrow}>Emotional care</Text>
                 <Text style={styles.title}>Emotional Check-in</Text>
                 <Text style={styles.subtitle}>Capture how you feel today so MumCare can support you with warmth and better guidance.</Text>
               </View>
@@ -114,15 +115,15 @@ export default function MoodLogScreen() {
               </View>
 
               <View style={styles.supportBanner}>
-                <Ionicons name="heart" size={14} color="#8E5A54" />
+                <Ionicons name="heart" size={14} color={AUTH_UI.linkBerry} />
                 <Text style={styles.supportText}>{getMoodAffirmation(mood)}</Text>
               </View>
 
-              <Text style={styles.inputLabel}>Additional Thoughts</Text>
+              <Text style={styles.inputLabel}>Additional thoughts</Text>
               <TextInput
                 style={styles.input}
                 placeholder="What's on your mind?"
-                placeholderTextColor="#BDBDBD"
+                placeholderTextColor={AUTH_UI.semanticNeutral}
                 value={notes}
                 onChangeText={setNotes}
                 multiline
@@ -136,11 +137,11 @@ export default function MoodLogScreen() {
               >
                 <LinearGradient colors={ctaGradientColors} start={{x:0, y:0}} end={{x:1, y:0}} style={ctaButtonStyles.gradient}>
                   {logMood.isPending ? (
-                    <ActivityIndicator color="#FFF" />
+                    <ActivityIndicator color={AUTH_UI.textWhite} />
                   ) : (
                     <>
-                      <Ionicons name="checkmark-circle-outline" size={18} color="#FFF" />
-                      <Text style={ctaButtonStyles.text}>Save Reflection</Text>
+                      <Ionicons name="checkmark-circle-outline" size={18} color={AUTH_UI.textWhite} />
+                      <Text style={ctaButtonStyles.text}>Save reflection</Text>
                     </>
                   )}
                 </LinearGradient>
@@ -158,23 +159,23 @@ export default function MoodLogScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
+  screen: { flex: 1, backgroundColor: AUTH_UI.warmBackground },
   bgOverlay: { flex: 1 },
   content: { padding: 20, paddingTop: 56, paddingBottom: 32 },
   header: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 24 },
   headerCopy: { flex: 1 },
-  eyebrow: { fontSize: 11, fontWeight: '800', color: '#8E5A54', letterSpacing: 1.1, marginBottom: 6 },
-  title: { fontSize: 26, fontWeight: '800', color: '#4D3B39' },
-  subtitle: { marginTop: 6, fontSize: 13, lineHeight: 19, color: '#6E7890' },
+  eyebrow: { fontSize: 12, fontWeight: '700', color: AUTH_UI.textBlack, marginBottom: 6, fontFamily: FONT_FRIENDLY_SANS },
+  title: { fontSize: 30, fontWeight: '800', color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF, letterSpacing: -0.5 },
+  subtitle: { marginTop: 6, fontSize: 13, lineHeight: 19, color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
   glassCard: {
-    backgroundColor: 'rgba(255,255,255,0.84)',
-    borderRadius: 28,
+    backgroundColor: AUTH_UI.textWhite,
+    borderRadius: AUTH_UI.cardRadius,
     padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.74)',
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: AUTH_UI.semanticSevereBorder20,
     ...Platform.select({
       ios: {
-        shadowColor: '#C97B6E',
+        shadowColor: AUTH_UI.shadowRose,
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.1,
         shadowRadius: 18,
@@ -183,50 +184,54 @@ const styles = StyleSheet.create({
     }),
   },
   moodGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 20 },
-  moodCard: { width: '48%', backgroundColor: '#FFF', padding: 18, borderRadius: 20, alignItems: 'center', borderWidth: 1.2, borderColor: 'rgba(140,90,82,0.16)' },
-  moodCardActive: { borderColor: '#C97B6E', backgroundColor: 'rgba(201, 123, 110, 0.10)' },
+  moodCard: { width: '48%', backgroundColor: AUTH_UI.textWhite, padding: 18, borderRadius: AUTH_UI.inputRadius, alignItems: 'center', borderWidth: AUTH_UI.borderWidth, borderColor: AUTH_UI.semanticSevereBorder20 },
+  moodCardActive: { borderColor: AUTH_UI.shadowRose, backgroundColor: AUTH_UI.shadowRoseSoft10 },
   moodEmoji: { fontSize: 40, marginBottom: 8 },
-  moodLabel: { fontSize: 14, color: '#757575', fontWeight: '700' },
-  moodLabelActive: { color: '#8E5A54' },
+  moodLabel: { fontSize: 14, color: AUTH_UI.textBlack, fontWeight: '700', fontFamily: FONT_FRIENDLY_SANS },
+  moodLabelActive: { color: AUTH_UI.shadowRose },
   supportBanner: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
-    backgroundColor: 'rgba(201, 123, 110, 0.10)',
+    backgroundColor: AUTH_UI.shadowRoseSoft10,
     padding: 12,
     borderRadius: 14,
     marginBottom: 20,
     borderLeftWidth: 3,
-    borderLeftColor: '#C97B6E',
+    borderLeftColor: AUTH_UI.shadowRose,
   },
-  supportText: { flex: 1, fontSize: 12.5, color: '#6D4A45', lineHeight: 18 },
-  inputLabel: { fontSize: 11, fontWeight: '800', color: '#8E5A54', textTransform: 'uppercase', marginBottom: 10, marginLeft: 5, letterSpacing: 1.1 },
+  supportText: { flex: 1, fontSize: 12.5, color: AUTH_UI.textBlack, lineHeight: 18, fontFamily: FONT_FRIENDLY_SANS },
+  inputLabel: { fontSize: 14, fontWeight: '600', color: AUTH_UI.textBlack, marginBottom: 10, marginLeft: 2, fontFamily: FONT_FRIENDLY_SANS },
   input: {
-    backgroundColor: '#FFF',
-    borderRadius: 18,
-    padding: 15,
+    backgroundColor: AUTH_UI.textWhite,
+    borderRadius: AUTH_UI.inputRadius,
+    paddingHorizontal: AUTH_UI.fieldPaddingX,
+    paddingVertical: AUTH_UI.fieldPaddingY,
     minHeight: 100,
     textAlignVertical: 'top',
     fontSize: 15,
-    color: '#4D3B39',
-    borderWidth: 1.2,
-    borderColor: 'rgba(140,90,82,0.16)',
+    color: AUTH_UI.textBlack,
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: AUTH_UI.semanticSevereBorder20,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   submitBtn: { marginTop: 30 },
   submitBtnDisabled: { opacity: 0.72 },
   cancel: { marginTop: 20, alignItems: 'center' },
-  cancelText: { color: '#98A2B8', fontWeight: '600' },
+  cancelText: { color: AUTH_UI.textBlack, fontWeight: '600', fontFamily: FONT_FRIENDLY_SANS },
   backBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FFF',
+    backgroundColor: AUTH_UI.textWhite,
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: AUTH_UI.semanticSevereBorder20,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
     ...Platform.select({
       ios: {
-        shadowColor: '#6A4039',
+        shadowColor: AUTH_UI.shadowBrown,
         shadowOffset: { width: 0, height: 5 },
         shadowOpacity: 0.1,
         shadowRadius: 12,

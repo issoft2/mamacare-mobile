@@ -20,22 +20,25 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors, shadows } from "@mumcare/ui";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { useMemo, useState } from "react";
-import { getTimeBasedGreeting, getDailyMessage } from "../../lib/greetings";
 import { usePwaInstallPrompt } from "../../lib/usePwaInstallPrompt";
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 const WELCOME_BG = require("../../assets/welcome-bg.png");
 const APP_LOGO = require("../../assets/mumlogo.png");
+const TEXT_BLACK = AUTH_UI.textBlack;
+const TEXT_HEADING = AUTH_UI.textHeading;
+const TEXT_WHITE = AUTH_UI.textWhite;
+const LINK_BERRY = AUTH_UI.linkBerry;
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const { width, fontScale } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 900;
+  const isCompact = width < 360;
+  const isLargeText = fontScale >= 1.2;
   const install = usePwaInstallPrompt();
   const [installBannerDismissed, setInstallBannerDismissed] = useState(false);
   
-  // Memoize greeting and message to prevent shift on re-renders
-  const greeting = useMemo(() => getTimeBasedGreeting(), []);
-  const dailyMessage = useMemo(() => getDailyMessage(), []);
   const isMobileWeb = Platform.OS === "web" && width < 760;
   const isAppleMobileBrowser = useMemo(() => {
     if (typeof navigator === "undefined") {
@@ -59,14 +62,14 @@ export default function WelcomeScreen() {
       <Image
         source={WELCOME_BG}
         style={styles.backgroundImage}
-        resizeMode="contain"
+        resizeMode="cover"
       />
 
       <LinearGradient
         colors={
           isWide
-            ? ["rgba(255,248,244,0.12)", "rgba(255,248,244,0.72)", "#FFF8F4"]
-            : ["rgba(255,248,244,0.18)", "rgba(255,248,244,0.82)", "#FFF8F4"]
+            ? [AUTH_UI.overlayDark22, AUTH_UI.overlayEnd, AUTH_UI.warmBackground]
+            : [AUTH_UI.overlayDark28, AUTH_UI.overlayStart, AUTH_UI.warmBackground]
         }
         locations={isWide ? [0, 0.54, 0.9] : [0, 0.46, 0.78]}
         style={StyleSheet.absoluteFill}
@@ -79,7 +82,7 @@ export default function WelcomeScreen() {
             onPress={handleInstallBannerPress}
           >
             <View style={styles.installIcon}>
-              <Ionicons name="phone-portrait-outline" size={20} color="#E8697C" />
+              <Ionicons name="phone-portrait-outline" size={20} color={colors.rose[500]} />
             </View>
             <View style={styles.installCopy}>
               <Text style={styles.installTitle}>Install MumCare</Text>
@@ -109,13 +112,19 @@ export default function WelcomeScreen() {
                 onPress={() => setInstallBannerDismissed(true)}
                 activeOpacity={0.86}
               >
-                <Ionicons name="close" size={18} color="#7B8498" />
+                <Ionicons name="close" size={18} color={AUTH_UI.mutedText} />
               </TouchableOpacity>
             )}
           </Pressable>
         )}
 
-        <View style={[styles.content, isWide && styles.contentWide]}>
+        <View
+          style={[
+            styles.content,
+            isWide && styles.contentWide,
+            isCompact && styles.contentCompact,
+          ]}
+        >
             
           {/* Upper Hero Section */}
           <View style={[styles.hero, isWide && styles.heroWide]}>
@@ -125,18 +134,25 @@ export default function WelcomeScreen() {
               </View>
             </View>
 
-            <View style={[styles.messageStack, isWide && styles.messageStackWide]}>
-              <Text style={styles.timeGreeting}>{greeting}, mama</Text>
-              <Text style={[styles.dailyQuote, isWide && styles.dailyQuoteWide]}>
-                "{dailyMessage}"
+            <View
+              style={[
+                styles.messageStack,
+                isWide && styles.messageStackWide,
+                isCompact && styles.messageStackCompact,
+                isLargeText && styles.messageStackLarge,
+              ]}
+            >
+              <Text style={styles.timeGreeting}>Welcome, mama</Text>
+              <Text style={[styles.dailyQuote, isWide && styles.dailyQuoteWide, isCompact && styles.dailyQuoteCompact]}>
+                "Your pregnancy journey starts here."
               </Text>
               <View style={styles.accentLine} />
             </View>
           </View>
 
           {/* Lower Action Section */}
-          <View style={[styles.footer, isWide && styles.footerWide]}>
-            <Text style={[styles.tagline, isWide && styles.taglineWide]}>
+          <View style={[styles.footer, isWide && styles.footerWide, isLargeText && styles.footerWrap]}>
+            <Text style={[styles.tagline, isWide && styles.taglineWide, isCompact && styles.taglineCompact, isLargeText && styles.taglineLarge]}>
               Your personalized companion for a healthy, supported pregnancy.
             </Text>
               
@@ -152,15 +168,15 @@ export default function WelcomeScreen() {
                 style={ctaButtonStyles.gradient}
               >
                 <Text style={ctaButtonStyles.text}>Begin your journey</Text>
-                <Ionicons name="arrow-forward" size={20} color="#FFF" />
+                <Ionicons name="arrow-forward" size={20} color={AUTH_UI.textWhite} />
               </LinearGradient>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.loginBtn, isWide && styles.loginBtnWide]}
+              style={[styles.loginBtn, isWide && styles.loginBtnWide, isLargeText && styles.loginBtnLarge]}
               onPress={() => router.push("/auth/login")}
             >
-              <Text style={styles.loginBtnText}>
+              <Text style={[styles.loginBtnText, isCompact && styles.loginBtnTextCompact]}>
                 Already a member? <Text style={styles.footerLink}>Sign in</Text>
               </Text>
             </TouchableOpacity>
@@ -178,7 +194,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     minHeight: "100%",
-    backgroundColor: '#FFF8F4',
+    backgroundColor: AUTH_UI.warmBackground,
     overflow: "hidden",
   },
   backgroundImage: {
@@ -204,6 +220,9 @@ const styles = StyleSheet.create({
     paddingTop: 36,
     paddingBottom: 40,
   },
+  contentCompact: {
+    paddingHorizontal: 18,
+  },
   
   // Hero
   hero: {
@@ -225,7 +244,7 @@ const styles = StyleSheet.create({
     height: 96,
     borderRadius: 48,
     overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: AUTH_UI.textWhite,
     justifyContent: 'center',
     alignItems: 'center',
     ...shadows.md,
@@ -238,51 +257,62 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 28,
     fontWeight: '800',
-    color: colors.navy[700],
+    color: TEXT_HEADING,
   },
   
   messageStack: {
     alignItems: "center",
     gap: 12,
-    backgroundColor: "rgba(255,255,255,0.52)",
+    backgroundColor: AUTH_UI.overlayGlass,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.55)",
+    borderColor: AUTH_UI.overlayGlassBorder,
     paddingHorizontal: 16,
     paddingVertical: 11,
     borderRadius: 16,
     ...Platform.select({
       ios: {
-        shadowColor: "#875851",
+        shadowColor: AUTH_UI.shadowEspresso,
         shadowOffset: { width: 0, height: 5 },
-        shadowOpacity: 0.14,
-        shadowRadius: 10,
+        shadowOpacity: 0.2,
+        shadowRadius: 14,
       },
-      android: { elevation: 2 },
+      android: { elevation: 4 },
     }),
   },
   messageStackWide: { alignItems: "flex-start" },
+  messageStackLarge: {
+    paddingVertical: 14,
+  },
+  messageStackCompact: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 10,
+  },
   timeGreeting: {
-    fontSize: 13,
-    color: "#7F4E47",
-    textTransform: 'uppercase',
-    letterSpacing: 1.8,
-    fontWeight: '800'
+    fontSize: 15,
+    color: TEXT_HEADING,
+    letterSpacing: 0.6,
+    fontWeight: '700',
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   dailyQuote: {
-    fontSize: 21,
-    color: "#4D3B39",
+    fontSize: 22,
+    color: TEXT_HEADING,
     textAlign: 'center',
-    lineHeight: 30,
-    fontStyle: 'italic',
-    fontWeight: "600",
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    textShadowColor: "rgba(255,255,255,0.45)",
+    lineHeight: 33,
+    fontWeight: "500",
+    fontFamily: FONT_WARM_SERIF,
+    textShadowColor: AUTH_UI.textShadowLight,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   dailyQuoteWide: {
     textAlign: "left",
     maxWidth: 500,
+  },
+  dailyQuoteCompact: {
+    fontSize: 20,
+    lineHeight: 30,
   },
   accentLine: {
     width: 40,
@@ -299,6 +329,9 @@ const styles = StyleSheet.create({
   footerWide: {
     maxWidth: 500,
   },
+  footerWrap: {
+    rowGap: 8,
+  },
   installBannerFloating: {
     position: "absolute",
     top: 10,
@@ -308,9 +341,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "rgba(255,255,255,0.96)",
+    backgroundColor: AUTH_UI.overlayCard96,
     borderWidth: 1,
-    borderColor: "rgba(232,105,124,0.2)",
+    borderColor: AUTH_UI.semanticSevereBorder20,
     borderRadius: 16,
     padding: 12,
     ...shadows.md,
@@ -319,7 +352,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 13,
-    backgroundColor: "rgba(232,105,124,0.12)",
+    backgroundColor: AUTH_UI.semanticSevereBg,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -328,18 +361,20 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   installTitle: {
-    color: colors.navy[700],
-    fontSize: 14,
+    color: TEXT_BLACK,
+    fontSize: 16,
     fontWeight: "800",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   installHint: {
-    color: colors.navy[500],
-    fontSize: 12,
-    lineHeight: 16,
+    color: TEXT_BLACK,
+    fontSize: 16,
+    lineHeight: 24,
     marginTop: 2,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   installAction: {
-    minHeight: 36,
+    minHeight: 44,
     borderRadius: 12,
     paddingHorizontal: 13,
     alignItems: "center",
@@ -347,9 +382,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.rose[500],
   },
   installActionText: {
-    color: "#FFFFFF",
-    fontSize: 13,
+    color: TEXT_WHITE,
+    fontSize: 16,
     fontWeight: "800",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   installDismiss: {
     width: 36,
@@ -357,33 +393,51 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F6F7FB",
+    backgroundColor: AUTH_UI.semanticPanel,
   },
   tagline: {
-    fontSize: 15,
-    color: colors.navy[500],
+    fontSize: 16,
+    color: TEXT_BLACK,
     textAlign: 'center',
     marginBottom: 32,
-    lineHeight: 22,
+    lineHeight: 24,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   taglineWide: {
     textAlign: "left",
   },
+  taglineLarge: {
+    lineHeight: 26,
+  },
+  taglineCompact: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 24,
+  },
   loginBtn: {
     marginTop: 20,
-    paddingVertical: 10,
+    minHeight: 44,
+    paddingVertical: 12,
     alignItems: 'center',
   },
   loginBtnWide: {
     alignItems: "flex-start",
   },
   loginBtnText: {
-    color: colors.navy[600],
+    color: TEXT_BLACK,
+    fontSize: 16,
+    fontFamily: FONT_FRIENDLY_SANS,
+  },
+  loginBtnTextCompact: {
     fontSize: 15,
   },
+  loginBtnLarge: {
+    minHeight: 48,
+  },
    footerLink: {
-    color: colors.rose[500],
-    fontSize: 15,
+    color: LINK_BERRY,
+    fontSize: 16,
     fontWeight: "700",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 });

@@ -17,8 +17,10 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useCareTeam } from "@mumcare/api";
+import { colors } from "@mumcare/ui";
 import type { CareTeamMember } from "@mumcare/types";
 import { ctaButtonStyles, ctaGradientColors } from "@/components/styles/ctaButton";
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 export default function CareTeamScreen() {
   const router = useRouter();
@@ -36,9 +38,9 @@ export default function CareTeamScreen() {
 
   const roleLabel = (role: CareTeamMember["role"]) => {
     if (role === "gp") return "GP";
-    if (role === "obstetrician") return "OBSTETRICIAN";
-    if (role === "midwife") return "MIDWIFE";
-    return "SPECIALIST";
+    if (role === "obstetrician") return "Obstetrician";
+    if (role === "midwife") return "Midwife";
+    return "Specialist";
   };
 
   const initialsFromName = (fullName: string) => {
@@ -67,18 +69,18 @@ export default function CareTeamScreen() {
                 end={{ x: 1, y: 0 }}
                 style={styles.primaryTag}
               >
-                <Text style={styles.primaryText}>PRIMARY</Text>
+                <Text style={styles.primaryText}>Primary</Text>
               </LinearGradient>
             )}
           </View>
-          <Ionicons name="shield-checkmark-outline" size={19} color="#97A2BC" />
+          <Ionicons name="shield-checkmark-outline" size={19} color={AUTH_UI.semanticBlueSlate} />
         </View>
 
         <View style={styles.body}>
           <Text style={styles.name}>{item.full_name}</Text>
           {item.practice_name && (
             <View style={styles.practiceRow}>
-              <Ionicons name="business-outline" size={14} color="#7A86A0" />
+              <Ionicons name="business-outline" size={14} color={AUTH_UI.mutedText} />
               <Text style={styles.practiceText}>{item.practice_name}</Text>
             </View>
           )}
@@ -91,7 +93,7 @@ export default function CareTeamScreen() {
             disabled={!item.phone}
             activeOpacity={0.86}
           >
-            <Ionicons name="call" size={17} color={item.phone ? "#6D4A45" : "#BDBDBD"} />
+            <Ionicons name="call" size={17} color={item.phone ? AUTH_UI.linkBerry : AUTH_UI.semanticNeutral} />
             <Text style={[styles.actionBtnText, !item.phone && styles.disabledText]}>Call</Text>
           </TouchableOpacity>
 
@@ -103,7 +105,7 @@ export default function CareTeamScreen() {
             disabled={!item.email}
             activeOpacity={0.86}
           >
-            <Ionicons name="mail" size={17} color={item.email ? "#6D4A45" : "#BDBDBD"} />
+            <Ionicons name="mail" size={17} color={item.email ? AUTH_UI.linkBerry : AUTH_UI.semanticNeutral} />
             <Text style={[styles.actionBtnText, !item.email && styles.disabledText]}>Email</Text>
           </TouchableOpacity>
         </View>
@@ -113,13 +115,13 @@ export default function CareTeamScreen() {
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)"]} style={styles.bgOverlay}>
+      <LinearGradient colors={[AUTH_UI.overlayStart, AUTH_UI.overlayEnd]} style={styles.bgOverlay}>
         <View style={styles.headerNav}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.86}>
-            <Ionicons name="chevron-back" size={24} color="#6D4A45" />
+            <Ionicons name="chevron-back" size={24} color={AUTH_UI.linkBerry} />
           </TouchableOpacity>
           <View style={styles.headerCopy}>
-            <Text style={styles.headerEyebrow}>CARE CIRCLE</Text>
+            <Text style={styles.headerEyebrow}>Care circle</Text>
             <Text style={styles.headerTitle}>Your Care Team</Text>
             <Text style={styles.headerSubtext}>Keep your trusted contacts close for calmer, coordinated support.</Text>
           </View>
@@ -132,11 +134,11 @@ export default function CareTeamScreen() {
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             isLoading ? (
-              <ActivityIndicator color="#C97B6E" style={{ marginTop: 40 }} />
+              <ActivityIndicator color={colors.rose[500]} style={{ marginTop: 40 }} />
             ) : (
               <View style={styles.emptyContainer}>
                 <View style={styles.emptyIconCircle}>
-                  <Ionicons name="heart-outline" size={36} color="#6B7BB8" />
+                  <Ionicons name="heart-outline" size={36} color={AUTH_UI.semanticBlue} />
                 </View>
                 <Text style={styles.emptyText}>No care team added yet</Text>
                 <Text style={styles.emptySubtext}>
@@ -158,8 +160,8 @@ export default function CareTeamScreen() {
             end={{ x: 1, y: 0 }}
             style={ctaButtonStyles.gradient}
           >
-            <Ionicons name="add-circle-outline" size={18} color="#FFF" />
-            <Text style={ctaButtonStyles.text}>Add Member</Text>
+            <Ionicons name="add-circle-outline" size={18} color={AUTH_UI.textWhite} />
+            <Text style={ctaButtonStyles.text}>Add member</Text>
           </LinearGradient>
         </TouchableOpacity>
       </LinearGradient>
@@ -168,7 +170,7 @@ export default function CareTeamScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
+  screen: { flex: 1, backgroundColor: AUTH_UI.warmBackground },
   bgOverlay: { flex: 1 },
   headerNav: {
     flexDirection: "row",
@@ -181,13 +183,15 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#FFF",
+    backgroundColor: AUTH_UI.textWhite,
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: colors.rose[200],
     alignItems: "center",
     justifyContent: "center",
     marginRight: 14,
     ...Platform.select({
       ios: {
-        shadowColor: "#6A4039",
+        shadowColor: AUTH_UI.shadowBrown,
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.1,
         shadowRadius: 12,
@@ -197,31 +201,32 @@ const styles = StyleSheet.create({
   },
   headerCopy: { flex: 1 },
   headerEyebrow: {
-    fontSize: 11,
-    fontWeight: "800",
-    color: "#8E5A54",
-    letterSpacing: 1.2,
+    fontSize: 12,
+    fontWeight: "700",
+    color: AUTH_UI.linkBerry,
     marginBottom: 4,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
-  headerTitle: { fontSize: 24, fontWeight: "800", color: "#4D3B39" },
+  headerTitle: { fontSize: 30, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF, letterSpacing: -0.5 },
   headerSubtext: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: "#6E7890",
+    fontSize: 14,
+    lineHeight: 20,
+    color: AUTH_UI.textBlack,
     marginTop: 6,
     paddingRight: 8,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   list: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 120 },
   card: {
-    backgroundColor: "rgba(255,255,255,0.92)",
-    borderRadius: 24,
+    backgroundColor: AUTH_UI.textWhite,
+    borderRadius: AUTH_UI.cardRadius,
     padding: 18,
     marginBottom: 14,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.7)",
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: colors.rose[200],
     ...Platform.select({
       ios: {
-        shadowColor: "#C97B6E",
+        shadowColor: colors.rose[500],
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.1,
         shadowRadius: 20,
@@ -240,33 +245,35 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "#F4F6FF",
+    backgroundColor: AUTH_UI.semanticBluePale,
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { fontSize: 12, fontWeight: "800", color: "#5A6AA6" },
+  avatarText: { fontSize: 12, fontWeight: "800", color: AUTH_UI.semanticBlueMuted },
   roleTag: {
-    backgroundColor: "#F0F2F8",
+    backgroundColor: colors.rose[50],
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: AUTH_UI.inputRadius,
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: colors.rose[200],
   },
   roleText: {
-    fontSize: 10,
-    fontWeight: "800",
-    color: "#6B7BB8",
-    letterSpacing: 0.6,
+    fontSize: 12,
+    fontWeight: "700",
+    color: AUTH_UI.linkBerry,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
-  primaryTag: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  primaryText: { fontSize: 10, fontWeight: "800", color: "#FFF", letterSpacing: 0.4 },
+  primaryTag: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: AUTH_UI.inputRadius },
+  primaryText: { fontSize: 12, fontWeight: "700", color: AUTH_UI.textWhite, fontFamily: FONT_FRIENDLY_SANS },
   body: { marginBottom: 14 },
-  name: { fontSize: 18, fontWeight: "700", color: "#4D3B39", marginBottom: 5 },
+  name: { fontSize: 19, fontWeight: "700", color: AUTH_UI.textHeading, marginBottom: 5, fontFamily: FONT_FRIENDLY_SANS },
   practiceRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  practiceText: { fontSize: 14, color: "#667085" },
+  practiceText: { fontSize: 14, color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
   actionRow: {
     flexDirection: "row",
-    borderTopWidth: 1,
-    borderTopColor: "#F2F4FA",
+    borderTopWidth: AUTH_UI.borderWidth,
+    borderTopColor: colors.rose[100],
     paddingTop: 13,
   },
   actionBtn: {
@@ -277,10 +284,10 @@ const styles = StyleSheet.create({
     gap: 8,
     minHeight: 34,
   },
-  actionBtnText: { fontWeight: "700", color: "#6D4A45", fontSize: 14 },
-  actionDivider: { width: 1, height: 20, backgroundColor: "#EEF1F7" },
+  actionBtnText: { fontWeight: "700", color: AUTH_UI.linkBerry, fontSize: 14, fontFamily: FONT_FRIENDLY_SANS },
+  actionDivider: { width: 1, height: 20, backgroundColor: AUTH_UI.lineCool },
   disabledBtn: { opacity: 0.45 },
-  disabledText: { color: "#BDBDBD" },
+  disabledText: { color: AUTH_UI.semanticNeutral },
   emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
@@ -291,13 +298,13 @@ const styles = StyleSheet.create({
     width: 78,
     height: 78,
     borderRadius: 39,
-    backgroundColor: "#FFF",
+    backgroundColor: AUTH_UI.textWhite,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 18,
     ...Platform.select({
       ios: {
-        shadowColor: "#6B7BB8",
+        shadowColor: AUTH_UI.semanticBlue,
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.12,
         shadowRadius: 14,
@@ -305,8 +312,8 @@ const styles = StyleSheet.create({
       android: { elevation: 3 },
     }),
   },
-  emptyText: { fontSize: 18, fontWeight: "700", color: "#4D3B39", marginBottom: 8 },
-  emptySubtext: { fontSize: 14, color: "#6E7890", textAlign: "center", lineHeight: 21 },
+  emptyText: { fontSize: 22, fontWeight: "800", color: AUTH_UI.textHeading, marginBottom: 8, fontFamily: FONT_WARM_SERIF },
+  emptySubtext: { fontSize: 14, color: AUTH_UI.textBlack, textAlign: "center", lineHeight: 21, fontFamily: FONT_FRIENDLY_SANS },
   addBtn: {
     position: "absolute",
     left: 20,

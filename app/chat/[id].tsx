@@ -33,6 +33,7 @@ import {
   useTranscribeVoice,
 } from "@mumcare/api";
 import { colors } from "@mumcare/ui";
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 type SpeechRecognitionResult = {
   readonly isFinal: boolean;
@@ -61,6 +62,44 @@ type SpeechRecognitionInstance = EventTarget & {
 };
 
 type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance;
+
+const WEEKLY_PROMPT_MARKER = "Here's what I know about this week:";
+
+function normalizeAssistantBranding(text: string): string {
+  return text.replace(/MamaCare's AI assistant/gi, "MumCare's AI assistant");
+}
+
+function getWeeklyStarterDisplayText(content: string): string | null {
+  if (!content.includes(WEEKLY_PROMPT_MARKER)) {
+    return null;
+  }
+
+  const weekMatch = content.match(/week\s+(\d+)/i);
+  const week = weekMatch?.[1];
+  if (!week) {
+    return "Hi MumCare, can you tell me what to expect this week?";
+  }
+  return `Hi MumCare, can you tell me what to expect in week ${week}?`;
+}
+
+function getRenderedMessageText(role: string, content: string): string {
+  if (role === "assistant") {
+    return normalizeAssistantBranding(content);
+  }
+
+  if (role === "user") {
+    const weeklyStarterText = getWeeklyStarterDisplayText(content);
+    if (weeklyStarterText) {
+      return weeklyStarterText;
+    }
+  }
+
+  return content;
+}
+
+function isUsageLimitMessage(content: string): boolean {
+  return /usage limit|limit reached|quota|upgrade/i.test(content);
+}
 
 function getSpeechRecognitionConstructor(): SpeechRecognitionConstructor | null {
   if (Platform.OS !== "web" || typeof window === "undefined") {
@@ -156,12 +195,28 @@ export default function ChatConversationScreen() {
   const inputRef = useRef<TextInput>(null);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const voiceBaseInputRef = useRef("");
+  const supportAnim = useRef(new Animated.Value(0)).current;
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
 
   const messages = data?.messages ?? [];
+  const hasUsageLimitNotice = messages.some(
+    (msg) => msg.role === "assistant" && isUsageLimitMessage(msg.content)
+  );
+  const showSupportOptions = hasUsageLimitNotice && !isWaitingForAI;
+  const supportOptionsAnimStyle = {
+    opacity: supportAnim,
+    transform: [
+      {
+        translateY: supportAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [10, 0],
+        }),
+      },
+    ],
+  };
   const recorderSupported =
     Platform.OS === "web" &&
     typeof navigator !== "undefined" &&
@@ -235,6 +290,20 @@ export default function ChatConversationScreen() {
     const timeout = setTimeout(() => inputRef.current?.focus(), 450);
     return () => clearTimeout(timeout);
   }, []);
+
+  useEffect(() => {
+    if (showSupportOptions) {
+      supportAnim.setValue(0);
+      Animated.timing(supportAnim, {
+        toValue: 1,
+        duration: 260,
+        useNativeDriver: true,
+      }).start();
+      return;
+    }
+
+    supportAnim.setValue(0);
+  }, [showSupportOptions, supportAnim]);
 
   // ── Send message ───────────────────────────────────────────────────────────
   async function handleSend() {
@@ -480,6 +549,8 @@ export default function ChatConversationScreen() {
   function renderMessage({ item }: { item: any }) {
     const isUser = item.role === "user";
     const isSpeaking = speakingMessageId === item.id;
+    const renderedMessage = getRenderedMessageText(item.role, item.content);
+    const canUseReadAloud = Platform.OS === "web";
     return (
       <View style={[styles.messageRow, isUser ? styles.userRow : styles.assistantRow]}>
         {!isUser && (
@@ -489,9 +560,9 @@ export default function ChatConversationScreen() {
         )}
         <View style={[styles.bubble, isUser ? styles.userBubble : styles.assistantBubble]}>
           <Text style={[styles.bubbleText, isUser ? styles.userText : styles.assistantText]}>
-            {item.content}
+            {renderedMessage}
           </Text>
-          {!isUser && (
+          {!isUser && canUseReadAloud && (
             <TouchableOpacity
               style={[styles.readAloudBtn, isSpeaking && styles.readAloudBtnActive]}
               onPress={() => toggleReadAloud(item.id, item.content)}
@@ -500,7 +571,7 @@ export default function ChatConversationScreen() {
               <Ionicons
                 name={isSpeaking ? "stop-circle" : "volume-medium-outline"}
                 size={16}
-                color={isSpeaking ? "#FFFFFF" : "#8E5A54"}
+                color={isSpeaking ? AUTH_UI.textWhite : AUTH_UI.linkBerry}
               />
               <Text
                 style={[
@@ -517,10 +588,50 @@ export default function ChatConversationScreen() {
     );
   }
 
+  function renderSupportOptions() {
+    if (!showSupportOptions) {
+      return null;
+    }
+
+    return (
+      <Animated.View style={[styles.supportOptionsWrap, supportOptionsAnimStyle]}>
+        <Text style={styles.supportOptionsTitle}>Need support while chat is paused?</Text>
+        <View style={styles.supportChipRow}>
+          <TouchableOpacity
+            style={styles.supportChip}
+            activeOpacity={0.86}
+            onPress={() => router.push("/tabs/home")}
+          >
+            <Ionicons name="book-outline" size={14} color={AUTH_UI.linkBerry} />
+            <Text style={styles.supportChipText}>View Week Article</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.supportChip}
+            activeOpacity={0.86}
+            onPress={() => router.push("/profile/care-team")}
+          >
+            <Ionicons name="call-outline" size={14} color={AUTH_UI.linkBerry} />
+            <Text style={styles.supportChipText}>Contact My Midwife</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.supportChip}
+            activeOpacity={0.86}
+            onPress={() => router.push("/tabs/tracker")}
+          >
+            <Ionicons name="fitness-outline" size={14} color={AUTH_UI.linkBerry} />
+            <Text style={styles.supportChipText}>Browse Safe Exercises</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+    );
+  }
+
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#C97B6E" />
+        <ActivityIndicator size="large" color={colors.rose[500]} />
         <Text style={styles.loadingText}>Opening your chat…</Text>
       </View>
     );
@@ -529,7 +640,7 @@ export default function ChatConversationScreen() {
   return (
     <View style={styles.screen}>
       <LinearGradient
-        colors={["rgba(255,251,247,0.92)", "rgba(255,244,239,0.68)"]}
+        colors={[AUTH_UI.overlayStart, AUTH_UI.overlayEnd]}
         style={styles.bgOverlay}
       >
         <KeyboardAvoidingView
@@ -543,7 +654,7 @@ export default function ChatConversationScreen() {
               onPress={() => router.replace("/tabs/chat")}
               style={styles.backBtn}
             >
-              <Ionicons name="chevron-back" size={28} color="#6D4A45" />
+              <Ionicons name="chevron-back" size={28} color={AUTH_UI.textHeading} />
             </TouchableOpacity>
             <View>
               <Text style={styles.headerTitle}>MumCare AI</Text>
@@ -554,27 +665,35 @@ export default function ChatConversationScreen() {
           </View>
 
           {/* ── Message list ────────────────────────────────────── */}
-          <FlatList
-            ref={listRef}
-            data={messages}
-            keyExtractor={(item) => item.id}
-            renderItem={renderMessage}
-            contentContainerStyle={styles.messageList}
-            showsVerticalScrollIndicator={false}
-            maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
-            ListEmptyComponent={
-              isWaitingForAI ? null : (
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.welcomeEmoji}>🌸</Text>
-                  <Text style={styles.welcomeTitle}>MumCare is here with you</Text>
-                  <Text style={styles.welcomeSubtitle}>
-                    Ask me anything about your pregnancy journey.
-                  </Text>
-                </View>
-              )
-            }
-            ListFooterComponent={isWaitingForAI ? <TypingIndicator /> : null}
-          />
+          <View style={styles.messageListContainer}>
+            <FlatList
+              ref={listRef}
+              data={messages}
+              keyExtractor={(item) => item.id}
+              renderItem={renderMessage}
+              style={styles.messageScroller}
+              contentContainerStyle={styles.messageList}
+              showsVerticalScrollIndicator={false}
+              maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+              ListEmptyComponent={
+                isWaitingForAI ? null : (
+                  <View style={styles.emptyContainer}>
+                    <Text style={styles.welcomeEmoji}>🌸</Text>
+                    <Text style={styles.welcomeTitle}>MumCare is here with you</Text>
+                    <Text style={styles.welcomeSubtitle}>
+                      Ask me anything about your pregnancy journey.
+                    </Text>
+                  </View>
+                )
+              }
+              ListFooterComponent={
+                <>
+                  {isWaitingForAI ? <TypingIndicator /> : null}
+                  {renderSupportOptions()}
+                </>
+              }
+            />
+          </View>
 
           {/* ── Input bar ───────────────────────────────────────── */}
           <View style={styles.inputContainer}>
@@ -583,7 +702,7 @@ export default function ChatConversationScreen() {
                 <Ionicons
                 name={isListening ? "mic" : isTranscribing ? "sync" : "information-circle-outline"}
                 size={15}
-                color={isListening || isTranscribing ? "#C97B6E" : "#7B8498"}
+                  color={isListening || isTranscribing ? colors.rose[500] : AUTH_UI.textBlack}
               />
               <Text style={styles.voiceNoticeText}>{voiceNotice}</Text>
               </View>
@@ -597,7 +716,7 @@ export default function ChatConversationScreen() {
                   ref={inputRef}
                   style={styles.textInput}
                   placeholder={isListening ? "Listening..." : "Message MumCare"}
-                  placeholderTextColor="#98A2B3"
+                  placeholderTextColor={AUTH_UI.textBlack}
                   value={input}
                   onChangeText={setInput}
                   multiline
@@ -620,12 +739,12 @@ export default function ChatConversationScreen() {
                   activeOpacity={0.82}
                 >
                   {isTranscribing ? (
-                    <ActivityIndicator size="small" color="#C97B6E" />
+                    <ActivityIndicator size="small" color={colors.rose[500]} />
                   ) : (
                     <Ionicons
                       name={isListening ? "stop" : "mic-outline"}
                       size={20}
-                      color={isListening ? "#FFFFFF" : "#8E5A54"}
+                      color={isListening ? AUTH_UI.textWhite : AUTH_UI.linkBerry}
                     />
                   )}
                 </TouchableOpacity>
@@ -639,13 +758,21 @@ export default function ChatConversationScreen() {
                 disabled={!input.trim() || sendMessage.isPending}
               >
                 <LinearGradient
-                  colors={["#C97B6E", "#E7A693"]}
+                  colors={
+                    input.trim() && !sendMessage.isPending
+                      ? [AUTH_UI.linkBerry, AUTH_UI.shadowRose]
+                      : [AUTH_UI.semanticNeutralSoft, AUTH_UI.semanticNeutral]
+                  }
                   style={styles.sendGradient}
                 >
                   {sendMessage.isPending ? (
-                    <ActivityIndicator size="small" color="#FFF" />
+                    <ActivityIndicator size="small" color={AUTH_UI.textWhite} />
                   ) : (
-                    <Ionicons name="send" size={18} color="#FFF" />
+                    <Ionicons
+                      name="send"
+                      size={18}
+                      color={input.trim() ? AUTH_UI.textWhite : AUTH_UI.mutedText}
+                    />
                   )}
                 </LinearGradient>
               </TouchableOpacity>
@@ -662,50 +789,64 @@ export default function ChatConversationScreen() {
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  screen:    { flex: 1, backgroundColor: "#FFF" },
+  screen:    { flex: 1, backgroundColor: AUTH_UI.warmBackground },
   bgOverlay: { flex: 1 },
   flex:      { flex: 1 },
   center: {
     flex: 1, justifyContent: "center", alignItems: "center", gap: 12,
   },
-  loadingText: { fontSize: 15, color: colors.navy[300], fontStyle: "italic" },
+  loadingText: { fontSize: 15, color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
 
   chatHeader: {
     paddingTop: 60, paddingBottom: 15, paddingHorizontal: 20,
     flexDirection: "row", alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.6)",
-    borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.05)",
+    backgroundColor: AUTH_UI.overlaySoft,
+    borderBottomWidth: 1, borderBottomColor: AUTH_UI.lineFaint,
   },
   backBtn:      { marginRight: 15 },
-  headerTitle:  { fontSize: 18, fontWeight: "800", color: "#4D3B39" },
-  headerStatus: { fontSize: 12, color: "#88B0A8", fontWeight: "600" },
+  headerTitle:  { fontSize: 26, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF },
+  headerStatus: { fontSize: 12, color: AUTH_UI.textBlack, fontWeight: "600", fontFamily: FONT_FRIENDLY_SANS },
 
-  messageList: { padding: 20, paddingBottom: 30 },
+  messageListContainer: {
+    flex: 1,
+    overflow: "hidden",
+  },
+  messageScroller: {
+    flex: 1,
+  },
+  messageList: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 30 },
   messageRow:   { flexDirection: "row", marginBottom: 15, alignItems: "flex-end" },
   userRow:      { justifyContent: "flex-end" },
-  assistantRow: { justifyContent: "flex-start" },
+  assistantRow: { justifyContent: "flex-start", alignItems: "flex-start" },
 
   assistantAvatar: {
-    width: 32, height: 32, borderRadius: 16, backgroundColor: "#FFF",
-    alignItems: "center", justifyContent: "center", marginRight: 8,
+    width: 32, height: 32, borderRadius: 16, backgroundColor: AUTH_UI.textWhite,
+    alignItems: "center", justifyContent: "center", marginRight: 16,
+    marginTop: 1,
+    alignSelf: "flex-start",
     elevation: 3, shadowOpacity: 0.1, shadowRadius: 5,
   },
   avatarEmoji: { fontSize: 16 },
 
   bubble: {
     maxWidth: "80%", padding: 15, borderRadius: 22,
-    elevation: 2, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 5,
+    elevation: 2, shadowColor: AUTH_UI.textBlack, shadowOpacity: 0.05, shadowRadius: 5,
   },
   userBubble: {
-    backgroundColor: "#C97B6E", borderBottomRightRadius: 4,
-    shadowColor: "#C97B6E", shadowOpacity: 0.25,
+    backgroundColor: colors.rose[500], borderBottomRightRadius: 4,
+    shadowColor: colors.rose[500], shadowOpacity: 0.25,
+    marginRight: 8,
   },
-  assistantBubble: { backgroundColor: "#FFF", borderBottomLeftRadius: 4 },
+  assistantBubble: {
+    backgroundColor: AUTH_UI.textWhite,
+    borderBottomLeftRadius: 4,
+    marginLeft: 8,
+  },
   typingBubble:    { paddingVertical: 12, paddingHorizontal: 16 },
 
-  bubbleText:    { fontSize: 15, lineHeight: 22 },
-  userText:      { color: "#FFF", fontWeight: "500" },
-  assistantText: { color: "#424242" },
+  bubbleText:    { fontSize: 15, lineHeight: 22, fontFamily: FONT_FRIENDLY_SANS },
+  userText:      { color: AUTH_UI.textWhite, fontWeight: "500", fontFamily: FONT_FRIENDLY_SANS },
+  assistantText: { color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
   readAloudBtn: {
     alignSelf: "flex-start",
     marginTop: 10,
@@ -715,18 +856,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: "rgba(232,105,124,0.1)",
+    backgroundColor: colors.rose[50],
   },
   readAloudBtnActive: {
-    backgroundColor: "#C97B6E",
+    backgroundColor: colors.rose[500],
   },
   readAloudText: {
-    color: "#8E5A54",
+    color: AUTH_UI.linkBerry,
     fontSize: 12,
     fontWeight: "800",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   readAloudTextActive: {
-    color: "#FFFFFF",
+    color: AUTH_UI.textWhite,
   },
 
   typingDots: { flexDirection: "row", gap: 5, alignItems: "center" },
@@ -735,25 +877,60 @@ const styles = StyleSheet.create({
     backgroundColor: colors.rose[300],
   },
   typingLabel: {
-    fontSize: 11, color: colors.navy[300],
-    fontStyle: "italic", marginTop: 4,
+    fontSize: 11, color: AUTH_UI.textBlack,
+    marginTop: 4,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 
   emptyContainer: {
     flex: 1, alignItems: "center", justifyContent: "center",
     marginTop: 100, paddingHorizontal: 32, gap: 8,
   },
+  supportOptionsWrap: {
+    marginTop: 20,
+    marginBottom: 4,
+    paddingHorizontal: 6,
+    gap: 10,
+  },
+  supportOptionsTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: AUTH_UI.textWarm,
+    fontFamily: FONT_FRIENDLY_SANS,
+  },
+  supportChipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  supportChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: AUTH_UI.textWhite,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: AUTH_UI.semanticSevereBorder20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  supportChipText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: AUTH_UI.linkBerry,
+    fontFamily: FONT_FRIENDLY_SANS,
+  },
   welcomeEmoji:    { fontSize: 40, marginBottom: 4 },
-  welcomeTitle:    { color: colors.navy[600], fontSize: 18, fontWeight: "700", textAlign: "center" },
-  welcomeSubtitle: { color: "#9E9E9E", fontSize: 14, textAlign: "center", lineHeight: 21 },
+  welcomeTitle:    { color: AUTH_UI.textHeading, fontSize: 18, fontWeight: "700", textAlign: "center", fontFamily: FONT_WARM_SERIF },
+  welcomeSubtitle: { color: AUTH_UI.textBlack, fontSize: 14, textAlign: "center", lineHeight: 21, fontFamily: FONT_FRIENDLY_SANS },
 
   inputContainer: {
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: Platform.OS === "ios" ? 26 : 18,
-    backgroundColor: "rgba(255,248,250,0.72)",
+    backgroundColor: AUTH_UI.roseSoftBg,
     borderTopWidth: 1,
-    borderTopColor: "rgba(154,162,180,0.14)",
+    borderTopColor: AUTH_UI.lineSoft,
   },
   voiceNotice: {
     alignSelf: "center",
@@ -762,16 +939,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.92)",
+    backgroundColor: AUTH_UI.overlayCard,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
   voiceNoticeText: {
     flex: 1,
-    color: "#7B8498",
+    color: AUTH_UI.textBlack,
     fontSize: 12,
     fontWeight: "600",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   composer: {
     width: "100%",
@@ -781,15 +959,15 @@ const styles = StyleSheet.create({
     minHeight: 54,
     maxHeight: 124,
     borderRadius: 27,
-    backgroundColor: "rgba(255,255,255,0.98)",
+    backgroundColor: AUTH_UI.overlayElevated,
     borderWidth: 1,
-    borderColor: "rgba(140,90,82,0.16)",
+    borderColor: AUTH_UI.mutedBorder,
     paddingLeft: 18,
     paddingRight: 8,
     paddingVertical: 6,
     flexDirection: "row",
     alignItems: "flex-end",
-    shadowColor: "#1A2E4A",
+    shadowColor: AUTH_UI.textHeading,
     shadowOpacity: 0.08,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
@@ -800,7 +978,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     minHeight: 38,
     maxHeight: 92,
-    color: "#4D3B39",
+    color: AUTH_UI.textBlack,
     fontSize: 16,
     lineHeight: 22,
     paddingTop: 8,
@@ -820,10 +998,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(201,123,110,0.12)",
+    backgroundColor: colors.rose[50],
   },
   voiceBtnActive: {
-    backgroundColor: "#C97B6E",
+    backgroundColor: colors.rose[500],
   },
   voiceBtnDisabled: {
     opacity: 0.45,

@@ -27,6 +27,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -35,7 +36,34 @@ import { getErrorMessage } from "@/lib/errors";
 import { goHomeAfterClerkSetActive } from "@/lib/goHomeAfterClerkSetActive";
 import { GoogleIcon } from "@/components/icons/GoogleIcon";
 
-type SupportedOAuthStrategy = "oauth_google" | "oauth_microsoft";
+const TEXT_BLACK = "#111111";
+const LINK_BERRY = "#9A3E4D";
+const FONT_FRIENDLY_SANS = Platform.select({ ios: "System", android: "Roboto", default: "sans-serif" });
+
+type SupportedOAuthStrategy = "oauth_google" | "oauth_microsoft" | "oauth_apple";
+
+function normalizeClerkTarget(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    try {
+      const url = new URL(trimmed);
+      const path = `${url.pathname}${url.search}${url.hash}`;
+      return path || null;
+    } catch {
+      return null;
+    }
+  }
+
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -44,6 +72,8 @@ export function SocialSignInButtons({
 }: {
   afterAuthHref?: Href;
 }) {
+  const { width, fontScale } = useWindowDimensions();
+  const stackButtons = width < 380 || fontScale >= 1.2;
   const { startSSOFlow } = useSSO();
   const router = useRouter();
   const [busy, setBusy] = useState<SupportedOAuthStrategy | null>(null);
@@ -52,8 +82,22 @@ export function SocialSignInButtons({
     async (strategy: SupportedOAuthStrategy) => {
       try {
         setBusy(strategy);
+        if (typeof __DEV__ !== "undefined" && __DEV__) {
+          // eslint-disable-next-line no-console
+          console.log("Social sign-in started:", strategy);
+        }
+
         const { createdSessionId, setActive, authSessionResult } =
           await startSSOFlow({ strategy });
+
+        if (typeof __DEV__ !== "undefined" && __DEV__) {
+          // eslint-disable-next-line no-console
+          console.log("Social sign-in result:", {
+            strategy,
+            authSessionResultType: authSessionResult?.type ?? null,
+            createdSessionId: createdSessionId ?? null,
+          });
+        }
 
         if (
           authSessionResult?.type === "cancel" ||
@@ -62,10 +106,33 @@ export function SocialSignInButtons({
           return;
 
         if (createdSessionId && setActive) {
-          await setActive({ session: createdSessionId });
-          goHomeAfterClerkSetActive(router, afterAuthHref);
+          await setActive({
+            session: createdSessionId,
+            navigate: async (params) => {
+              const session = params.session;
+              const sessionTaskUrl = (params as { sessionTaskUrl?: string }).sessionTaskUrl;
+              const redirectUrl = (params as { redirectUrl?: string }).redirectUrl;
+              const target =
+                normalizeClerkTarget(sessionTaskUrl) ??
+                normalizeClerkTarget(redirectUrl) ??
+                (session ? afterAuthHref : "/auth/welcome");
+              router.replace(target as any);
+            },
+          });
+
+          if (typeof __DEV__ !== "undefined" && __DEV__) {
+            // eslint-disable-next-line no-console
+            console.log("Social sign-in setActive completed for session:", createdSessionId);
+          }
+        } else if (typeof __DEV__ !== "undefined" && __DEV__) {
+          // eslint-disable-next-line no-console
+          console.warn("Social sign-in did not produce an active session.");
         }
       } catch (err) {
+        if (typeof __DEV__ !== "undefined" && __DEV__) {
+          // eslint-disable-next-line no-console
+          console.warn("Social sign-in failed with raw error:", err);
+        }
         Alert.alert("Sign-in failed", getErrorMessage(err, "Please try again."));
       } finally {
         setBusy(null);
@@ -79,16 +146,20 @@ export function SocialSignInButtons({
       {/* Divider */}
       <View style={styles.dividerRow}>
         <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>or continue with</Text>
+        <Text style={styles.dividerText}>Or continue with</Text>
         <View style={styles.dividerLine} />
       </View>
 
       {/* Buttons */}
-      <View style={styles.buttonRow}>
+      <View style={[styles.buttonRow, stackButtons && styles.buttonRowStacked]}>
 
         {/* Google */}
         <TouchableOpacity
-          style={[styles.socialBtn, busy === "oauth_google" && styles.btnBusy]}
+          style={[
+            styles.socialBtn,
+            stackButtons && styles.socialBtnStacked,
+            busy === "oauth_google" && styles.btnBusy,
+          ]}
           onPress={() => void run("oauth_google")}
           disabled={busy !== null}
           activeOpacity={0.8}
@@ -105,7 +176,11 @@ export function SocialSignInButtons({
 
         {/* Microsoft */}
         <TouchableOpacity
-          style={[styles.socialBtn, busy === "oauth_microsoft" && styles.btnBusy]}
+          style={[
+            styles.socialBtn,
+            stackButtons && styles.socialBtnStacked,
+            busy === "oauth_microsoft" && styles.btnBusy,
+          ]}
           onPress={() => void run("oauth_microsoft")}
           disabled={busy !== null}
           activeOpacity={0.8}
@@ -119,6 +194,29 @@ export function SocialSignInButtons({
             </>
           )}
         </TouchableOpacity>
+
+        {/* Apple */}
+        {Platform.OS === "ios" ? (
+          <TouchableOpacity
+            style={[
+              styles.socialBtn,
+              stackButtons && styles.socialBtnStacked,
+              busy === "oauth_apple" && styles.btnBusy,
+            ]}
+            onPress={() => void run("oauth_apple")}
+            disabled={busy !== null}
+            activeOpacity={0.8}
+          >
+            {busy === "oauth_apple" ? (
+              <ActivityIndicator color={colors.rose[400]} size="small" />
+            ) : (
+              <>
+                <Ionicons name="logo-apple" size={20} color="#1F1A17" />
+                <Text style={styles.socialBtnText}>Apple</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        ) : null}
 
       </View>
     </View>
@@ -136,6 +234,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing[3],
+    paddingTop: spacing[1],
+    paddingBottom: spacing[1],
   },
   dividerLine: {
     flex: 1,
@@ -143,26 +243,33 @@ const styles = StyleSheet.create({
     backgroundColor: colors.rose[100],
   },
   dividerText: {
-    fontSize: 12,
-    color: colors.navy[300],
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
+    fontSize: 14,
+    color: TEXT_BLACK,
+    fontWeight: "500",
+    letterSpacing: 0.2,
+    fontFamily: FONT_FRIENDLY_SANS,
+    paddingHorizontal: 2,
   },
 
   // Social buttons — white outlined cards, side by side
   buttonRow: {
     flexDirection: "row",
     gap: spacing[3],
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  buttonRowStacked: {
+    flexDirection: "column",
   },
   socialBtn: {
-    flex: 1,
+    width: "48%",
     flexDirection: "row",
     backgroundColor: "#FFF",
     borderWidth: 1.5,
     borderColor: "#D5D9E0",
     borderRadius: 16,
-    paddingVertical: 14,
+    minHeight: 50,
+    paddingVertical: 16,
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
@@ -176,10 +283,14 @@ const styles = StyleSheet.create({
       android: { elevation: 2 },
     }),
   },
+  socialBtnStacked: {
+    width: "100%",
+  },
   socialBtnText: {
-    color: "#4A5260",
-    fontSize: 15,
+    color: LINK_BERRY,
+    fontSize: 16,
     fontWeight: "600",
+    fontFamily: FONT_FRIENDLY_SANS,
   },
   btnBusy: {
     opacity: 0.6,
