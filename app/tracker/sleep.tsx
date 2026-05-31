@@ -5,7 +5,7 @@
 
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Platform } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Platform } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { Ionicons } from '@expo/vector-icons';
@@ -50,6 +50,11 @@ export default function SleepLogScreen() {
   return (
     <View style={styles.screen}>
         <LinearGradient colors={[AUTH_UI.overlayStart, AUTH_UI.overlayEnd]} style={styles.bgOverlay}>
+          <KeyboardAvoidingView
+            style={styles.keyboardContainer}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
+          >
           <ScrollView contentContainerStyle={styles.content}>
             
             <View style={styles.header}>
@@ -108,7 +113,10 @@ export default function SleepLogScreen() {
 
               <TouchableOpacity
                 style={[ctaButtonStyles.button, styles.submitBtn, logSleep.isPending && styles.submitBtnDisabled]}
-                onPress={() => logSleep.mutateAsync({ duration_band: band, quality, notes, log_date: todayDateKey })}
+                onPress={async () => {
+                  await logSleep.mutateAsync({ duration_band: band, quality, notes, log_date: todayDateKey });
+                  router.push("/tabs/tracker");
+                }}
                 disabled={logSleep.isPending}
                 activeOpacity={0.88}
               >
@@ -125,6 +133,7 @@ export default function SleepLogScreen() {
               </TouchableOpacity>
             </View>
           </ScrollView>
+          </KeyboardAvoidingView>
         </LinearGradient>
     </View>
   );
@@ -133,7 +142,8 @@ export default function SleepLogScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: AUTH_UI.warmBackground },
   bgOverlay: { flex: 1 },
-  content: { padding: 20, paddingTop: 56, paddingBottom: 32 },
+  keyboardContainer: { flex: 1 },
+  content: { flexGrow: 1, padding: 20, paddingTop: 56, paddingBottom: 96 },
   header: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 24 },
   backBtn: {
     width: 40,

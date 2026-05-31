@@ -8,6 +8,7 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
@@ -99,7 +100,7 @@ export default function NewSymptomScreen() {
       Alert.alert(
         "Logged ✓",
         "Your symptoms have been saved. We're here with you.",
-        [{ text: "OK", onPress: () => router.back() }]
+        [{ text: "OK", onPress: () => router.push("/tabs/symptoms") }]
       );
     } catch (err: unknown) {
       const message =
@@ -116,11 +117,17 @@ export default function NewSymptomScreen() {
         colors={[AUTH_UI.overlayStart, AUTH_UI.overlayEnd]}
         style={styles.bgOverlay}
       >
-        <ScrollView
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+        <KeyboardAvoidingView
+          style={styles.keyboardContainer}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
         >
+          <ScrollView
+            contentContainerStyle={styles.content}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
           {/* Back button */}
           <TouchableOpacity
             onPress={() => router.back()}
@@ -196,7 +203,7 @@ export default function NewSymptomScreen() {
             <TextInput
               style={styles.input}
               placeholder="Anything else we should know? Describe how you feel..."
-              placeholderTextColor={colors.navy[300]}
+              placeholderTextColor={AUTH_UI.textWarmMuted}
               value={notes}
               onChangeText={setNotes}
               multiline
@@ -226,7 +233,7 @@ export default function NewSymptomScreen() {
 
             {/* Cancel */}
             <TouchableOpacity
-              onPress={() => router.back()}
+              onPress={() => router.push("/tabs/symptoms")}
               style={styles.cancel}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
@@ -234,7 +241,8 @@ export default function NewSymptomScreen() {
             </TouchableOpacity>
 
           </View>
-        </ScrollView>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </LinearGradient>
     </View>
   );
@@ -245,10 +253,12 @@ export default function NewSymptomScreen() {
 const styles = StyleSheet.create({
   screen:    { flex: 1, backgroundColor: AUTH_UI.cream },
   bgOverlay: { flex: 1 },
+  keyboardContainer: { flex: 1 },
   content: {
+    flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 56,
-    paddingBottom: 48,
+    paddingBottom: 96,
   },
 
   backBtn: {

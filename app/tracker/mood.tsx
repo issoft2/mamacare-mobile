@@ -5,7 +5,7 @@
 
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { useLogMood, useMoodLogs } from "@mumcare/api";
@@ -83,6 +83,11 @@ export default function MoodLogScreen() {
   return (
     <View style={styles.screen}>
       <LinearGradient colors={[AUTH_UI.overlayStart, AUTH_UI.overlayEnd]} style={styles.bgOverlay}>
+        <KeyboardAvoidingView
+          style={styles.keyboardContainer}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
+        >
           <ScrollView contentContainerStyle={styles.content}>
         
             <View style={styles.header}>
@@ -131,7 +136,10 @@ export default function MoodLogScreen() {
 
               <TouchableOpacity
                 style={[ctaButtonStyles.button, styles.submitBtn, logMood.isPending && styles.submitBtnDisabled]}
-                onPress={() => logMood.mutateAsync({ mood, notes, log_date: todayDateKey })}
+                onPress={async () => {
+                  await logMood.mutateAsync({ mood, notes, log_date: todayDateKey });
+                  router.push("/tabs/tracker");
+                }}
                 disabled={logMood.isPending}
                 activeOpacity={0.88}
               >
@@ -147,13 +155,14 @@ export default function MoodLogScreen() {
                 </LinearGradient>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => router.back()} style={styles.cancel}>
+              <TouchableOpacity onPress={() => router.push("/tabs/tracker")} style={styles.cancel}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
             </View>
 
           </ScrollView>
-        </LinearGradient>
+        </KeyboardAvoidingView>
+      </LinearGradient>
     </View>
   );
 }
@@ -161,7 +170,8 @@ export default function MoodLogScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: AUTH_UI.warmBackground },
   bgOverlay: { flex: 1 },
-  content: { padding: 20, paddingTop: 56, paddingBottom: 32 },
+  keyboardContainer: { flex: 1 },
+  content: { flexGrow: 1, padding: 20, paddingTop: 56, paddingBottom: 96 },
   header: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 24 },
   headerCopy: { flex: 1 },
   eyebrow: { fontSize: 12, fontWeight: '700', color: AUTH_UI.textBlack, marginBottom: 6, fontFamily: FONT_FRIENDLY_SANS },

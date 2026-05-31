@@ -99,10 +99,16 @@ export default function AddAppointmentScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.screen}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
     >
       <LinearGradient colors={[AUTH_UI.overlayStart, AUTH_UI.overlayEnd]} style={styles.bgOverlay}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
           <View style={styles.headerRow}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
               <Ionicons name="arrow-back" size={22} color={AUTH_UI.textHeading} />
@@ -137,7 +143,7 @@ export default function AddAppointmentScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               placeholder="2026-06-03"
-              placeholderTextColor={colors.navy[300]}
+              placeholderTextColor={AUTH_UI.textWarmMuted}
             />
 
             <Text style={styles.label}>Time (HH:MM)</Text>
@@ -148,7 +154,7 @@ export default function AddAppointmentScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               placeholder="09:30"
-              placeholderTextColor={colors.navy[300]}
+              placeholderTextColor={AUTH_UI.textWarmMuted}
             />
 
             <Text style={styles.label}>Location (optional)</Text>
@@ -157,7 +163,7 @@ export default function AddAppointmentScreen() {
               value={location}
               onChangeText={setLocation}
               placeholder="Clinic or hospital"
-              placeholderTextColor={colors.navy[300]}
+              placeholderTextColor={AUTH_UI.textWarmMuted}
             />
 
             {errorText && <Text style={styles.errorText}>{errorText}</Text>}
@@ -189,7 +195,7 @@ export default function AddAppointmentScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: AUTH_UI.cream },
   bgOverlay: { flex: 1 },
-  content: { paddingHorizontal: 24, paddingTop: 56, paddingBottom: 32 },
+  content: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 56, paddingBottom: 96 },
   headerRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 24 },
   backBtn: {
     width: 40,
