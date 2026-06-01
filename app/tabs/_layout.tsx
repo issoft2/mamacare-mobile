@@ -16,7 +16,7 @@
 import { Tabs, usePathname, useRouter } from "expo-router";
 import { useAuth } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Platform,
   StyleSheet,
@@ -32,6 +32,7 @@ import Svg, { Circle, Path } from "react-native-svg";
 import { usePwaInstallPrompt } from "@/lib/usePwaInstallPrompt";
 import { signOutWithPushCleanup } from "@/lib/pushNotifications";
 import { AUTH_UI } from "@/lib/authUiTokens";
+import { PregnancyProvider, usePregnancyState } from "@/lib/pregnancyState";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -108,13 +109,37 @@ function TabIcon({
 // ── Layout ────────────────────────────────────────────────────────────────────
 
 export default function TabsLayout() {
+  return (
+    <PregnancyProvider>
+      <TabsWithGuard />
+    </PregnancyProvider>
+  );
+}
+
+function TabsWithGuard() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+  const router = useRouter();
+  const { data: activePregnancy, isLoading: isPregnancyLoading, isError: isPregnancyError } = usePregnancyState();
   const isDesktop = Platform.OS === "web" && width >= DESKTOP_BREAKPOINT;
 
   // Full tab bar height including device bottom inset (gesture bar / home indicator)
   const tabBarHeight = TAB_BAR_BASE_HEIGHT + insets.bottom;
   const mobileHeaderHeight = MOBILE_HEADER_HEIGHT + insets.top;
+
+  useEffect(() => {
+    if (isPregnancyLoading || isPregnancyError) {
+      return;
+    }
+
+    if (activePregnancy === null) {
+      void router.replace("/onboarding/new-pregnancy");
+    }
+  }, [activePregnancy, isPregnancyError, isPregnancyLoading, router]);
+
+  if (isPregnancyLoading) {
+    return <View style={{ flex: 1, backgroundColor: AUTH_UI.cream }} />;
+  }
 
   return (
     <Tabs

@@ -375,6 +375,8 @@ export default function HomeScreen() {
     useDailyTrackerReminderStatus();
   const { data: kickSessions } = useKickSessions();
 
+  const hasCompletedOnboarding = Boolean(profile);
+  const onboardingRedirectPath = "/onboarding/profile-setup";
 
   const { data: mood }         = useMoodLogs();
   const { data: sleep }        = useSleepLogs();
@@ -431,7 +433,7 @@ export default function HomeScreen() {
     };
   }, [user?.id]);
 
-  const firstName = profile?.first_name ?? user?.firstName ?? "mama";
+  const firstName = profile?.first_name ?? '';
   const todayDateKey = getLocalDateKey(new Date());
 
   // Hydration
@@ -451,6 +453,10 @@ export default function HomeScreen() {
   const logMood = useLogMood();
 
   const handleHydrationTap = async () => {
+    if (!hasCompletedOnboarding) {
+      router.push(onboardingRedirectPath);
+      return;
+    }
     if (logWater.isPending) return;
     try {
       await logWater.mutateAsync({
@@ -469,6 +475,10 @@ export default function HomeScreen() {
     folicTakenLocal;
 
   const handleFolicAcidTap = async () => {
+    if (!hasCompletedOnboarding) {
+      router.push(onboardingRedirectPath);
+      return;
+    }
     if (folicTakenToday || logFolicAcid.isPending) return;
 
     // Optimistic local update so card never feels broken if API is temporarily unavailable.
@@ -508,6 +518,10 @@ export default function HomeScreen() {
   const activeMood: Mood | null = activeFeeling ? FEELING_TO_MOOD[activeFeeling] : (todayMoodLog?.mood ?? null);
 
   const handleFeelingSelect = async (nextFeeling: Feeling) => {
+    if (!hasCompletedOnboarding) {
+      router.push(onboardingRedirectPath);
+      return;
+    }
     if (logMood.isPending) return;
 
     const previousFeeling = activeFeeling;
@@ -572,7 +586,7 @@ export default function HomeScreen() {
   );
 
   const showBanner =
-    !bannerDismissed && !!nextAppointment && appointmentRemindersEnabled;
+    hasCompletedOnboarding && !bannerDismissed && !!nextAppointment && appointmentRemindersEnabled;
 
   useEffect(() => {
     setTrackerBannerDismissed(false);
@@ -613,6 +627,7 @@ export default function HomeScreen() {
     : localPendingTrackerItems;
 
   const showTrackerReminderBanner =
+    hasCompletedOnboarding &&
     dailyTrackerRemindersEnabled &&
     !trackerBannerDismissed &&
     pendingTrackerItems.length > 0;
@@ -690,8 +705,22 @@ export default function HomeScreen() {
               isLargeText && styles.greetingTextStandaloneLarge,
             ]}
           >
-            {greeting}, {firstName} <Text style={styles.sparkle}>✨</Text>
+            {firstName ? (
+              <>
+                {greeting}, {firstName}{" "}
+                <Text style={styles.sparkle}>✨</Text>
+              </>
+            ) : ''}
           </Text>
+
+          {!hasCompletedOnboarding && (
+            <View style={styles.onboardingNotice}>
+              <Text style={styles.onboardingNoticeTitle}>Finish setup first</Text>
+              <Text style={styles.onboardingNoticeText}>
+                Complete your profile before logging symptoms, mood, hydration, rest, folic acid, or appointments.
+              </Text>
+            </View>
+          )}
 
           {/* ── Weekly content card ───────────────────────────────── */}
           <WeeklyContentCard />
@@ -703,15 +732,24 @@ export default function HomeScreen() {
               {FEELING_CHOICES.map((f) => (
                 <TouchableOpacity
                   key={f.key}
-                    onPress={() => {
-                      if (f.key === "other") {
-                        setShowMoodSheet(true);
-                        return;
-                      }
-                      void handleFeelingSelect(f.key);
-                    }}
-                    disabled={logMood.isPending}
-                  style={[styles.feelingCol, isWide && styles.feelingColWide, isLargeText && styles.feelingColLarge]}
+                  onPress={() => {
+                    if (!hasCompletedOnboarding) {
+                      router.push(onboardingRedirectPath);
+                      return;
+                    }
+                    if (f.key === "other") {
+                      setShowMoodSheet(true);
+                      return;
+                    }
+                    void handleFeelingSelect(f.key);
+                  }}
+                  disabled={!hasCompletedOnboarding || logMood.isPending}
+                  style={[
+                    styles.feelingCol,
+                    isWide && styles.feelingColWide,
+                    isLargeText && styles.feelingColLarge,
+                    !hasCompletedOnboarding && styles.careCardDisabled,
+                  ]}
                 >
                   <View
                     style={[
@@ -742,10 +780,10 @@ export default function HomeScreen() {
 
               {/* Hydration */}
                 <TouchableOpacity
-                  style={[styles.careCard, isWide && styles.careCardWide]}
+                  style={[styles.careCard, !hasCompletedOnboarding && styles.careCardDisabled, isWide && styles.careCardWide]}
                   onPress={handleHydrationTap}
                   activeOpacity={0.85}
-                  disabled={logWater.isPending}
+                  disabled={!hasCompletedOnboarding || logWater.isPending}
                   accessibilityRole="button"
                   accessibilityLabel="Hydration card"
                 >
@@ -768,15 +806,18 @@ export default function HomeScreen() {
 
               {/* Mood */}
               <TouchableOpacity
-                style={[styles.careCard, isWide && styles.careCardWide]}
+                style={[styles.careCard, !hasCompletedOnboarding && styles.careCardDisabled, isWide && styles.careCardWide]}
                 onPress={() =>
-                  router.push(
-                    activeMood
-                      ? (`/tracker/mood?mood=${activeMood}` as any)
-                      : ("/tracker/mood" as any)
-                  )
+                  hasCompletedOnboarding
+                    ? router.push(
+                        activeMood
+                          ? (`/tracker/mood?mood=${activeMood}` as any)
+                          : ("/tracker/mood" as any)
+                      )
+                    : router.push(onboardingRedirectPath)
                 }
                 activeOpacity={0.85}
+                disabled={!hasCompletedOnboarding}
                 accessibilityRole="button"
                 accessibilityLabel="Mood card"
               >
@@ -799,9 +840,14 @@ export default function HomeScreen() {
               {/* Rest — dynamic colour coding */}
 
                 <TouchableOpacity
-                  style={[styles.careCard, isWide && styles.careCardWide]}
-                  onPress={() => router.push("/tracker/sleep" as any)}
+                  style={[styles.careCard, !hasCompletedOnboarding && styles.careCardDisabled, isWide && styles.careCardWide]}
+                  onPress={() =>
+                    hasCompletedOnboarding
+                      ? router.push("/tracker/sleep" as any)
+                      : router.push(onboardingRedirectPath)
+                  }
                   activeOpacity={0.85}
+                  disabled={!hasCompletedOnboarding}
                   accessibilityRole="button"
                   accessibilityLabel="Rest card"
                 >
@@ -833,10 +879,10 @@ export default function HomeScreen() {
 
               {/* Folic Acid */}
               <TouchableOpacity
-                style={[styles.careCard, isWide && styles.careCardWide]}
+                style={[styles.careCard, !hasCompletedOnboarding && styles.careCardDisabled, isWide && styles.careCardWide]}
                 onPress={handleFolicAcidTap}
                 activeOpacity={0.85}
-                disabled={folicTakenToday || logFolicAcid.isPending}
+                disabled={!hasCompletedOnboarding || folicTakenToday || logFolicAcid.isPending}
                 accessibilityRole="button"
                 accessibilityLabel="Folic acid card"
               >
@@ -866,9 +912,14 @@ export default function HomeScreen() {
 
               {/* Symptoms — replaces Next Visit */}
               <TouchableOpacity
-                style={[styles.careCard, isWide && styles.careCardWide]}
-                onPress={() => router.push("/tabs/symptoms")}
+                style={[styles.careCard, !hasCompletedOnboarding && styles.careCardDisabled, isWide && styles.careCardWide]}
+                onPress={() =>
+                  hasCompletedOnboarding
+                    ? router.push("/tabs/symptoms")
+                    : router.push(onboardingRedirectPath)
+                }
                 activeOpacity={0.85}
+                disabled={!hasCompletedOnboarding}
                 accessibilityRole="button"
                 accessibilityLabel="Symptoms card"
               >
@@ -962,9 +1013,14 @@ export default function HomeScreen() {
 
               {/* Appointment */}
               <TouchableOpacity
-                style={[styles.careCard, isWide && styles.careCardWide]}
-                onPress={() => router.push("/profile/appointments")}
+                style={[styles.careCard, !hasCompletedOnboarding && styles.careCardDisabled, isWide && styles.careCardWide]}
+                onPress={() =>
+                  hasCompletedOnboarding
+                    ? router.push("/profile/appointments")
+                    : router.push(onboardingRedirectPath)
+                }
                 activeOpacity={0.85}
+                disabled={!hasCompletedOnboarding}
                 accessibilityRole="button"
                 accessibilityLabel="Appointment card"
               >
@@ -1268,6 +1324,28 @@ const styles = StyleSheet.create({
   },
   careCardDisabled: {
     opacity: 0.65,
+  },
+  onboardingNotice: {
+    marginTop: 18,
+    marginBottom: 8,
+    padding: 16,
+    borderRadius: 18,
+    backgroundColor: AUTH_UI.semanticNeutralBg,
+    borderWidth: 1,
+    borderColor: colors.navy[100],
+  },
+  onboardingNoticeTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: AUTH_UI.textHeading,
+    marginBottom: 4,
+    fontFamily: FONT_WARM_SERIF,
+  },
+  onboardingNoticeText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: AUTH_UI.textBlack,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 
   // Quality / severity badge

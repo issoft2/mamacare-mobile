@@ -4,7 +4,7 @@
  */
 
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -19,7 +19,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { ctaButtonStyles, ctaGradientColors } from "../../../components/styles/ctaButton";
-import { useCreateAppointment } from "@mumcare/api";
+import { useCreateAppointment, useProfile } from "@mumcare/api";
+import promptFinishOnboarding from "@/lib/onboardingPrompt";
 import { colors } from "@mumcare/ui";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
@@ -56,6 +57,15 @@ function buildLocalIso(dateValue: string, timeValue: string): string | null {
 export default function AddAppointmentScreen() {
   const router = useRouter();
   const createAppointment = useCreateAppointment();
+  const { data: profile } = useProfile();
+  const hasCompletedOnboarding = Boolean(profile);
+  const onboardingRedirectPath = "/onboarding/profile-setup";
+
+  useEffect(() => {
+    if (!hasCompletedOnboarding) {
+      promptFinishOnboarding(router);
+    }
+  }, [hasCompletedOnboarding, router]);
 
   const initialDate = useMemo(() => {
     const d = new Date();

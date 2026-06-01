@@ -6,6 +6,7 @@
 import { useAuth, useUser } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import {
+  Alert,
   Platform,
   ScrollView,
   StyleSheet,
@@ -20,6 +21,7 @@ import { useProfile, useSubscription } from "@mumcare/api";
 import { colors } from "@mumcare/ui";
 import { signOutWithPushCleanup } from "@/lib/pushNotifications";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
+import { useStartNewPregnancy } from "@mumcare/api";
 
 export default function ProfileScreen() {
   const { user } = useUser();
@@ -29,16 +31,44 @@ export default function ProfileScreen() {
   const isWide = Platform.OS === "web" && width >= 980;
   const { data: profile } = useProfile();
   const { data: subscription } = useSubscription();
+  const startNewPregnancy = useStartNewPregnancy();
 
   const menuItems = [
     { label: "Personal Details", path: "/profile/edit", icon: "person" },
     { label: "Medical Details", path: "/profile/medical", icon: "medkit", meta: "High priority" },
     { label: "Care Team", path: "/profile/care-team", icon: "people" },
+    { label: "Pregnancy history", path: "/profile/history", icon: "time" },
+    { label: "Start a new pregnancy", action: () => handleStartNewPregnancy(), icon: "add-circle" },
     { label: "Subscription", path: "/profile/subscription", icon: "star" },
     ...(!isWide
       ? [{ label: "Notifications", path: "/profile/notifications", icon: "notifications" }]
       : []),
   ];
+
+  function handleStartNewPregnancy() {
+    Alert.alert(
+      "Start a new pregnancy",
+      "Starting a new journey will safely archive your current week data and chat histories into your profile records, allowing you to begin a fresh milestone tracker. Would you like to continue, mama?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Continue",
+          onPress: async () => {
+            try {
+              await startNewPregnancy.mutateAsync();
+              router.replace("/tabs/home");
+            } catch (error) {
+              Alert.alert(
+                "Couldn\'t start a new pregnancy",
+                error instanceof Error ? error.message : "Something went wrong. Please try again."
+              );
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  }
 
   return (
     <View style={styles.screen}>
@@ -80,7 +110,13 @@ export default function ProfileScreen() {
                   <TouchableOpacity 
                     key={item.path} 
                     style={[styles.menuTile, isWide && styles.menuTileWide]} 
-                    onPress={() => router.push(item.path as any)}
+                    onPress={() => {
+                      if (item.action) {
+                        item.action();
+                        return;
+                      }
+                      void router.push(item.path as any);
+                    }}
                   >
                     <View style={styles.tileLeft}>
                       <View style={styles.iconBox}>

@@ -11,6 +11,8 @@ import type {
   CreateProfileRequest,
   Profile,
   UpdateProfileRequest,
+  Pregnancy,
+  PregnancyHistoryItem,
 } from "@mumcare/types";
 
 export type ConsentTier = "marketing" | "system_improvement" | "anon_commercial" | "model_training";
@@ -101,6 +103,51 @@ export function useProfile() {
         return false;
       }
       return failureCount < 2;
+    },
+  });
+}
+
+export function useActivePregnancy() {
+  return useQuery<Pregnancy | null>({
+    queryKey: ["pregnancy", "active"],
+    queryFn: async () => {
+      try {
+        return await apiRequest<Pregnancy>("/pregnancies/active");
+      } catch (err) {
+        if (err instanceof ApiRequestError && err.isNotFound) {
+          return null;
+        }
+        throw err;
+      }
+    },
+    retry: (failureCount, err) => {
+      if (err instanceof ApiRequestError && err.isNotFound) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+  });
+}
+
+export function usePregnancyHistory() {
+  return useQuery({
+    queryKey: ["pregnancy", "history"],
+    queryFn: () => apiRequest<PregnancyHistoryItem[]>("/pregnancies"),
+    retry: false,
+  });
+}
+
+export function useStartNewPregnancy() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiRequest<Pregnancy>("/pregnancies/new", { method: "POST" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: profileKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["pregnancy", "active"] });
+      queryClient.invalidateQueries({ queryKey: ["pregnancy", "history"] });
+      queryClient.invalidateQueries({ queryKey: ["tracker"] });
+      queryClient.invalidateQueries({ queryKey: ["symptoms"] });
+      queryClient.invalidateQueries({ queryKey: ["chat"] });
     },
   });
 }
