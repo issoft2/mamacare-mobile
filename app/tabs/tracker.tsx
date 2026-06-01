@@ -28,6 +28,7 @@ import { colors } from "@mumcare/ui";
 import { ctaGradientColors } from "../../components/styles/ctaButton";
 import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
+import promptFinishOnboarding from "@/lib/onboardingPrompt";
 
 const KICK_COUNTER_MIN_WEEK = 16;
 
@@ -52,6 +53,8 @@ export default function TrackerScreen() {
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 980;
   const { data: profile } = useProfile();
+  const hasCompletedOnboarding = Boolean(profile);
+  const onboardingRedirectPath = "/onboarding/profile-setup";
   const { data: kicks } = useKickSessions();
   const { data: hydration } = useHydrationLogs();
   const { data: todayFolicAcidLog } = useTodayFolicAcidLog();
@@ -109,14 +112,16 @@ export default function TrackerScreen() {
                   />
                 </View>
                 <TouchableOpacity 
-                  style={[styles.widgetBtn, { backgroundColor: AUTH_UI.shadowRose }]}
-                  onPress={() =>
-                    logWater.mutateAsync({
+                  style={[styles.widgetBtn, { backgroundColor: AUTH_UI.shadowRose }, !hasCompletedOnboarding && styles.widgetBtnDisabled]}
+                  onPress={() => {
+                    if (!hasCompletedOnboarding) { promptFinishOnboarding(router); return; }
+                    void logWater.mutateAsync({
                       glasses_count: glassesCount + 1,
                       target_glasses: targetGlasses,
                       log_date: todayDateKey,
-                    })
-                  }
+                    });
+                  }}
+                  disabled={!hasCompletedOnboarding}
                 >
                     <Text style={[styles.widgetBtnText, { color: AUTH_UI.textWhite }]}>Add a glass</Text>
                 </TouchableOpacity>
@@ -135,10 +140,11 @@ export default function TrackerScreen() {
                   style={[
                     styles.widgetBtn,
                     { backgroundColor: AUTH_UI.shadowRose },
-                    (folicTakenToday || logFolicAcid.isPending) && styles.widgetBtnDisabled,
+                    (folicTakenToday || logFolicAcid.isPending || !hasCompletedOnboarding) && styles.widgetBtnDisabled,
                   ]}
-                  disabled={folicTakenToday || logFolicAcid.isPending}
+                  disabled={folicTakenToday || logFolicAcid.isPending || !hasCompletedOnboarding}
                   onPress={async () => {
+                    if (!hasCompletedOnboarding) { promptFinishOnboarding(router); return; }
                     if (folicTakenToday || logFolicAcid.isPending) return;
                     setFolicTakenLocal(true);
                     try {
@@ -167,16 +173,17 @@ export default function TrackerScreen() {
                   style={[
                     styles.widgetBtn,
                     { backgroundColor: AUTH_UI.shadowRose },
-                    !canUseKickCounter && styles.widgetBtnDisabled,
+                    (!canUseKickCounter || !hasCompletedOnboarding) && styles.widgetBtnDisabled,
                   ]}
-                  disabled={!canUseKickCounter}
+                  disabled={!canUseKickCounter || !hasCompletedOnboarding}
                   onPress={async () => {
-                     if (!canUseKickCounter) return;
-                     if(activeKick) router.push(`/tracker/kick/${activeKick.id}` as any);
-                     else {
-                       const session = await startKick.mutateAsync(gestationalWeek || 12);
-                       router.push(`/tracker/kick/${session.id}` as any);
-                     }
+                    if (!hasCompletedOnboarding) { promptFinishOnboarding(router); return; }
+                    if (!canUseKickCounter) return;
+                    if(activeKick) router.push(`/tracker/kick/${activeKick.id}` as any);
+                    else {
+                      const session = await startKick.mutateAsync(gestationalWeek || 12);
+                      router.push(`/tracker/kick/${session.id}` as any);
+                    }
                   }}
                 >
                   <Text style={[styles.widgetBtnText, { color: AUTH_UI.textWhite }]}>
@@ -189,7 +196,7 @@ export default function TrackerScreen() {
 
               {/* Sleep & Mood Row */}
               <View style={[styles.row, isWide && styles.rowWide]}>
-                <TouchableOpacity style={[styles.halfCard]} onPress={() => router.push("/tracker/sleep" as any)}>
+                <TouchableOpacity style={[styles.halfCard]} onPress={() => hasCompletedOnboarding ? router.push("/tracker/sleep" as any) : promptFinishOnboarding(router)}>
                   <View style={[styles.iconCircle, { backgroundColor: AUTH_UI.semanticBlueSoft10 }]}>
                      <Ionicons name="moon" size={18} color={AUTH_UI.semanticBlue} />
                   </View>
@@ -197,7 +204,7 @@ export default function TrackerScreen() {
                   <Text style={styles.halfValue}>{sleep?.[0] ? sleep[0].quality : "Log rest"}</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={[styles.halfCard]} onPress={() => router.push("/tracker/mood" as any)}>
+                <TouchableOpacity style={[styles.halfCard]} onPress={() => hasCompletedOnboarding ? router.push("/tracker/mood" as any) : promptFinishOnboarding(router)}>
                   <View style={[styles.iconCircle, { backgroundColor: AUTH_UI.semanticSevereBgSoft }]}>
                      <Ionicons name="happy" size={18} color={colors.rose[500]} />
                   </View>

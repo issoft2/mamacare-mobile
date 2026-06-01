@@ -5,6 +5,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "./client";
+import { useProfile } from "./profile";
 import type {
   DailyTrackerReminderStatus,
   FolicAcidLog,
@@ -48,33 +49,42 @@ export function useKickSessions() {
 
 export function useStartKickSession() {
   const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
   return useMutation({
-    mutationFn: (gestational_week: number) =>
-      apiRequest<KickSession>("/tracker/kicks", {
+    mutationFn: (gestational_week: number) => {
+      if (!profile) return Promise.reject(new Error("onboarding_required"));
+      return apiRequest<KickSession>("/tracker/kicks", {
         method: "POST",
         body: JSON.stringify({ gestational_week }),
-      }),
+      });
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: trackerKeys.kicks() }),
   });
 }
 
 export function useLogKick(sessionId: string) {
   const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
   return useMutation({
-    mutationFn: (kicks_to_add: number = 1) =>
-      apiRequest<KickSession>(`/tracker/kicks/${sessionId}/log`, {
+    mutationFn: (kicks_to_add: number = 1) => {
+      if (!profile) return Promise.reject(new Error("onboarding_required"));
+      return apiRequest<KickSession>(`/tracker/kicks/${sessionId}/log`, {
         method: "POST",
         body: JSON.stringify({ kicks_to_add }),
-      }),
+      });
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: trackerKeys.kicks() }),
   });
 }
 
 export function useEndKickSession(sessionId: string) {
   const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
   return useMutation({
-    mutationFn: () =>
-      apiRequest<KickSession>(`/tracker/kicks/${sessionId}/end`, { method: "POST" }),
+    mutationFn: () => {
+      if (!profile) return Promise.reject(new Error("onboarding_required"));
+      return apiRequest<KickSession>(`/tracker/kicks/${sessionId}/end`, { method: "POST" });
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: trackerKeys.kicks() }),
   });
 }
@@ -88,12 +98,15 @@ export function useHydrationLogs() {
 
 export function useLogHydration() {
   const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
   return useMutation({
-    mutationFn: (data: { glasses_count: number; target_glasses?: number; log_date?: string }) =>
-      apiRequest<HydrationLog>("/tracker/hydration", {
+    mutationFn: (data: { glasses_count: number; target_glasses?: number; log_date?: string }) => {
+      if (!profile) return Promise.reject(new Error("onboarding_required"));
+      return apiRequest<HydrationLog>("/tracker/hydration", {
         method: "POST",
         body: JSON.stringify(data),
-      }),
+      });
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: trackerKeys.hydration() }),
   });
 }
@@ -114,12 +127,15 @@ export function useTodayFolicAcidLog() {
 
 export function useLogFolicAcid() {
   const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
   return useMutation({
-    mutationFn: (data: { taken: boolean; log_date?: string }) =>
-      apiRequest<FolicAcidLog>("/tracker/folic-acid", {
+    mutationFn: (data: { taken: boolean; log_date?: string }) => {
+      if (!profile) return Promise.reject(new Error("onboarding_required"));
+      return apiRequest<FolicAcidLog>("/tracker/folic-acid", {
         method: "POST",
         body: JSON.stringify(data),
-      }),
+      });
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: trackerKeys.folicAcid() }),
   });
 }
@@ -133,12 +149,15 @@ export function useSleepLogs() {
 
 export function useLogSleep() {
   const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
   return useMutation({
-    mutationFn: (data: { duration_band: SleepDurationBand; quality: SleepQuality; notes?: string; log_date?: string }) =>
-      apiRequest<SleepLog>("/tracker/sleep", {
+    mutationFn: (data: { duration_band: SleepDurationBand; quality: SleepQuality; notes?: string; log_date?: string }) => {
+      if (!profile) return Promise.reject(new Error("onboarding_required"));
+      return apiRequest<SleepLog>("/tracker/sleep", {
         method: "POST",
         body: JSON.stringify(data),
-      }),
+      });
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: trackerKeys.sleep() }),
   });
 }
@@ -152,12 +171,15 @@ export function useMoodLogs() {
 
 export function useLogMood() {
   const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
   return useMutation({
-    mutationFn: (data: { mood: Mood; notes?: string; log_date?: string }) =>
-      apiRequest<MoodLog>("/tracker/mood", {
+    mutationFn: (data: { mood: Mood; notes?: string; log_date?: string }) => {
+      if (!profile) return Promise.reject(new Error("onboarding_required"));
+      return apiRequest<MoodLog>("/tracker/mood", {
         method: "POST",
         body: JSON.stringify(data),
-      }),
+      });
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: trackerKeys.mood() }),
   });
 }

@@ -4,14 +4,15 @@
  */
 
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Platform } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { Ionicons } from '@expo/vector-icons';
-import { useLogSleep } from "@mumcare/api";
+import { useLogSleep, useProfile } from "@mumcare/api";
 import type { SleepDurationBand, SleepQuality } from "@mumcare/types";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
+import promptFinishOnboarding from "@/lib/onboardingPrompt";
 
 const BANDS: { value: SleepDurationBand; label: string }[] = [
   { value: "under_4h", label: "< 4h" },
@@ -41,11 +42,20 @@ function getLocalDateKey(value: Date): string {
 
 export default function SleepLogScreen() {
   const router = useRouter();
+  const { data: profile } = useProfile();
+  const hasCompletedOnboarding = Boolean(profile);
+  const onboardingRedirectPath = "/onboarding/profile-setup";
   const logSleep = useLogSleep();
   const todayDateKey = getLocalDateKey(new Date());
   const [band, setBand] = useState<SleepDurationBand>("6_8h");
   const [quality, setQuality] = useState<SleepQuality>("good");
   const [notes, setNotes] = useState("");
+
+  useEffect(() => {
+    if (!hasCompletedOnboarding) {
+      promptFinishOnboarding(router);
+    }
+  }, [hasCompletedOnboarding, router]);
 
   return (
     <View style={styles.screen}>

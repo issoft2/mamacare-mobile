@@ -8,10 +8,11 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
-import { useLogMood, useMoodLogs } from "@mumcare/api";
+import { useLogMood, useMoodLogs, useProfile } from "@mumcare/api";
 import type { Mood } from "@mumcare/types";
 import { Ionicons } from '@expo/vector-icons';
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
+import promptFinishOnboarding from "@/lib/onboardingPrompt";
 
 
 const MOODS: { value: Mood; emoji: string; label: string }[] = [
@@ -51,6 +52,9 @@ function getMoodAffirmation(value: Mood): string {
 export default function MoodLogScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ mood?: string }>();
+  const { data: profile } = useProfile();
+  const hasCompletedOnboarding = Boolean(profile);
+  const onboardingRedirectPath = "/onboarding/profile-setup";
   const { data: moodLogs } = useMoodLogs();
   const logMood = useLogMood();
   const [mood, setMood] = useState<Mood>("neutral");
@@ -79,6 +83,12 @@ export default function MoodLogScreen() {
 
     setMood("neutral");
   }, [isMoodChosenManually, moodLogs, params.mood, todayDateKey]);
+
+  useEffect(() => {
+    if (!hasCompletedOnboarding) {
+      promptFinishOnboarding(router);
+    }
+  }, [hasCompletedOnboarding, router]);
 
   return (
     <View style={styles.screen}>

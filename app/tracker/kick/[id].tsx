@@ -9,14 +9,18 @@ import { StyleSheet, Text, TouchableOpacity, View, Vibration } from "react-nativ
 import { LinearGradient } from "expo-linear-gradient";
 import { ctaButtonStyles, ctaGradientColors } from "../../../components/styles/ctaButton";
 import { Ionicons } from '@expo/vector-icons';
-import { useEndKickSession, useLogKick } from "@mumcare/api";
+import { useEndKickSession, useLogKick, useProfile } from "@mumcare/api";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
+import promptFinishOnboarding from "@/lib/onboardingPrompt";
 
 export default function KickCounterScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const logKick = useLogKick(id);
   const endSession = useEndKickSession(id);
+  const { data: profile } = useProfile();
+  const hasCompletedOnboarding = Boolean(profile);
+  const onboardingRedirectPath = "/onboarding/profile-setup";
   const [count, setCount] = useState(0);
   const [seconds, setSeconds] = useState(0);
 
@@ -32,6 +36,10 @@ export default function KickCounterScreen() {
   };
 
   async function handleKick() {
+    if (!hasCompletedOnboarding) {
+      promptFinishOnboarding(router);
+      return;
+    }
     Vibration.vibrate(50); // Haptic feedback for tactile feel
     setCount(c => c + 1);
     await logKick.mutateAsync(1);

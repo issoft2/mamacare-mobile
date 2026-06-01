@@ -4,7 +4,7 @@
  */
 
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -21,6 +21,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { Ionicons } from "@expo/vector-icons";
 import { useProfile, useSubmitSymptom } from "@mumcare/api";
+import promptFinishOnboarding from "@/lib/onboardingPrompt";
 import { colors } from "@mumcare/ui";
 import type { Severity } from "@mumcare/types";
 import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
@@ -51,6 +52,15 @@ export default function NewSymptomScreen() {
   const router        = useRouter();
   const { data: profile } = useProfile();
   const submitSymptom = useSubmitSymptom();
+
+  const hasCompletedOnboarding = Boolean(profile);
+  const onboardingRedirectPath = "/onboarding/profile-setup";
+
+  useEffect(() => {
+    if (!hasCompletedOnboarding) {
+      promptFinishOnboarding(router);
+    }
+  }, [hasCompletedOnboarding, router]);
 
   const [selected, setSelected] = useState<string[]>([]);
   const [severity, setSeverity] = useState<Severity>("mild");
