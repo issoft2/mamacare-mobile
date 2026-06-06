@@ -2,6 +2,7 @@
  * mobile/components/home/WeeklyContentCard.tsx
  *
  * Displays the current week's pregnancy content on the home screen.
+ * Optimized to prevent layout bloat and fix trimester welcome text bugs.
  *
  * On tap:
  *  1. Creates a new chat session for the current gestational week
@@ -10,11 +11,6 @@
  *     available immediately without waiting for a state update
  *  3. Navigates into the chat session — AI response will arrive
  *     via the polling loop in the chat screen
- *
- * States:
- *  - Loading   → soft activity indicator
- *  - No week   → warm prompt to set due date
- *  - Content   → week badge, baby size, overview, daily tip, chat CTA
  */
 
 import { useRouter } from "expo-router";
@@ -64,10 +60,24 @@ function trimesterLabel(t: number): string {
   return "3rd trimester";
 }
 
-function getTrimesterWelcomeTitle(trimester: number): string {
-  if (trimester === 1) return "Welcome to Trimester 1";
-  if (trimester === 2) return "Welcome to Trimester 2";
-  if (trimester === 3) return "Welcome to Trimester 3";
+/**
+ * Dynamically resolves status copy to prevent displaying "Welcome to Trimester 2" 
+ * to a user deep into their 24th week of pregnancy.
+ */
+function getTrimesterStatusText(trimester: number, week: number): string {
+  if (trimester === 1) {
+    return week <= 4 ? "Welcome to Trimester 1" : "Growing in Trimester 1";
+  }
+  if (trimester === 2) {
+    if (week >= 13 && week <= 15) return "Welcome to Trimester 2";
+    if (week >= 24) return "Nearing Trimester 3";
+    return "Cruising through Trimester 2";
+  }
+  if (trimester === 3) {
+    if (week >= 28 && week <= 30) return "Welcome to Trimester 3";
+    if (week >= 37) return "Approaching full term!";
+    return "Deep in Trimester 3";
+  }
   return "Your weekly update";
 }
 
@@ -119,7 +129,7 @@ export function WeeklyContentCard() {
   const isCompact = width < 380;
   const isLargeText = fontScale >= 1.2;
   const router = useRouter();
-  const {data: pregnancy, isLoading: isActivePregnancyLoading } = useActivePregnancy();
+  const { data: pregnancy, isLoading: isActivePregnancyLoading } = useActivePregnancy();
   const currentWeek = useMemo(() => resolveCurrentGestationalWeek(pregnancy), [pregnancy]);
   const { data: weekResponse, isLoading: isWeekLoading } = useWeekContent(currentWeek ?? 0);
   const content = weekResponse?.content;
@@ -130,47 +140,35 @@ export function WeeklyContentCard() {
     () => (content?.tips ? getDailyTip(content.tips) : ""),
     [content?.tips]
   );
-   console.log("What is the value of this  current week");
-   console.log(currentWeek);
+
   async function handleTap() {
     if (!content || !currentWeek) return;
     if (opening) return;
 
     setOpening(true);
     try {
-      // Step 1 — create the chat session
       const session = await createSession.mutateAsync({
         gestational_week: currentWeek,
       });
 
       const sessionId = session.id.toString();
-
-      // Step 2 — send the opening message directly via apiRequest.
-      // We cannot use the useSendMessage hook here because hook values
-      // are fixed at render time — the new sessionId isn't available
-      // to the hook until the next render cycle, which causes a failure.
-      // Direct apiRequest uses the session ID immediately and correctly.
       const prompt = buildWeeklyPrompt(content, currentWeek);
+      
       await apiRequest(`/chat/sessions/${sessionId}/messages`, {
         method: "POST",
         body: JSON.stringify({ content: prompt }),
       });
 
-      // Step 3 — navigate. The chat screen's polling loop will detect
-      // the pending AI response and show it when it arrives.
       router.push(`/chat/${sessionId}`);
     } catch (err) {
       console.error("WeeklyContentCard error:", err);
-      Alert.alert(
-        "Couldn't open chat",
-        "Please try again in a moment."
-      );
+      Alert.alert("Couldn't open chat", "Please try again in a moment.");
     } finally {
       setOpening(false);
     }
   }
 
-  // ── Loading ────────────────────────────────────────────────────────────────
+  // ── Loading State ──────────────────────────────────────────────────────────
   if (isActivePregnancyLoading || (currentWeek != null && isWeekLoading)) {
     return (
       <View style={[styles.card, isCompact && styles.cardCompact, isLargeText && styles.cardLargeText, styles.loadingCard]}>
@@ -180,7 +178,7 @@ export function WeeklyContentCard() {
     );
   }
 
-  // ── No week set ────────────────────────────────────────────────────────────
+  // ── No Week Set State ──────────────────────────────────────────────────────
   if (!currentWeek || !content) {
     return (
       <TouchableOpacity
@@ -199,8 +197,7 @@ export function WeeklyContentCard() {
           </View>
           <Text style={styles.noWeekTitle}>What week are you on, mama?</Text>
           <Text style={styles.noWeekSubtitle}>
-            Add your due date and we'll bring your week-by-week journey
-            to life — just for you.
+            Add your due date and we'll bring your week-by-week journey to life — just for you.
           </Text>
           <View style={styles.noWeekCta}>
             <Text style={styles.noWeekCtaText}>Set my due date</Text>
@@ -211,9 +208,7 @@ export function WeeklyContentCard() {
     );
   }
 
-  // ── Content ────────────────────────────────────────────────────────────────
-  const current_week = currentWeek;
-
+  // ── Active Content State ───────────────────────────────────────────────────
   return (
     <TouchableOpacity
       style={[styles.card, isCompact && styles.cardCompact, isLargeText && styles.cardLargeText]}
@@ -227,20 +222,18 @@ export function WeeklyContentCard() {
         end={{ x: 1, y: 1 }}
         style={[styles.gradient, isLargeText && styles.gradientLargeText]}
       >
-        {/* ── Top row ─────────────────────────────────────────── */}
+        {/* ── Top Header Row ─────────────────────────────────── */}
         <View style={[styles.topRow, isCompact && styles.topRowCompact, isLargeText && styles.topRowWrap]}>
           <View style={[styles.weekBadge, isCompact && styles.weekBadgeCompact]}>
-              
-            <Text style={styles.weekBadgeNumber}>{current_week}</Text>
+            <Text style={styles.weekBadgeNumber}>{currentWeek}</Text>
             <Text style={styles.weekBadgeLabel}>weeks</Text>
-            
           </View>
           <View style={styles.topRight}>
             <Text style={styles.trimesterLabel}>
               {trimesterLabel(content.trimester)}
             </Text>
             <Text style={[styles.contentTitle, isCompact && styles.contentTitleCompact]} numberOfLines={1}>
-              {getTrimesterWelcomeTitle(content.trimester)}
+              {getTrimesterStatusText(content.trimester, currentWeek)}
             </Text>
           </View>
           <Ionicons name="heart" size={18} color={colors.rose[200]} style={styles.heartAccent} />
@@ -249,7 +242,7 @@ export function WeeklyContentCard() {
         {/* ── Divider ─────────────────────────────────────────── */}
         <View style={styles.divider} />
 
-        {/* ── Baby size ───────────────────────────────────────── */}
+        {/* ── Baby Size Data Row ──────────────────────────────── */}
         {content.baby_size_label ? (
           <View style={styles.babySizeRow}>
             <Text style={styles.babySizeEmoji}>🌱</Text>
@@ -263,53 +256,38 @@ export function WeeklyContentCard() {
           </View>
         ) : null}
 
-        {/* ── Overview ────────────────────────────────────────── */}
-        <Text style={[styles.overview, isCompact && styles.overviewCompact]} numberOfLines={4}>
-          {content.overview}
-        </Text>
-
-        {/* ── Daily tip ───────────────────────────────────────── */}
+        {/* ── Daily Personalized Tip ──────────────────────────── */}
         {dailyTip ? (
           <View style={styles.tipBox}>
             <Ionicons name="sparkles" size={14} color={colors.rose[400]} />
-            <Text style={styles.tipText} numberOfLines={isLargeText ? 3 : 2}>
+            <Text style={styles.tipText} numberOfLines={2}>
               {dailyTip}
             </Text>
           </View>
         ) : null}
 
-        {/* ── Chat CTA ────────────────────────────────────────── */}
-        <View style={ctaButtonStyles.button}>
+        {/* ── Slimmed Down & Compact Chat CTA Bar ──────────────── */}
+        <View style={[ctaButtonStyles.button, styles.ctaSlimOverride]}>
           <LinearGradient
-                          colors={ctaGradientColors}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
-                          style={ctaButtonStyles.gradient}
-                        >
-
-          {opening ? (
-            <>
-              <ActivityIndicator size="small" color="#FFF" />
-              <Text style={ctaButtonStyles.text}>Opening your weekly chat…</Text>
-            </>
-          ) : ( 
-            <>
-              <View style={styles.chatPromptIcon}>
-                <Ionicons name="chatbubble-ellipses-outline" size={18} color="#FFF" />
+            colors={ctaGradientColors}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={ctaButtonStyles.gradient}
+          >
+            {opening ? (
+              <View style={styles.ctaContentRow}>
+                <ActivityIndicator size="small" color="#FFF" />
+                <Text style={ctaButtonStyles.text}>Opening weekly chat…</Text>
               </View>
-              <View style={styles.chatPromptCopy}>
-                <Text style={ctaButtonStyles.text}>
-                  Chat with safeborn about week {current_week}
+            ) : (
+              <View style={styles.ctaContentRow}>
+                <Ionicons name="chatbubble-ellipses-outline" size={16} color="#FFF" />
+                <Text style={[ctaButtonStyles.text, styles.ctaSingleLineText]}>
+                  Discuss Week {currentWeek} with Safeborn AI
                 </Text>
-                <Text style={ctaButtonStyles.text}>
-                  Tap for a warm breakdown of what to expect.
-                </Text>
+                <Ionicons name="chevron-forward" size={16} color="#FFF" />
               </View>
-              <View style={styles.chatPromptChevronWrap}>
-                <Ionicons name="chevron-forward" size={18} color="#FFF" />
-              </View>
-            </>
-          )}
+            )}
           </LinearGradient>
         </View>
       </LinearGradient>
@@ -336,16 +314,10 @@ const styles = StyleSheet.create({
       android: { elevation: 4 },
     }),
   },
-  cardCompact: {
-    borderRadius: 20,
-  },
-  cardLargeText: {
-    marginBottom: 20,
-  },
-  gradient: { padding: 20 },
-  gradientLargeText: {
-    padding: 22,
-  },
+  cardCompact: { borderRadius: 20 },
+  cardLargeText: { marginBottom: 20 },
+  gradient: { padding: 18 }, // Reduced slightly from 20 to tighten screen space
+  gradientLargeText: { padding: 20 },
 
   loadingCard: {
     flexDirection: "row",
@@ -377,20 +349,16 @@ const styles = StyleSheet.create({
     textAlign: "center", lineHeight: 24, marginBottom: 16,
     fontFamily: FONT_FRIENDLY_SANS,
   },
-  noWeekCta: {
-    flexDirection: "row", alignItems: "center",
-    justifyContent: "center", gap: 4,
-  },
+  noWeekCta: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4 },
   noWeekCtaText: { fontSize: 15, fontWeight: "700", color: colors.rose[400], fontFamily: FONT_FRIENDLY_SANS },
 
-  topRow: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 14 },
-  topRowCompact: { gap: 10, marginBottom: 12 },
-  topRowWrap: {
-    alignItems: "flex-start",
-  },
+  topRow: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 12 },
+  topRowCompact: { gap: 10, marginBottom: 10 },
+  topRowWrap: { alignItems: "flex-start" },
   weekBadge: {
     width: 54, height: 54, borderRadius: 27,
     justifyContent: "center", alignItems: "center",
+    backgroundColor: "#C97B6E",
     ...Platform.select({
       ios: {
         shadowColor: colors.rose[400],
@@ -400,78 +368,50 @@ const styles = StyleSheet.create({
       },
       android: { elevation: 4 },
     }),
-    backgroundColor: "#C97B6E",
   },
   weekBadgeNumber: { fontSize: 20, fontWeight: "800", color: "#FFF", lineHeight: 22 },
   weekBadgeCompact: { width: 50, height: 50, borderRadius: 25 },
-  weekBadgeLabel: {
-    fontSize: 11, fontWeight: "600",
-    color: "rgba(255,255,255,0.8)",
-    letterSpacing: 0.2,
-  },
+  weekBadgeLabel: { fontSize: 11, fontWeight: "600", color: "rgba(255,255,255,0.8)", letterSpacing: 0.2 },
   topRight: { flex: 1, gap: 3 },
-  trimesterLabel: {
-    fontSize: 13, fontWeight: "700", color: "#8E5A54",
-    letterSpacing: 0.2,
-    fontFamily: FONT_FRIENDLY_SANS,
-  },
+  trimesterLabel: { fontSize: 13, fontWeight: "700", color: "#8E5A54", letterSpacing: 0.2, fontFamily: FONT_FRIENDLY_SANS },
   contentTitle: { fontSize: 18, fontWeight: "700", color: TEXT_BLACK, fontFamily: FONT_WARM_SERIF },
   contentTitleCompact: { fontSize: 17 },
   heartAccent: { alignSelf: "flex-start", marginTop: 2 },
 
-  divider: { height: 1, backgroundColor: colors.rose[100], marginBottom: 14 },
+  divider: { height: 1, backgroundColor: colors.rose[100], marginBottom: 12 },
 
-  babySizeRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
+  babySizeRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
   babySizeEmoji: { fontSize: 18 },
   babySizeText: { fontSize: 15, color: TEXT_BLACK, flex: 1, lineHeight: 22, fontFamily: FONT_FRIENDLY_SANS },
   babySizeHighlight: { color: "#8E5A54", fontWeight: "700", fontFamily: FONT_FRIENDLY_SANS },
 
-  overview: { fontSize: 16, color: TEXT_BLACK, lineHeight: 26, marginBottom: 14, fontWeight: "500", fontFamily: FONT_FRIENDLY_SANS },
-  overviewCompact: { fontSize: 15, lineHeight: 24, marginBottom: 12 },
-
   tipBox: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: "rgba(201,123,110,0.10)",
-    borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, marginBottom: 14,
+    backgroundColor: "rgba(201,123,110,0.08)",
+    borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 4,
     borderLeftWidth: 3, borderLeftColor: "#C97B6E",
   },
-  tipText: {
-    flex: 1, fontSize: 15, color: TEXT_BLACK,
-    lineHeight: 21,
-    marginTop: -1,
-    fontFamily: FONT_FRIENDLY_SANS,
-  },
+  tipText: { flex: 1, fontSize: 14, color: TEXT_BLACK, lineHeight: 20, fontFamily: FONT_FRIENDLY_SANS },
 
-  chatPrompt: {
+  ctaSlimOverride: {
+    height: 48,
+    marginTop: 10,
+    borderRadius: 14,
+    overflow: "hidden",
+  },
+  ctaContentRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    backgroundColor: colors.rose[500],
-    borderRadius: 16,
-    padding: 14,
-    marginTop: 4,
-  },
-  chatPromptIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.18)",
-    alignItems: "center",
     justifyContent: "center",
+    width: "100%",
+    height: "100%",
+    gap: 8,
+    paddingHorizontal: 16,
   },
-  chatPromptCopy: { flex: 1, marginLeft: 7, paddingRight: 32, justifyContent: "center" },
-  chatPromptChevronWrap: {
-    paddingLeft: 4,
-  },
-  chatPromptTitle: {
-    color: "#FFF",
+  ctaSingleLineText: {
     fontSize: 14,
-    fontWeight: "800",
-  },
-  chatPromptText: {
-    color: "rgba(255,255,255,0.78)",
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: 2,
+    fontWeight: "700",
+    marginTop: 0,
+    marginBottom: 0,
   },
 });
