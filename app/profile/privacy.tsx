@@ -20,8 +20,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
-import { apiRequest } from "@mumcare/api";
-import { colors, spacing, typography, shadows } from "@mumcare/ui";
+import { apiRequest } from "@safeborn/api";
+import { colors, spacing, typography, shadows } from "@safeborn/ui";
 import { getActiveLegalDocument, getActiveLegalRoute } from "@/lib/legal";
 import { signOutWithPushCleanup } from "@/lib/pushNotifications";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
@@ -100,7 +100,7 @@ export default function PrivacyScreen() {
           <View style={styles.securityText}>
             <Text style={styles.securityTitle}>Your data is your own.</Text>
             <Text style={styles.securitySub}>
-              We use 256-bit encryption to protect your health records. MumCare never sells your personal information.
+              We use 256-bit encryption to protect your health records. safeborn never sells your personal information.
             </Text>
           </View>
         </View>
@@ -202,7 +202,7 @@ export default function PrivacyScreen() {
         </View>
 
         <Text style={styles.footerNote}>
-          MumCare complies with UK GDPR and NDPA. Health records are legally retained for 7 years post-due date per DCB0129 standards.
+          safeborn complies with UK GDPR and NDPA. Health records are legally retained for 7 years post-due date per DCB0129 standards.
         </Text>
       </ScrollView>
       </LinearGradient>

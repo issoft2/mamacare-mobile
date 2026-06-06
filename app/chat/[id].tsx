@@ -25,48 +25,15 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  ApiRequestError,
-  useChatSession,
-  useSendMessage,
-  useTextToSpeech,
-  useTranscribeVoice,
-} from "@mumcare/api";
-import { colors } from "@mumcare/ui";
+import { ApiRequestError, useChatSession, useSendMessage } from "@safeborn/api";
+import { colors } from "@safeborn/ui";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
-type SpeechRecognitionResult = {
-  readonly isFinal: boolean;
-  readonly 0: { readonly transcript: string };
-};
-
-type SpeechRecognitionEvent = Event & {
-  readonly resultIndex: number;
-  readonly results: {
-    readonly length: number;
-    readonly [index: number]: SpeechRecognitionResult;
-  };
-};
-
-type SpeechRecognitionInstance = EventTarget & {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-  onstart: (() => void) | null;
-  onend: (() => void) | null;
-  onerror: ((event: Event) => void) | null;
-  onresult: ((event: SpeechRecognitionEvent) => void) | null;
-};
-
-type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance;
 
 const WEEKLY_PROMPT_MARKER = "Here's what I know about this week:";
 
 function normalizeAssistantBranding(text: string): string {
-  return text.replace(/MamaCare's AI assistant/gi, "MumCare's AI assistant");
+  return text.replace(/MamaCare Assistant/gi, "safeborn  Assistant");
 }
 
 function getWeeklyStarterDisplayText(content: string): string | null {
@@ -77,9 +44,9 @@ function getWeeklyStarterDisplayText(content: string): string | null {
   const weekMatch = content.match(/week\s+(\d+)/i);
   const week = weekMatch?.[1];
   if (!week) {
-    return "Hi MumCare, can you tell me what to expect this week?";
+    return "Hi safeborn, can you tell me what to expect this week?";
   }
-  return `Hi MumCare, can you tell me what to expect in week ${week}?`;
+  return `Hi safeborn, can you tell me what to expect in week ${week}?`;
 }
 
 function getRenderedMessageText(role: string, content: string): string {
@@ -101,35 +68,7 @@ function isUsageLimitMessage(content: string): boolean {
   return /usage limit|limit reached|quota|upgrade/i.test(content);
 }
 
-function getSpeechRecognitionConstructor(): SpeechRecognitionConstructor | null {
-  if (Platform.OS !== "web" || typeof window === "undefined") {
-    return null;
-  }
 
-  const speechWindow = window as typeof window & {
-    SpeechRecognition?: SpeechRecognitionConstructor;
-    webkitSpeechRecognition?: SpeechRecognitionConstructor;
-  };
-
-  return speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition ?? null;
-}
-
-function getPreferredVoice() {
-  if (
-    Platform.OS !== "web" ||
-    typeof window === "undefined" ||
-    !window.speechSynthesis
-  ) {
-    return null;
-  }
-
-  const voices = window.speechSynthesis.getVoices();
-  return (
-    voices.find((voice) => /female|samantha|serena|ava|victoria/i.test(voice.name)) ??
-    voices.find((voice) => voice.lang.toLowerCase().startsWith("en")) ??
-    null
-  );
-}
 
 // ── Typing indicator ──────────────────────────────────────────────────────────
 
@@ -169,7 +108,7 @@ function TypingIndicator() {
           <Animated.View style={[styles.dot, dotStyle(dot2)]} />
           <Animated.View style={[styles.dot, dotStyle(dot3)]} />
         </View>
-        <Text style={styles.typingLabel}>MumCare is thinking…</Text>
+        <Text style={styles.typingLabel}>safeborn is thinking…</Text>
       </View>
     </View>
   );
@@ -182,8 +121,6 @@ export default function ChatConversationScreen() {
   const router = useRouter();
   const { data, isLoading, refetch } = useChatSession(id);
   const sendMessage = useSendMessage(id);
-  const transcribeVoice = useTranscribeVoice();
-  const textToSpeech = useTextToSpeech();
   const [input, setInput] = useState("");
   const [isWaitingForAI, setIsWaitingForAI] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -193,8 +130,6 @@ export default function ChatConversationScreen() {
   const listRef = useRef<FlatList>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRef = useRef<TextInput>(null);
-  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
-  const voiceBaseInputRef = useRef("");
   const supportAnim = useRef(new Animated.Value(0)).current;
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -217,16 +152,7 @@ export default function ChatConversationScreen() {
       },
     ],
   };
-  const recorderSupported =
-    Platform.OS === "web" &&
-    typeof navigator !== "undefined" &&
-    Boolean(navigator.mediaDevices?.getUserMedia) &&
-    typeof MediaRecorder !== "undefined";
-  const speechRecognitionSupported = getSpeechRecognitionConstructor() != null;
-  const browserSpeechSynthesisSupported =
-    Platform.OS === "web" &&
-    typeof window !== "undefined" &&
-    "speechSynthesis" in window;
+
 
   // ── Polling logic ─────────────────────────────────────────────────────────
   // When the screen mounts, check if the last message is from the user.
@@ -272,19 +198,7 @@ export default function ChatConversationScreen() {
     }
   }, [messages.length]);
 
-  useEffect(() => {
-    return () => {
-      recognitionRef.current?.abort();
-      mediaRecorderRef.current?.stream.getTracks().forEach((track) => track.stop());
-      if (Platform.OS === "web" && typeof window !== "undefined") {
-        window.speechSynthesis?.cancel();
-      }
-      audioPlayerRef.current?.pause();
-      if (audioUrlRef.current) {
-        URL.revokeObjectURL(audioUrlRef.current);
-      }
-    };
-  }, []);
+ 
 
   useEffect(() => {
     const timeout = setTimeout(() => inputRef.current?.focus(), 450);
@@ -321,229 +235,7 @@ export default function ChatConversationScreen() {
     }
   }
 
-  async function toggleVoiceInput() {
-    setVoiceNotice("");
 
-    if (isListening) {
-      if (mediaRecorderRef.current?.state === "recording") {
-        mediaRecorderRef.current.stop();
-        return;
-      }
-      recognitionRef.current?.stop();
-      setIsListening(false);
-      return;
-    }
-
-    if (recorderSupported) {
-      await startRecordedVoiceInput();
-      return;
-    }
-
-    const Recognition = getSpeechRecognitionConstructor();
-    if (!Recognition) {
-      setVoiceNotice("Voice recording is not available in this browser.");
-      return;
-    }
-
-    const recognition = new Recognition();
-    recognitionRef.current = recognition;
-    recognition.continuous = false;
-    recognition.interimResults = true;
-    recognition.lang = "en-US";
-    voiceBaseInputRef.current = input.trim();
-
-    recognition.onstart = () => {
-      setIsListening(true);
-      setVoiceNotice("Listening. Speak gently, then pause when you are done.");
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    recognition.onerror = () => {
-      setIsListening(false);
-      setVoiceNotice("I could not hear clearly. Please try again or type your message.");
-    };
-
-    recognition.onresult = (event) => {
-      let transcript = "";
-      for (let i = 0; i < event.results.length; i += 1) {
-        transcript += event.results[i][0].transcript;
-      }
-      const base = voiceBaseInputRef.current;
-      const next = transcript.trim();
-      setInput(base && next ? `${base} ${next}` : base || next);
-    };
-
-    try {
-      recognition.start();
-    } catch {
-      setIsListening(false);
-      setVoiceNotice("Voice input could not start. Please try again.");
-    }
-  }
-
-  async function startRecordedVoiceInput() {
-    if (Platform.OS !== "web" || typeof navigator === "undefined") {
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : MediaRecorder.isTypeSupported("audio/mp4")
-          ? "audio/mp4"
-          : "";
-      const recorder = new MediaRecorder(
-        stream,
-        mimeType ? { mimeType } : undefined
-      );
-      mediaRecorderRef.current = recorder;
-      audioChunksRef.current = [];
-
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      recorder.onstop = async () => {
-        setIsListening(false);
-        stream.getTracks().forEach((track) => track.stop());
-        const audio = new Blob(audioChunksRef.current, {
-          type: recorder.mimeType || "audio/webm",
-        });
-
-        if (audio.size === 0) {
-          setVoiceNotice("I could not capture your voice. Please try again.");
-          return;
-        }
-
-        setIsTranscribing(true);
-        setVoiceNotice("Turning your voice into text...");
-        try {
-          const result = await transcribeVoice.mutateAsync({
-            audio,
-            filename: recorder.mimeType?.includes("mp4")
-              ? "mumcare-voice.mp4"
-              : "mumcare-voice.webm",
-          });
-          const text = result.text.trim();
-          if (!text) {
-            setVoiceNotice("I could not hear words clearly. Please try again.");
-            return;
-          }
-          setInput((current) => {
-            const base = current.trim();
-            return base ? `${base} ${text}` : text;
-          });
-          setVoiceNotice("Voice added to your message.");
-        } catch (err) {
-          if (err instanceof ApiRequestError && err.isNotFound) {
-            setVoiceNotice("Voice service is not connected on the server yet.");
-          } else {
-            setVoiceNotice("I could not transcribe that audio. Please try again.");
-          }
-        } finally {
-          setIsTranscribing(false);
-        }
-      };
-
-      recorder.start();
-      setIsListening(true);
-      setVoiceNotice("Recording. Tap the mic again when you are done.");
-    } catch {
-      setIsListening(false);
-      setVoiceNotice("Microphone permission was not allowed.");
-    }
-  }
-
-  async function toggleReadAloud(messageId: string, content: string) {
-    setVoiceNotice("");
-
-    if (speakingMessageId === messageId) {
-      audioPlayerRef.current?.pause();
-      audioPlayerRef.current = null;
-      if (audioUrlRef.current) {
-        URL.revokeObjectURL(audioUrlRef.current);
-        audioUrlRef.current = null;
-      }
-      if (typeof window !== "undefined") {
-        window.speechSynthesis?.cancel();
-      }
-      setSpeakingMessageId(null);
-      return;
-    }
-
-    if (Platform.OS !== "web" || typeof window === "undefined") {
-      setVoiceNotice("Read aloud is available in the web app.");
-      return;
-    }
-
-    try {
-      audioPlayerRef.current?.pause();
-      if (audioUrlRef.current) {
-        URL.revokeObjectURL(audioUrlRef.current);
-      }
-      setSpeakingMessageId(messageId);
-      setVoiceNotice("Preparing a gentle voice...");
-      const audio = await textToSpeech.mutateAsync({
-        text: content,
-        voice_style: "gentle_companion",
-      });
-      const url = URL.createObjectURL(audio);
-      const player = new Audio(url);
-      audioUrlRef.current = url;
-      audioPlayerRef.current = player;
-      player.onended = () => {
-        setSpeakingMessageId(null);
-        if (audioUrlRef.current) {
-          URL.revokeObjectURL(audioUrlRef.current);
-          audioUrlRef.current = null;
-        }
-      };
-      player.onerror = () => {
-        setSpeakingMessageId(null);
-        setVoiceNotice("I could not play that audio right now.");
-      };
-      await player.play();
-      setVoiceNotice("");
-      return;
-    } catch (err) {
-      if (err instanceof ApiRequestError && err.isNotFound) {
-        setVoiceNotice("Voice read-aloud service is not connected on the server yet.");
-      } else if (!browserSpeechSynthesisSupported) {
-        setVoiceNotice("Read aloud is not available in this browser.");
-        setSpeakingMessageId(null);
-        return;
-      }
-    }
-
-    if (!browserSpeechSynthesisSupported || typeof window === "undefined") {
-      setSpeakingMessageId(null);
-      return;
-    }
-
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(content);
-    const voice = getPreferredVoice();
-    if (voice) {
-      utterance.voice = voice;
-    }
-    utterance.rate = 0.92;
-    utterance.pitch = 1.04;
-    utterance.volume = 1;
-    utterance.onend = () => setSpeakingMessageId(null);
-    utterance.onerror = () => {
-      setSpeakingMessageId(null);
-      setVoiceNotice("I could not read that aloud right now.");
-    };
-
-    setSpeakingMessageId(messageId);
-    window.speechSynthesis.speak(utterance);
-  }
 
   // ── Render message ─────────────────────────────────────────────────────────
   function renderMessage({ item }: { item: any }) {
@@ -562,27 +254,6 @@ export default function ChatConversationScreen() {
           <Text style={[styles.bubbleText, isUser ? styles.userText : styles.assistantText]}>
             {renderedMessage}
           </Text>
-          {!isUser && canUseReadAloud && (
-            <TouchableOpacity
-              style={[styles.readAloudBtn, isSpeaking && styles.readAloudBtnActive]}
-              onPress={() => toggleReadAloud(item.id, item.content)}
-              activeOpacity={0.82}
-            >
-              <Ionicons
-                name={isSpeaking ? "stop-circle" : "volume-medium-outline"}
-                size={16}
-                color={isSpeaking ? AUTH_UI.textWhite : AUTH_UI.linkBerry}
-              />
-              <Text
-                style={[
-                  styles.readAloudText,
-                  isSpeaking && styles.readAloudTextActive,
-                ]}
-              >
-                {isSpeaking ? "Stop" : "Listen"}
-              </Text>
-            </TouchableOpacity>
-          )}
         </View>
       </View>
     );
@@ -657,7 +328,7 @@ export default function ChatConversationScreen() {
               <Ionicons name="chevron-back" size={28} color={AUTH_UI.textHeading} />
             </TouchableOpacity>
             <View>
-              <Text style={styles.headerTitle}>MumCare AI</Text>
+              <Text style={styles.headerTitle}>safeborn Assistant</Text>
               <Text style={styles.headerStatus}>
                 {isWaitingForAI ? "Thinking…" : "Always here for you"}
               </Text>
@@ -679,7 +350,7 @@ export default function ChatConversationScreen() {
                 isWaitingForAI ? null : (
                   <View style={styles.emptyContainer}>
                     <Text style={styles.welcomeEmoji}>🌸</Text>
-                    <Text style={styles.welcomeTitle}>MumCare is here with you</Text>
+                    <Text style={styles.welcomeTitle}>safeborn is here with you</Text>
                     <Text style={styles.welcomeSubtitle}>
                       Ask me anything about your pregnancy journey.
                     </Text>
@@ -715,7 +386,7 @@ export default function ChatConversationScreen() {
                 <TextInput
                   ref={inputRef}
                   style={styles.textInput}
-                  placeholder={isListening ? "Listening..." : "Message MumCare"}
+                  placeholder={isListening ? "Listening..." : "Message safeborn"}
                   placeholderTextColor={AUTH_UI.textBlack}
                   value={input}
                   onChangeText={setInput}
@@ -727,55 +398,34 @@ export default function ChatConversationScreen() {
                 />
 
                 <View style={styles.composerActions}>
-                <TouchableOpacity
-                  style={[
-                    styles.voiceBtn,
-                    isListening && styles.voiceBtnActive,
-                    isTranscribing && styles.voiceBtnDisabled,
-                    !recorderSupported && !speechRecognitionSupported && styles.voiceBtnDisabled,
-                  ]}
-                  onPress={toggleVoiceInput}
-                  disabled={isTranscribing}
-                  activeOpacity={0.82}
-                >
-                  {isTranscribing ? (
-                    <ActivityIndicator size="small" color={colors.rose[500]} />
-                  ) : (
-                    <Ionicons
-                      name={isListening ? "stop" : "mic-outline"}
-                      size={20}
-                      color={isListening ? AUTH_UI.textWhite : AUTH_UI.linkBerry}
-                    />
-                  )}
-                </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.sendBtn,
-                  (!input.trim() || sendMessage.isPending) && styles.sendDisabled,
-                ]}
-                onPress={handleSend}
-                disabled={!input.trim() || sendMessage.isPending}
-              >
-                <LinearGradient
-                  colors={
-                    input.trim() && !sendMessage.isPending
-                      ? [AUTH_UI.linkBerry, AUTH_UI.shadowRose]
-                      : [AUTH_UI.semanticNeutralSoft, AUTH_UI.semanticNeutral]
-                  }
-                  style={styles.sendGradient}
-                >
-                  {sendMessage.isPending ? (
-                    <ActivityIndicator size="small" color={AUTH_UI.textWhite} />
-                  ) : (
-                    <Ionicons
-                      name="send"
-                      size={18}
-                      color={input.trim() ? AUTH_UI.textWhite : AUTH_UI.mutedText}
-                    />
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
+                
+                  <TouchableOpacity
+                    style={[
+                      styles.sendBtn,
+                      (!input.trim() || sendMessage.isPending) && styles.sendDisabled,
+                    ]}
+                    onPress={handleSend}
+                    disabled={!input.trim() || sendMessage.isPending}
+                  >
+                    <LinearGradient
+                      colors={
+                        input.trim() && !sendMessage.isPending
+                          ? [AUTH_UI.linkBerry, AUTH_UI.shadowRose]
+                          : [AUTH_UI.semanticNeutralSoft, AUTH_UI.semanticNeutral]
+                      }
+                      style={styles.sendGradient}
+                    >
+                      {sendMessage.isPending ? (
+                        <ActivityIndicator size="small" color={AUTH_UI.textWhite} />
+                      ) : (
+                        <Ionicons
+                          name="send"
+                          size={18}
+                          color={input.trim() ? AUTH_UI.textWhite : AUTH_UI.mutedText}
+                        />
+                      )}
+                    </LinearGradient>
+                  </TouchableOpacity>
               </View>
               </Pressable>
             </View>

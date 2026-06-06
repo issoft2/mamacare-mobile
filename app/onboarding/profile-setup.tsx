@@ -18,8 +18,9 @@ import {
   useCreateProfile,
   useProfile,
   useUpdateProfile,
-} from "@mumcare/api";
-import { colors } from "@mumcare/ui";
+  useActivePregnancy,
+} from "@safeborn/api";
+import { colors } from "@safeborn/ui";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { getActiveLegalDocument, getActiveLegalRoute } from "@/lib/legal";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
@@ -34,6 +35,11 @@ export default function ProfileSetupScreen() {
   const createProfile = useCreateProfile();
   const updateProfile = useUpdateProfile();
   const { data: profile, isPending } = useProfile();
+  const { 
+    data: activePregnancy,
+    isPending: isPregnancyPending,
+    isFetching: isPregnancyFetching,
+   } = useActivePregnancy();
   const activePrivacyDoc = getActiveLegalDocument("privacy");
   const accountFirstName = (user?.firstName ?? "").trim();
   const accountLastName = (user?.lastName ?? "").trim();
@@ -41,7 +47,7 @@ export default function ProfileSetupScreen() {
   const [consentSubmitting, setConsentSubmitting] = useState(false);
   const isSaving = createProfile.isPending || updateProfile.isPending;
   
-  const [form, setForm] = useState({ firstName: '', lastName: '', dob: '', edd: '', lmp: '', week: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', dob: '' });
   const [formError, setFormError] = useState('');
   const [consents, setConsents] = useState({
     marketing: false,
@@ -57,7 +63,7 @@ export default function ProfileSetupScreen() {
     model_training: true,
   } as const;
 
-  const isBusy = isSaving || consentSubmitting;
+    const isBusy = isSaving || consentSubmitting || isPregnancyFetching;
   const isAuthReady = !!effectiveClerkUserId;
 
   function getJurisdictionFromRegion(region: "ng" | "uk"): "NG" | "GB" {
@@ -87,80 +93,7 @@ export default function ProfileSetupScreen() {
     return parsed;
   }
 
-  function formatIsoDate(date: Date): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  }
 
-  function isPastDate(date: Date): boolean {
-    const today = new Date();
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const inputStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    return inputStart < todayStart;
-  }
-
-  function addDays(date: Date, days: number): Date {
-    const next = new Date(date);
-    next.setDate(next.getDate() + days);
-    return next;
-  }
-
-  function clampWeek(week: number): number {
-    return Math.max(1, Math.min(42, week));
-  }
-
-  function deriveWeekFromLmp(lmp: Date): number {
-    const now = new Date();
-    const msPerDay = 86_400_000;
-    const daysSinceLmp = Math.floor((now.getTime() - lmp.getTime()) / msPerDay);
-    return clampWeek(Math.floor(daysSinceLmp / 7) + 1);
-  }
-
-  function deriveWeekFromEdd(edd: Date): number {
-    const now = new Date();
-    const msPerDay = 86_400_000;
-    const daysUntilDue = Math.floor((edd.getTime() - now.getTime()) / msPerDay);
-    return clampWeek(40 - Math.floor(daysUntilDue / 7));
-  }
-
-  function handleLmpChange(value: string) {
-    const lmp = parseIsoDate(value);
-
-    if (!lmp) {
-      setForm((prev) => ({ ...prev, lmp: value }));
-      return;
-    }
-
-    const autoEdd = addDays(lmp, 280);
-    const autoWeek = deriveWeekFromLmp(lmp);
-    setForm((prev) => ({
-      ...prev,
-      lmp: value,
-      edd: formatIsoDate(autoEdd),
-      week: String(autoWeek),
-    }));
-  }
-
-  function handleEddChange(value: string) {
-    const edd = parseIsoDate(value);
-    if (!edd) {
-      setForm((prev) => ({ ...prev, edd: value }));
-      return;
-    }
-
-    if (isPastDate(edd)) {
-      setForm((prev) => ({ ...prev, edd: value }));
-      setFormError("Estimated due date cannot be in the past.");
-      return;
-    }
-
-    setFormError("");
-
-    const autoWeek = deriveWeekFromEdd(edd);
-    setForm((prev) => ({ ...prev, edd: value, week: String(autoWeek) }));
-  }
 
   async function submitConsentEvents(
     userId: string,
@@ -215,9 +148,6 @@ export default function ProfileSetupScreen() {
         firstName: profile.first_name,
         lastName: profile.last_name,
         dob: profile.date_of_birth,
-        edd: profile.estimated_due_date,
-        lmp: profile.lmp_date ?? '',
-        week: String(profile.gestational_week),
       });
       return;
     }
@@ -237,31 +167,20 @@ export default function ProfileSetupScreen() {
     const firstName = (form.firstName.trim() || accountFirstName).trim();
     const lastName = (form.lastName.trim() || accountLastName).trim();
     const dob = form.dob.trim();
-    const edd = form.edd.trim();
-    const lmp = form.lmp.trim();
-    const gestational_week = parseInt(form.week, 10);
+  
 
-    if (!firstName || !lastName || !dob || !edd) {
+    if (!firstName || !lastName || !dob) {
       setFormError('Please complete all profile fields.');
       return;
     }
 
-    const parsedEdd = parseIsoDate(edd);
-    if (!parsedEdd) {
-      setFormError('Estimated due date must be in YYYY-MM-DD format.');
+    const parsedDob = parseIsoDate(dob);
+    if (!parsedDob) {
+      setFormError('Date of birth must be in YYYY-MM-DD format.');
       return;
     }
 
-    if (isPastDate(parsedEdd)) {
-      setFormError('Estimated due date cannot be in the past.');
-      return;
-    }
-    
-    if (isNaN(gestational_week) || gestational_week < 1 || gestational_week > 42) {
-      setFormError('Gestational week must be between 1 and 42.');
-      return;
-    }
-
+  
     if (!isAuthReady || !effectiveClerkUserId) {
       setFormError('Your account is still loading. Please wait a moment and try again.');
       return;
@@ -273,10 +192,12 @@ export default function ProfileSetupScreen() {
         first_name: firstName,
         last_name: lastName,
         date_of_birth: dob,
-        estimated_due_date: edd,
-        lmp_date: lmp || null,
-        gestational_week,
       };
+
+      console.info("Onboarding profile payload", payload, {
+        profileId: profile?.id,
+        isNewProfile: !profile?.id,
+      });
 
       let savedProfile;
 
@@ -288,7 +209,7 @@ export default function ProfileSetupScreen() {
           if (err instanceof ApiRequestError && err.isNotFound) {
             savedProfile = await createProfile.mutateAsync({
               ...payload,
-              lmp_date: payload.lmp_date ?? undefined,
+           
             });
           } else {
             throw err;
@@ -298,7 +219,7 @@ export default function ProfileSetupScreen() {
         try {
           savedProfile = await createProfile.mutateAsync({
             ...payload,
-            lmp_date: payload.lmp_date ?? undefined,
+           
           });
         } catch (err) {
           // If profile already exists, backend may return conflict/validation.
@@ -310,16 +231,26 @@ export default function ProfileSetupScreen() {
         }
       }
 
-      try {
+     try {
         await submitConsentEvents(savedProfile.user_id, effectiveClerkUserId, selectedConsents);
       } catch (consentErr) {
         // Profile save should not be blocked if consent sync endpoint is temporarily unavailable.
         console.error("Profile saved but consent sync failed:", consentErr);
       }
-      router.replace("/tabs/home");
-    }catch (err: any) {
-      console.error("Failed to save profile:", err);
-      setFormError("An error occurred while saving. Please try again.");
+      if (!activePregnancy) {
+        router.replace("/onboarding/new-pregnancy");
+      } else {
+        router.replace("/tabs/home");
+      }
+
+    } catch (err: any) {
+      if (err instanceof ApiRequestError) {
+        console.error("Failed to save profile:", err.status, err.code, err.body);
+        setFormError(`An error occurred while saving (${err.status}). Please try again.`);
+      } else {
+        console.error("Failed to save profile:", err);
+        setFormError("An error occurred while saving. Please try again.");
+      }
     } finally {
       setConsentSubmitting(false);
     }
@@ -335,7 +266,7 @@ export default function ProfileSetupScreen() {
     await persistProfileAndConsents(allOn as Record<ConsentTier, boolean>);
   }
   
-  if (isPending) {
+   if (isPending || isPregnancyPending) {
     return (
       <View style={[styles.screen, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={colors.rose[500]} />
@@ -401,46 +332,7 @@ export default function ProfileSetupScreen() {
               </View>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Estimated due date</Text>
-              <View style={styles.inputWithIcon}>
-                <Ionicons name="heart-outline" size={18} color={AUTH_UI.linkBerry} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={AUTH_UI.textBlack}
-                  value={form.edd}
-                  onChangeText={handleEddChange}
-                />
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Last menstrual period (optional)</Text>
-              <View style={styles.inputWithIcon}>
-                <Ionicons name="calendar-outline" size={18} color={AUTH_UI.linkBerry} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={AUTH_UI.textBlack}
-                  value={form.lmp}
-                  onChangeText={handleLmpChange}
-                />
-              </View>
-              <Text style={styles.inputHint}>Adding LMP auto-fills your due date and current week.</Text>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Current week</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. 24"
-                placeholderTextColor={AUTH_UI.textBlack}
-                keyboardType="number-pad"
-                value={form.week}
-                onChangeText={(v) => setForm({ ...form, week: v })}
-              />
-            </View>
+           
 
             <View style={styles.consentGroup}>
               <Text style={styles.consentHeading}>Customize your experience</Text>

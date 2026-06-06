@@ -1,7 +1,7 @@
 /**
  * mobile/app/auth/register.tsx
  *
- * mumcare Registration Screen — brand-aligned, emotionally warm.
+ * safeborn Registration Screen — brand-aligned, emotionally warm.
  *
  * Design philosophy:
  *  - Same two-zone layout as login.tsx: hero photo top → floating
@@ -37,7 +37,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 
-import { colors, spacing, shadows } from "@mumcare/ui";
+import { colors, spacing, shadows } from "@safeborn/ui";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { SocialSignInButtons } from "@/components/auth/SocialSignInButtons";
 import { getErrorMessage, isClerkSessionExistsError } from "@/lib/errors";
@@ -49,7 +49,7 @@ import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const WELCOME_BG = require("../../assets/welcome-bg.png");
-const APP_LOGO = require("../../assets/mumlogo.png");
+const APP_LOGO = require("../../assets/safebornlogo.png");
 const CREAM = AUTH_UI.cream;
 const CARD_RADIUS = 32;
 const TEXT_BLACK = AUTH_UI.textBlack;

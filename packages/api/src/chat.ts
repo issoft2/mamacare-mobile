@@ -11,7 +11,7 @@ import type {
   ChatSessionDetail,
   CreateSessionRequest,
   SendMessageRequest,
-} from "@mumcare/types";
+} from "@safeborn/types";
 
 export const chatKeys = {
   all: ["chat"] as const,

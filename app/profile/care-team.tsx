@@ -16,9 +16,9 @@ import {
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useCareTeam } from "@mumcare/api";
-import { colors } from "@mumcare/ui";
-import type { CareTeamMember } from "@mumcare/types";
+import { useCareTeam } from "@safeborn/api";
+import { colors } from "@safeborn/ui";
+import type { CareTeamMember } from "@safeborn/types";
 import { ctaButtonStyles, ctaGradientColors } from "@/components/styles/ctaButton";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
@@ -142,7 +142,7 @@ export default function CareTeamScreen() {
                 </View>
                 <Text style={styles.emptyText}>No care team added yet</Text>
                 <Text style={styles.emptySubtext}>
-                  Add your midwife, GP, or obstetrician so MumCare can keep your care journey in sync.
+                  Add your midwife, GP, or obstetrician so safeborn can keep your care journey in sync.
                 </Text>
               </View>
             )

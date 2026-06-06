@@ -38,20 +38,19 @@ import {
   useMoodLogs,
   useProfile,
   useSleepLogs,
-  useSymptomPatterns,
   useSymptomLogs,
   useLogHydration,
   useLogMood,
-} from "@mumcare/api";
+  useActivePregnancy,
+} from "@safeborn/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { colors } from "@mumcare/ui";
+import { colors } from "@safeborn/ui";
 import { getTimeBasedGreeting } from "../../lib/greetings";
 import { WeeklyContentCard } from "@/components/home/WeeklyContentCard";
 import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
-import type { DailyTrackerReminderItem, Mood, Severity, UrgencyTier } from "@mumcare/types";
-import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
+import type { DailyTrackerReminderItem, Mood, Severity } from "@safeborn/types";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -366,8 +365,9 @@ export default function HomeScreen() {
   const [folicTakenLocal, setFolicTakenLocal] = useState(false);
   const [showMoodSheet, setShowMoodSheet] = useState(false);
 
-  const { data: profile }      = useProfile();
-  // const { data: patterns }     = useSymptomPatterns();
+  const { data: profile, isPending: isProfilePending } = useProfile();
+  const {data: pregnancy} = useActivePregnancy();
+  
   const { data: symptomLogs }  = useSymptomLogs(10, 0);
   const { data: hydration }    = useHydrationLogs();
   const { data: todayFolicAcidLog } = useTodayFolicAcidLog();
@@ -375,7 +375,11 @@ export default function HomeScreen() {
     useDailyTrackerReminderStatus();
   const { data: kickSessions } = useKickSessions();
 
-  const hasCompletedOnboarding = Boolean(profile);
+  // Only treat onboarding as incomplete once the profile query has resolved
+  // without a result. While the query is still in-flight (isProfilePending),
+  // stay neutral so we don't flash the "Finish setup first" banner or fire
+  // onboarding redirects for users who do have a profile.
+  const hasCompletedOnboarding = isProfilePending ? true : Boolean(profile);
   const onboardingRedirectPath = "/onboarding/profile-setup";
 
   const { data: mood }         = useMoodLogs();
@@ -633,8 +637,8 @@ export default function HomeScreen() {
     pendingTrackerItems.length > 0;
 
   const gestationalWeek = useMemo(
-    () => resolveCurrentGestationalWeek(profile) ?? 0,
-    [profile]
+    () => resolveCurrentGestationalWeek(pregnancy) ?? 0,
+    [pregnancy]
   );
   const canUseKickCounter = gestationalWeek >= KICK_COUNTER_MIN_WEEK;
 

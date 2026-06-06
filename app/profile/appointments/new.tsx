@@ -19,9 +19,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { ctaButtonStyles, ctaGradientColors } from "../../../components/styles/ctaButton";
-import { useCreateAppointment, useProfile } from "@mumcare/api";
+import { useCreateAppointment, useProfile } from "@safeborn/api";
 import promptFinishOnboarding from "@/lib/onboardingPrompt";
-import { colors } from "@mumcare/ui";
+import { colors } from "@safeborn/ui";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 const APPOINTMENT_TYPES = [

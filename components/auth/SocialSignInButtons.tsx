@@ -1,7 +1,7 @@
 /**
  * mobile/components/auth/SocialSignInButtons.tsx
  *
- * Brand-aligned social sign-in buttons for mumcare.
+ * Brand-aligned social sign-in buttons for safeborn.
  *
  * Google brand fix:
  *  - Ionicons "logo-google" renders a single-colour G — off-brand.
@@ -31,9 +31,8 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, spacing } from "@mumcare/ui";
+import { colors, spacing } from "@safeborn/ui";
 import { getErrorMessage } from "@/lib/errors";
-import { goHomeAfterClerkSetActive } from "@/lib/goHomeAfterClerkSetActive";
 import { GoogleIcon } from "@/components/icons/GoogleIcon";
 
 const TEXT_BLACK = "#111111";
@@ -105,6 +104,16 @@ export function SocialSignInButtons({
         )
           return;
 
+        // When the caller explicitly asks us to land on an onboarding screen
+        // (e.g. /onboarding/profile-setup from the Register page) we must
+        // ignore Clerk's `sessionTaskUrl` / `redirectUrl`. Those values point
+        // at Clerk-hosted next-step pages and would skip our in-app
+        // onboarding flow, leaving freshly-registered users stuck without a
+        // profile.
+        const afterAuthHrefStr =
+          typeof afterAuthHref === "string" ? afterAuthHref : "";
+        const forceAfterAuthHref = afterAuthHrefStr.startsWith("/onboarding");
+
         if (createdSessionId && setActive) {
           await setActive({
             session: createdSessionId,
@@ -112,10 +121,11 @@ export function SocialSignInButtons({
               const session = params.session;
               const sessionTaskUrl = (params as { sessionTaskUrl?: string }).sessionTaskUrl;
               const redirectUrl = (params as { redirectUrl?: string }).redirectUrl;
-              const target =
-                normalizeClerkTarget(sessionTaskUrl) ??
-                normalizeClerkTarget(redirectUrl) ??
-                (session ? afterAuthHref : "/auth/welcome");
+              const target = forceAfterAuthHref
+                ? (session ? afterAuthHref : "/auth/welcome")
+                : (normalizeClerkTarget(sessionTaskUrl) ??
+                   normalizeClerkTarget(redirectUrl) ??
+                   (session ? afterAuthHref : "/auth/welcome"));
               router.replace(target as any);
             },
           });

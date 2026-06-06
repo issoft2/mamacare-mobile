@@ -1,4 +1,4 @@
 
-> @mumcare/types@0.0.1 type-check /home/issoft/Workspace/mama-care/frontend/packages/types
+> @safeborn/types@0.0.1 type-check /home/issoft/Workspace/mama-care/frontend/packages/types
 > tsc --noEmit
 

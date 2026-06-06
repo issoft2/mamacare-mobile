@@ -1,5 +1,5 @@
 /**
- * Common types shared across all mumcare AI services.
+ * Common types shared across all safeborn AI services.
  * Mirrors shared Python Pydantic base schemas.
  */
 

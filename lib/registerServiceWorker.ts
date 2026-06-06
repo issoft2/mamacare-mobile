@@ -14,7 +14,7 @@ export function registerServiceWorker() {
       .register("/sw.js")
       .catch((error) => {
         // eslint-disable-next-line no-console
-        console.warn("[mumcare] service worker registration failed", error);
+        console.warn("[safeborn] service worker registration failed", error);
       });
   });
 }

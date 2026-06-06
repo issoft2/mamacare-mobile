@@ -1,6 +1,6 @@
 import { createContext, useContext, type ReactNode } from "react";
-import { useActivePregnancy, usePregnancyHistory } from "@mumcare/api";
-import type { Pregnancy } from "@mumcare/types";
+import { useActivePregnancy, usePregnancyHistory } from "@safeborn/api";
+import type { Pregnancy } from "@safeborn/types";
 
 interface PregnancyStateContextValue {
   activePregnancy: Pregnancy | null | undefined;
@@ -8,6 +8,7 @@ interface PregnancyStateContextValue {
   isLoading: boolean;
   isError: boolean;
   refetch: () => void;
+  refetchActive: () => void;
 }
 
 const PregnancyStateContext = createContext<PregnancyStateContextValue | null>(null);
@@ -24,6 +25,9 @@ export function PregnancyProvider({ children }: { children: ReactNode }) {
     refetch: () => {
       void activePregnancyQuery.refetch();
       void pregnancyHistoryQuery.refetch();
+    },
+    refetchActive: () => {
+      void activePregnancyQuery.refetch();
     },
   };
 

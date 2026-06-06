@@ -1,6 +1,6 @@
 {
-  "name": "MumCare Assistant",
-  "short_name": "MumCare",
+  "name": "safeborn Assistant",
+  "short_name": "safeborn",
   "description": "A calm pregnancy companion for symptoms, tracking, care team details, and supportive chat.",
   "start_url": "/",
   "scope": "/",

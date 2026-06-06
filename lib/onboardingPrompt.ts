@@ -2,7 +2,7 @@ import { Alert } from "react-native";
 
 export function promptFinishOnboarding(router: any, opts?: { title?: string; message?: string; cancelLabel?: string; confirmLabel?: string; onCancel?: () => void; }) {
   const title = opts?.title ?? "Complete setup to continue";
-  const message = opts?.message ?? "Please finish your profile so MumCare can personalise your care.\nYou can do this now or later.";
+  const message = opts?.message ?? "Please finish your profile so safeborn can personalise your care.\nYou can do this now or later.";
   const cancelLabel = opts?.cancelLabel ?? "Later";
   const confirmLabel = opts?.confirmLabel ?? "Finish setup";
 

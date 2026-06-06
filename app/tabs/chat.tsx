@@ -20,9 +20,9 @@ import { Ionicons } from "@expo/vector-icons";
 import {
   useChatSessions,
   useCreateChatSession,
-  useProfile,
-} from "@mumcare/api";
-import { colors, shadows } from "@mumcare/ui";
+  useActivePregnancy
+} from "@safeborn/api";
+import { colors, shadows } from "@safeborn/ui";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
 
@@ -31,7 +31,7 @@ export default function ChatScreen() {
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 980;
   const { data: sessions } = useChatSessions();
-  const { data: profile } = useProfile();
+  const { data: pregnancy} = useActivePregnancy();
   const createSession = useCreateChatSession();
 
   // ✅ Inside the component — hooks must always live here
@@ -43,7 +43,7 @@ export default function ChatScreen() {
     if (!prompt) return;
 
     async function openWithPrompt() {
-      const week = resolveCurrentGestationalWeek(profile) ?? 12;
+      const week = resolveCurrentGestationalWeek(pregnancy) ?? 1;
       const session = await createSession.mutateAsync({
         gestational_week: week,
       });
@@ -100,7 +100,7 @@ export default function ChatScreen() {
       >
         <View style={[styles.page, isWide && styles.pageWide]}>
         <View style={styles.header}>
-          <Text style={styles.screenTitle}>Conversations</Text>
+          <Text style={styles.screenTitle}>Conversations with safeborn Assistant</Text>
         </View>
 
         <FlatList

@@ -1,4 +1,4 @@
-const CACHE_NAME = "mumcare-pwa-v1";
+const CACHE_NAME = "safeborn-pwa-v1";
 const APP_SHELL = [
   "/",
   "/manifest.webmanifest",

@@ -17,14 +17,14 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, shadows } from "@mumcare/ui";
+import { colors, shadows } from "@safeborn/ui";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { useMemo, useState } from "react";
 import { usePwaInstallPrompt } from "../../lib/usePwaInstallPrompt";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 const WELCOME_BG = require("../../assets/welcome-bg.png");
-const APP_LOGO = require("../../assets/mumlogo.png");
+const APP_LOGO = require("../../assets/safebornlogo.png");
 const TEXT_BLACK = AUTH_UI.textBlack;
 const TEXT_HEADING = AUTH_UI.textHeading;
 const TEXT_WHITE = AUTH_UI.textWhite;
@@ -85,7 +85,7 @@ export default function WelcomeScreen() {
               <Ionicons name="phone-portrait-outline" size={20} color={colors.rose[500]} />
             </View>
             <View style={styles.installCopy}>
-              <Text style={styles.installTitle}>Install MumCare</Text>
+              <Text style={styles.installTitle}>Install safeborn</Text>
               <Text style={styles.installHint}>
                 {install.canPrompt
                   ? "Add it to your home screen for quick access."

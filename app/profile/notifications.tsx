@@ -30,8 +30,8 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@clerk/clerk-expo";
 
-import { apiRequest } from "@mumcare/api";
-import { colors, spacing, typography } from "@mumcare/ui";
+import { apiRequest, useActivePregnancy } from "@safeborn/api";
+import { colors, spacing, typography } from "@safeborn/ui";
 import { getErrorMessage } from "@/lib/errors";
 import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
@@ -107,7 +107,7 @@ const GROUPS: PrefGroup[] = [
   },
   {
     title: "From your assistant",
-    intro: "Updates and check-ins from mumcare itself.",
+    intro: "Updates and check-ins from safeborn itself.",
     items: [
       {
         key: "weekly_updates",
@@ -119,7 +119,7 @@ const GROUPS: PrefGroup[] = [
         key: "agent_action_alerts",
         label: "When we step in to help",
         description:
-          "If mumcare takes an action for you, we'll let you know.",
+          "If safeborn takes an action for you, we'll let you know.",
       },
     ],
   },
@@ -216,6 +216,7 @@ export default function NotificationsScreen() {
   const [savedKey, setSavedKey] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [gestationalWeek, setGestationalWeek] = useState<number | null>(null);
+  const {data: pregnancy } = useActivePregnancy();
 
   function readWebPrefsCache(key: string): NotificationSettings | null {
     if (Platform.OS !== "web" || typeof window === "undefined") {
@@ -354,7 +355,7 @@ export default function NotificationsScreen() {
         }>("/profile", {
           method: "GET",
         });
-        const week = resolveCurrentGestationalWeek(profile);
+        const week = resolveCurrentGestationalWeek(pregnancy);
         if (typeof week === "number") {
           setGestationalWeek(week);
         }
@@ -672,7 +673,7 @@ export default function NotificationsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Message safety</Text>
           <Text style={styles.sectionHint}>
-            Choose whether mumcare should always ask before sending messages.
+            Choose whether safeborn should always ask before sending messages.
           </Text>
 
           <View style={styles.groupCard}>

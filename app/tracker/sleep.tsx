@@ -9,8 +9,8 @@ import { ActivityIndicator, KeyboardAvoidingView, ScrollView, StyleSheet, Text, 
 import { LinearGradient } from "expo-linear-gradient";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { Ionicons } from '@expo/vector-icons';
-import { useLogSleep, useProfile } from "@mumcare/api";
-import type { SleepDurationBand, SleepQuality } from "@mumcare/types";
+import { useLogSleep, useProfile } from "@safeborn/api";
+import type { SleepDurationBand, SleepQuality } from "@safeborn/types";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 import promptFinishOnboarding from "@/lib/onboardingPrompt";
 
@@ -74,7 +74,7 @@ export default function SleepLogScreen() {
               <View style={styles.headerCopy}>
                 <Text style={styles.eyebrow}>Night rest</Text>
                 <Text style={styles.title}>Sleep Journal</Text>
-                <Text style={styles.subtitle}>Track your rest with care so MumCare can better support your energy and wellbeing.</Text>
+                <Text style={styles.subtitle}>Track your rest with care so safeborn can better support your energy and wellbeing.</Text>
               </View>
             </View>
 

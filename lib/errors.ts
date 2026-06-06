@@ -1,5 +1,5 @@
 import { isClerkAPIResponseError } from "@clerk/clerk-expo";
-import { ApiRequestError } from "@mumcare/api";
+import { ApiRequestError } from "@safeborn/api";
 
 /** True when `POST /v1/client/sign_ins` (or sign_ups) fails with a client that already has a session. */
 export function isClerkSessionExistsError(err: unknown): boolean {

@@ -1,7 +1,7 @@
 /**
  * mobile/app/auth/login.tsx
  *
- * mumcare Login Screen — emotionally warm, brand-aligned.
+ * safeborn Login Screen — emotionally warm, brand-aligned.
  *
  * Design philosophy:
  *  - Top half mirrors the welcome screen atmosphere: soft photo overlay,
@@ -36,7 +36,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 
-import { colors, shadows } from "@mumcare/ui";
+import { colors, shadows } from "@safeborn/ui";
 import { SocialSignInButtons } from "@/components/auth/SocialSignInButtons";
 import { getErrorMessage } from "@/lib/errors";
 import { goHomeAfterClerkSetActive } from "@/lib/goHomeAfterClerkSetActive";
@@ -49,7 +49,7 @@ import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaB
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const WELCOME_BG = require("../../assets/welcome-bg.png");
-const APP_LOGO = require("../../assets/mumlogo.png");
+const APP_LOGO = require("../../assets/safebornlogo.png");
 const CREAM = AUTH_UI.cream;
 const CARD_RADIUS = 32;
 const TEXT_BLACK = AUTH_UI.textBlack;

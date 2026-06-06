@@ -1,38 +1,38 @@
 {
   "expo": {
-    "name": "MumCare Assistant",
-    "slug": "MumCare-assistant",
+    "name": "safeborn Assistant",
+    "slug": "safeborn-assistant",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/mumcarelogo.png",
-    "scheme": "mumcare",
+    "icon": "./assets/safebornlogo.png",
+    "scheme": "safeborn",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/mumlogo.png",
+      "image": "./assets/safebornlogo.png",
       "resizeMode": "contain",
       "backgroundColor": "#1A2E4A"
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.mumcare.app",
+      "bundleIdentifier": "com.safeborn.app",
       "infoPlist": {
-        "NSUserNotificationsUsageDescription": "MumCare uses notifications for daily reminders, appointments, and important pregnancy updates."
+        "NSUserNotificationsUsageDescription": "safeborn uses notifications for daily reminders, appointments, and important pregnancy updates."
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/mumcaresplash.png",
+        "foregroundImage": "./assets/safebornsplash.png",
         "backgroundColor": "#1A2E4A"
       },
-      "package": "com.mumcare.app",
+      "package": "com.safeborn.app",
       "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/mumcarelogo.png",
-      "name": "MumCare Assistant",
-      "shortName": "MumCare",
+      "favicon": "./assets/safebornlogo.png",
+      "name": "safeborn Assistant",
+      "shortName": "safeborn",
       "themeColor": "#1A2E4A",
       "backgroundColor": "#FFF8F4"
     },

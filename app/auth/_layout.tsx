@@ -1,5 +1,5 @@
 import { Stack } from "expo-router";
-import { colors } from "@mumcare/ui";
+import { colors } from "@safeborn/ui";
 
 export default function AuthLayout() {
   return (

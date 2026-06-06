@@ -20,10 +20,10 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { Ionicons } from "@expo/vector-icons";
-import { useProfile, useSubmitSymptom } from "@mumcare/api";
+import { useProfile, useSubmitSymptom, useActivePregnancy } from "@safeborn/api";
 import promptFinishOnboarding from "@/lib/onboardingPrompt";
-import { colors } from "@mumcare/ui";
-import type { Severity } from "@mumcare/types";
+import { colors } from "@safeborn/ui";
+import type { Severity } from "@safeborn/types";
 import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
@@ -51,6 +51,8 @@ const SEVERITIES: { key: Severity; label: string; color: string; bg: string }[] 
 export default function NewSymptomScreen() {
   const router        = useRouter();
   const { data: profile } = useProfile();
+  const {data: pregnancy } = useActivePregnancy();
+  
   const submitSymptom = useSubmitSymptom();
 
   const hasCompletedOnboarding = Boolean(profile);
@@ -85,7 +87,7 @@ export default function NewSymptomScreen() {
     }
 
     // Guard — need gestational week from profile
-    const gestationalWeek = resolveCurrentGestationalWeek(profile);
+    const gestationalWeek = resolveCurrentGestationalWeek(pregnancy);
     if (!gestationalWeek) {
       Alert.alert(
         "Week not set",

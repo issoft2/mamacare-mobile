@@ -6,8 +6,8 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View, ImageBackground, ActivityIndicator } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useSymptomLog } from "@mumcare/api";
-import { colors, spacing, typography } from "@mumcare/ui";
+import { useSymptomLog } from "@safeborn/api";
+import { colors, spacing, typography } from "@safeborn/ui";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 export default function SymptomDetailScreen() {
@@ -103,7 +103,7 @@ export default function SymptomDetailScreen() {
                     This pattern is flagged as <Text style={{fontWeight: '800'}}>{log.urgency_tier.replace(/_/g, " ")}</Text>.
                   </Text>
                   <TouchableOpacity style={styles.actionLink} onPress={() => router.push("/tabs/chat")}>
-                    <Text style={styles.actionLinkText}>Discuss this with mumcare ✦</Text>
+                    <Text style={styles.actionLinkText}>Discuss this with safeborn ✦</Text>
                   </TouchableOpacity>
                 </LinearGradient>
               )}

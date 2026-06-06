@@ -14,7 +14,7 @@ export default function RootHtml({ children }: PropsWithChildren) {
         />
         <meta name="theme-color" content={AUTH_UI.shadowNavy} />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-title" content="MumCare" />
+        <meta name="apple-mobile-web-app-title" content="safeborn" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta
           name="description"

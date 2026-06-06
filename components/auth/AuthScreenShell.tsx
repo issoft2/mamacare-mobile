@@ -2,7 +2,7 @@ import React from "react";
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { colors, spacing, typography } from "@mumcare/ui";
+import { colors, spacing, typography } from "@safeborn/ui";
 
 import { HeartIcon } from "@/components/HeartIcon";
 
@@ -24,7 +24,7 @@ export function AuthScreenShell({ children }: AuthScreenShellProps) {
         >
           <View style={styles.brand}>
             <HeartIcon size={36} color={colors.rose[500]} />
-            <Text style={styles.brandText}>mumcare</Text>
+            <Text style={styles.brandText}>safeborn</Text>
           </View>
           {children}
         </ScrollView>

@@ -60,7 +60,7 @@ export function getActiveLegalContent(docType: LegalDocType, region?: LegalRegio
   const doc = getActiveLegalDocument(docType, region);
   return (
     LEGAL_CONTENT_BY_PATH[doc.path] ??
-    "This legal document could not be loaded. Please contact support@mumcare.com."
+    "This legal document could not be loaded. Please contact support@safeborn.com."
   );
 }
 

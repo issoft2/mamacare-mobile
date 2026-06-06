@@ -18,9 +18,10 @@ import * as WebBrowser from "expo-web-browser";
 import { useEffect, useRef, useState } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import { Text, TouchableOpacity } from "react-native";
-import { configureApiBaseUrl, configureApiClient } from "@mumcare/api";
+import { configureApiBaseUrl, configureApiClient } from "@safeborn/api";
 
 import { API_BASE_URL, EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY } from "@/lib/env";
+import { PregnancyProvider } from "@/lib/pregnancyState";
 import {
   configurePushNotificationsAsync,
   getNotificationTypeFromNotification,
@@ -36,7 +37,7 @@ import { registerServiceWorker } from "@/lib/registerServiceWorker";
 import { checkConsentVersion } from "@/lib/legal";
 import { AUTH_UI } from "@/lib/authUiTokens";
 
-/** Must run before any fetch from @mumcare/api — see configureApiBaseUrl in packages/api. */
+/** Must run before any fetch from @safeborn/api — see configureApiBaseUrl in packages/api. */
 configureApiBaseUrl(API_BASE_URL);
 
 WebBrowser.maybeCompleteAuthSession();
@@ -110,6 +111,18 @@ function isOAuthCallbackRoute(pathname: string) {
 }
 
 /**
+ * Onboarding screens (`/onboarding/profile-setup`, `/onboarding/new-pregnancy`, …)
+ * must NOT be hijacked by the auth guard. A freshly-signed-up user arrives here
+ * directly from `register.tsx` / `SocialSignInButtons` and the guard would
+ * otherwise race their `router.replace("/onboarding/profile-setup")` with a
+ * stale "send signed-in users to /tabs/home" redirect.
+ */
+function isOnboardingRoute(pathname: string) {
+  const p = pathname || "";
+  return p.startsWith("/onboarding/") || p === "/onboarding";
+}
+
+/**
  * `isSignedIn` / `userId` can lag the restored JWT (especially on web + manual URL
  * or hard reload). Await `getToken()` when hooks say “signed out” but a token
  * may still be in `localStorage`.
@@ -136,6 +149,8 @@ function AuthGuard() {
 
     const inAuth = isAuthGroupRoute(segments, pathname);
     const onRegister = isRegisterRoute(pathname);
+    const onOnboarding = isOnboardingRoute(pathname);
+    const onOAuthCallback = isOAuthCallbackRoute(pathname);
     const uid = userId as string | null | undefined;
     const sid = sessionId as string | null | undefined;
     const syncSession = Boolean(
@@ -145,6 +160,13 @@ function AuthGuard() {
     );
 
     if (syncSession) {
+      // Never override an in-flight onboarding redirect (profile-setup,
+      // new-pregnancy, …) or the OAuth return path. Doing so creates a race
+      // where freshly-registered users get bounced to /tabs/home before they
+      // finish setup.
+      if (onOnboarding || onOAuthCallback) {
+        return;
+      }
       if (inAuth && !onRegister) {
         router.replace("/tabs/home");
       }
@@ -164,12 +186,17 @@ function AuthGuard() {
       }
       const hasToken = token != null && token.length > 0;
       if (hasToken) {
+        // Same protection as the synchronous branch above — don't yank
+        // onboarding/OAuth-callback users back to /tabs/home.
+        if (onOnboarding || onOAuthCallback) {
+          return;
+        }
         if (inAuth && !onRegister) {
           router.replace("/tabs/home");
         }
         return;
       }
-      if (inAuth || isOAuthCallbackRoute(pathname)) {
+      if (inAuth || onOAuthCallback || onOnboarding) {
         return;
       }
       router.replace("/auth/welcome");
@@ -368,7 +395,7 @@ function PushNotificationRuntimeHandlers() {
     route: string;
   }) {
     const next = {
-      title: payload.title?.trim() || "New update from MumCare",
+      title: payload.title?.trim() || "New update from safeborn",
       body: payload.body?.trim() || "Tap to view your latest reminder.",
       route: payload.route,
     };
@@ -549,25 +576,18 @@ export default function RootLayout() {
       <AuthGuard />
     );
 
-  return (
+     return (
     <ClerkProvider
       publishableKey={EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY}
       tokenCache={tokenCache}
-      navigate={async ({ session, sessionTaskUrl, redirectUrl }) => {
-        const target =
-          normalizeClerkTarget(sessionTaskUrl ?? null) ??
-          normalizeClerkTarget(redirectUrl ?? null) ??
-          (session ? "/tabs/home" : "/auth/welcome");
-
-        // Use replace to avoid back-navigation loops during auth/task completion.
-        router.replace(target as any);
-      }}
     >
       <QueryClientProvider client={queryClient}>
-        <PushNotificationRuntimeHandlers />
-        <PushTokenSync />
-        <AppReconsentCheck />
-        {content}
+        <PregnancyProvider>
+          <PushNotificationRuntimeHandlers />
+          <PushTokenSync />
+          <AppReconsentCheck />
+          {content}
+        </PregnancyProvider>
       </QueryClientProvider>
     </ClerkProvider>
   );

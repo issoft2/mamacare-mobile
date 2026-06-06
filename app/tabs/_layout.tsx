@@ -42,7 +42,7 @@ const DRAWER_WIDTH = 292;
 const MOBILE_HEADER_HEIGHT = 64;
 const DESKTOP_BREAKPOINT = 900;
 const ROSE = AUTH_UI.semanticSevere;
-const BRAND_LOGO = require("../../assets/mumlogo.png");
+const BRAND_LOGO = require("../../assets/safebornlogo.png");
 const NARROW_MOBILE_BREAKPOINT = 360;
 
 // ── Tab icon ──────────────────────────────────────────────────────────────────
@@ -120,7 +120,7 @@ function TabsWithGuard() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const router = useRouter();
-  const { data: activePregnancy, isLoading: isPregnancyLoading, isError: isPregnancyError } = usePregnancyState();
+  const { activePregnancy, isLoading: isPregnancyLoading, isError: isPregnancyError } = usePregnancyState();
   const isDesktop = Platform.OS === "web" && width >= DESKTOP_BREAKPOINT;
 
   // Full tab bar height including device bottom inset (gesture bar / home indicator)
@@ -133,7 +133,7 @@ function TabsWithGuard() {
     }
 
     if (activePregnancy === null) {
-      void router.replace("/onboarding/new-pregnancy");
+      void router.replace("/onboarding/profile-setup");
     }
   }, [activePregnancy, isPregnancyError, isPregnancyLoading, router]);
 
@@ -325,7 +325,7 @@ function ResponsiveTabBar({
               />
             </View>
             <View>
-              <Text style={styles.brandName}>MumCare</Text>
+              <Text style={styles.brandName}>safeborn</Text>
               <Text style={styles.brandSub}>Pregnancy care hub</Text>
             </View>
           </View>
@@ -394,7 +394,7 @@ function ResponsiveTabBar({
               activeOpacity={0.84}
             >
               <Text style={styles.installTitle}>Install app</Text>
-              <Text style={styles.installHint}>Open MumCare like a mobile app</Text>
+              <Text style={styles.installHint}>Open safeborn like a mobile app</Text>
             </TouchableOpacity>
           )}
         
@@ -423,7 +423,7 @@ function ResponsiveTabBar({
           <View style={styles.mobileLogoPlate}>
             <Image source={BRAND_LOGO} style={styles.mobileLogo} resizeMode="cover" />
           </View>
-          <Text style={styles.mobileBrandText}>MumCare</Text>
+          <Text style={styles.mobileBrandText}>safeborn</Text>
         </View>
       </View>
 
@@ -451,7 +451,7 @@ function ResponsiveTabBar({
                 />
               </View>
               <View style={styles.drawerTitleWrap}>
-                <Text style={styles.brandName}>MumCare</Text>
+                <Text style={styles.brandName}>safeborn</Text>
                 <Text style={styles.brandSub}>Pregnancy care hub</Text>
               </View>
               <TouchableOpacity
@@ -552,7 +552,7 @@ function ResponsiveTabBar({
                   activeOpacity={0.84}
                 >
                   <Text style={styles.installTitle}>Install app</Text>
-                  <Text style={styles.installHint}>Open MumCare like a mobile app</Text>
+                  <Text style={styles.installHint}>Open safeborn like a mobile app</Text>
                 </TouchableOpacity>
               )}
             </View>
