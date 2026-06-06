@@ -3,7 +3,7 @@
  * TanStack Query hooks for profile_service endpoints.
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type UseQueryResult, type UseMutationResult } from "@tanstack/react-query";
 import { apiRequest, ApiRequestError } from "./client";
 import type {
   Appointment,
@@ -13,7 +13,10 @@ import type {
   UpdateProfileRequest,
   Pregnancy,
   PregnancyHistoryItem,
-} from "@mumcare/types";
+  CreatePregnancyInput,
+  UpdatePregnancyInput,
+  PregnancySummary,
+} from "@safeborn/types";
 
 export type ConsentTier = "marketing" | "system_improvement" | "anon_commercial" | "model_training";
 type BackendConsentTier = ConsentTier | Uppercase<ConsentTier>;
@@ -93,6 +96,15 @@ export const profileKeys = {
   appointments: () => [...profileKeys.all, "appointments"] as const,
 };
 
+export const pregnancyKeys = {
+  all:     ["pregnancy"] as const,
+  list:    () => [...pregnancyKeys.all, "list"] as const,
+  active:  () => [...pregnancyKeys.all, "active"] as const,
+  history: () => [...pregnancyKeys.all, "history"] as const,
+  detail:  (id: string) => [...pregnancyKeys.all, id] as const,
+  summary: (id: string) => [...pregnancyKeys.all, id, "summary"] as const,
+};
+
 export function useProfile() {
   return useQuery({
     queryKey: profileKeys.detail(),
@@ -109,10 +121,10 @@ export function useProfile() {
 
 export function useActivePregnancy() {
   return useQuery<Pregnancy | null>({
-    queryKey: ["pregnancy", "active"],
+    queryKey: pregnancyKeys.active(),
     queryFn: async () => {
       try {
-        return await apiRequest<Pregnancy>("/pregnancies/active");
+        return await apiRequest<Pregnancy>("/profile/pregnancies/current");
       } catch (err) {
         if (err instanceof ApiRequestError && err.isNotFound) {
           return null;
@@ -131,24 +143,85 @@ export function useActivePregnancy() {
 
 export function usePregnancyHistory() {
   return useQuery({
-    queryKey: ["pregnancy", "history"],
-    queryFn: () => apiRequest<PregnancyHistoryItem[]>("/pregnancies"),
+    queryKey: pregnancyKeys.history(),
+    queryFn: async () => {
+      try {
+        return await apiRequest<PregnancyHistoryItem[]>("/profile/pregnancies");
+      } catch (err) {
+        if (err instanceof ApiRequestError && err.isNotFound) {
+          return [];
+        }
+        throw err;
+      }
+    },
     retry: false,
   });
 }
 
+/** @deprecated Use useCreatePregnancy for all new code. Kept for backward compat. */
 export function useStartNewPregnancy() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => apiRequest<Pregnancy>("/pregnancies/new", { method: "POST" }),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: pregnancyKeys.all });
       queryClient.invalidateQueries({ queryKey: profileKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["pregnancy", "active"] });
-      queryClient.invalidateQueries({ queryKey: ["pregnancy", "history"] });
       queryClient.invalidateQueries({ queryKey: ["tracker"] });
       queryClient.invalidateQueries({ queryKey: ["symptoms"] });
       queryClient.invalidateQueries({ queryKey: ["chat"] });
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
     },
+  });
+}
+
+export function useCreatePregnancy() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreatePregnancyInput) =>
+      apiRequest<Pregnancy>("/profile/pregnancies", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: pregnancyKeys.all });
+      queryClient.invalidateQueries({ queryKey: profileKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["tracker"] });
+      queryClient.invalidateQueries({ queryKey: ["symptoms"] });
+      queryClient.invalidateQueries({ queryKey: ["chat"] });
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+    },
+  });
+}
+
+export function useGetPregnancies() {
+  return useQuery({
+    queryKey: pregnancyKeys.list(),
+    queryFn: () => apiRequest<Pregnancy[]>("/profile/pregnancies"),
+    retry: false,
+  });
+}
+
+export function useUpdatePregnancy(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: UpdatePregnancyInput) =>
+      apiRequest<Pregnancy>(`/profile/pregnancies/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: pregnancyKeys.all });
+      queryClient.invalidateQueries({ queryKey: profileKeys.all });
+    },
+  });
+}
+
+export function useGetPregnancySummary(id: string) {
+  return useQuery({
+    queryKey: pregnancyKeys.summary(id),
+    queryFn: () => apiRequest<PregnancySummary>(`/profile/pregnancies/${id}/summary`),
+    enabled: !!id,
+    retry: false,
   });
 }
 

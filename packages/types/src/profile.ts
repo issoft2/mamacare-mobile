@@ -10,14 +10,10 @@ export interface Profile {
   first_name: string;
   last_name: string;
   date_of_birth: string;
-  gestational_week: number;
-  estimated_due_date: string;
-  lmp_date: string | null;
-  gravida: number | null;
-  parity: number | null;
   blood_type: string | null;
   known_conditions: string[] | null;
   allergies: string[] | null;
+  gestational_week: number | null;
   nhs_number: string | null;
   nhia_number: string | null;
   avatar_url: string | null;
@@ -29,11 +25,6 @@ export interface CreateProfileRequest {
   first_name: string;
   last_name: string;
   date_of_birth: string;
-  gestational_week: number;
-  estimated_due_date: string;
-  lmp_date?: string;
-  gravida?: number;
-  parity?: number;
   blood_type?: string;
   known_conditions?: string[];
   allergies?: string[];
@@ -44,9 +35,6 @@ export interface CreateProfileRequest {
 export type UpdateProfileRequest = Partial<
   Omit<
     CreateProfileRequest,
-    | "lmp_date"
-    | "gravida"
-    | "parity"
     | "blood_type"
     | "known_conditions"
     | "allergies"
@@ -54,9 +42,7 @@ export type UpdateProfileRequest = Partial<
     | "nhia_number"
   >
 > & {
-  lmp_date?: string | null;
-  gravida?: number | null;
-  parity?: number | null;
+  gestational_week?: number | null;
   blood_type?: string | null;
   known_conditions?: string[] | null;
   allergies?: string[] | null;

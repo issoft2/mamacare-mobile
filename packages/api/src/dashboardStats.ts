@@ -4,7 +4,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "./client";
-import type { AgentActivityResponse, DashboardStats } from "@mumcare/types";
+import type { AgentActivityResponse, DashboardStats } from "@safeborn/types";
 
 export const dashboardStatsKeys = {
   all: ["dashboard-stats"] as const,

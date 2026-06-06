@@ -17,9 +17,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useProfile, useUpdateProfile } from "@mumcare/api";
+import { useProfile, useUpdateProfile } from "@safeborn/api";
 import { ctaButtonStyles, ctaGradientColors } from "@/components/styles/ctaButton";
-import { colors } from "@mumcare/ui";
+import { colors } from "@safeborn/ui";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -30,7 +30,7 @@ export default function MedicalProfileScreen() {
   const updateProfile = useUpdateProfile();
 
   const [form, setForm] = useState({ 
-    bloodType: "", lmpDate: "", gravida: "", parity: "", allergies: "", conditions: "" 
+    bloodType: "", allergies: "", conditions: "" 
   });
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [activeField, setActiveField] = useState("");
@@ -39,9 +39,6 @@ export default function MedicalProfileScreen() {
     if (!profile) return;
     setForm({
       bloodType: profile.blood_type ?? "",
-      lmpDate: profile.lmp_date ?? "",
-      gravida: profile.gravida != null ? String(profile.gravida) : "",
-      parity: profile.parity != null ? String(profile.parity) : "",
       allergies: profile.allergies?.join(", ") ?? "",
       conditions: profile.known_conditions?.join(", ") ?? ""
     });
@@ -113,55 +110,6 @@ export default function MedicalProfileScreen() {
         </View>
 
         <View style={styles.glassCard}>
-          <View style={styles.field}>
-            <Text style={styles.label}>Last menstrual period</Text>
-            <TouchableOpacity style={styles.dateInput} onPress={() => setShowDatePicker(true)}>
-              <Text style={styles.dateValue}>{form.lmpDate || "Select date"}</Text>
-              <Ionicons name="calendar" size={20} color={AUTH_UI.linkBerry} />
-            </TouchableOpacity>
-            {showDatePicker && (
-              <DateTimePicker
-                value={form.lmpDate ? new Date(form.lmpDate) : new Date()}
-                mode="date"
-                onChange={(e, d) => {
-                  setShowDatePicker(false);
-                  if(d) {
-                    const iso = d.toISOString().split('T')[0];
-                    setForm({...form, lmpDate: iso});
-                    save("LMP Date", { lmp_date: iso });
-                  }
-                }}
-              />
-            )}
-          </View>
-
-          <View style={styles.row}>
-            <View style={styles.half}>
-              <Text style={styles.label}>Total pregnancies</Text>
-              <TextInput 
-                style={styles.input} 
-                value={form.gravida} 
-                keyboardType="number-pad"
-                placeholder="0"
-                placeholderTextColor={AUTH_UI.textBlack}
-                onBlur={() => save("Pregnancies", { gravida: parseInt(form.gravida) })}
-                onChangeText={(v) => setForm({...form, gravida: v})}
-              />
-            </View>
-            <View style={styles.half}>
-              <Text style={styles.label}>Previous births</Text>
-              <TextInput 
-                style={styles.input} 
-                value={form.parity} 
-                keyboardType="number-pad"
-                placeholder="0"
-                placeholderTextColor={AUTH_UI.textBlack}
-                onBlur={() => save("Births", { parity: parseInt(form.parity) })}
-                onChangeText={(v) => setForm({...form, parity: v})}
-              />
-            </View>
-          </View>
-
           <View style={styles.field}>
             <Text style={styles.label}>Allergies</Text>
             <TextInput 

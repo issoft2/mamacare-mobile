@@ -22,9 +22,10 @@ import {
   useLogFolicAcid,
   useLogHydration, useMoodLogs,
   useSleepLogs, useStartKickSession,
-  useProfile
-} from "@mumcare/api";
-import { colors } from "@mumcare/ui";
+  useProfile,
+  useActivePregnancy
+} from "@safeborn/api";
+import { colors } from "@safeborn/ui";
 import { ctaGradientColors } from "../../components/styles/ctaButton";
 import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
@@ -53,8 +54,8 @@ export default function TrackerScreen() {
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 980;
   const { data: profile } = useProfile();
+  const { data: pregnancy} = useActivePregnancy();
   const hasCompletedOnboarding = Boolean(profile);
-  const onboardingRedirectPath = "/onboarding/profile-setup";
   const { data: kicks } = useKickSessions();
   const { data: hydration } = useHydrationLogs();
   const { data: todayFolicAcidLog } = useTodayFolicAcidLog();
@@ -66,7 +67,7 @@ export default function TrackerScreen() {
   const logFolicAcid = useLogFolicAcid();
   const [folicTakenLocal, setFolicTakenLocal] = useState(false);
   const todayDateKey = getLocalDateKey(new Date());
-  const gestationalWeek = resolveCurrentGestationalWeek(profile) ?? 0;
+  const gestationalWeek = resolveCurrentGestationalWeek(pregnancy) ?? 0;
   const canUseKickCounter = gestationalWeek >= KICK_COUNTER_MIN_WEEK;
 
   const todayHydration = hydration?.find((entry) => {

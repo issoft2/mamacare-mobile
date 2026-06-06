@@ -19,8 +19,8 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { Ionicons } from '@expo/vector-icons';
-import { ApiRequestError, useCreateProfile, useProfile, useUpdateProfile } from "@mumcare/api";
-import { colors } from "@mumcare/ui";
+import { ApiRequestError, useCreateProfile, useProfile, useUpdateProfile } from "@safeborn/api";
+import { colors } from "@safeborn/ui";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 export default function EditProfileScreen() {
@@ -34,60 +34,16 @@ export default function EditProfileScreen() {
   const isSaving = createProfile.isPending || updateProfile.isPending;
   const isWide = Platform.OS === "web" && width >= 760;
 
-  const [form, setForm] = useState({ firstName: "", lastName: "", week: "", edd: "", dob: "" });
+  const [form, setForm] = useState({ firstName: "", lastName: "", dob: ""});
   const [formError, setFormError] = useState("");
 
-  function parseIsoDate(value: string): Date | null {
-    const trimmed = value.trim();
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
-    if (!match) return null;
-
-    const year = Number(match[1]);
-    const month = Number(match[2]);
-    const day = Number(match[3]);
-    const parsed = new Date(year, month - 1, day);
-
-    if (
-      parsed.getFullYear() !== year ||
-      parsed.getMonth() !== month - 1 ||
-      parsed.getDate() !== day
-    ) {
-      return null;
-    }
-
-    return parsed;
-  }
-
-  function isPastDate(date: Date): boolean {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const inputDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    return inputDate < today;
-  }
-
-  function handleEddChange(value: string) {
-    setForm((prev) => ({ ...prev, edd: value }));
-
-    const parsed = parseIsoDate(value);
-    if (!parsed) {
-      return;
-    }
-
-    if (isPastDate(parsed)) {
-      setFormError("Estimated due date cannot be in the past.");
-      return;
-    }
-
-    setFormError("");
-  }
+  
 
   useEffect(() => {
     if (profile) {
       setForm({
         firstName: profile.first_name,
         lastName: profile.last_name,
-        week: String(profile.gestational_week),
-        edd: profile.estimated_due_date,
         dob: profile.date_of_birth,
       });
     }
@@ -98,29 +54,13 @@ export default function EditProfileScreen() {
     const firstName = form.firstName.trim();
     const lastName = form.lastName.trim();
     const dob = form.dob.trim();
-    const edd = form.edd.trim();
-    const gestational_week = parseInt(form.week, 10);
 
-    if (!firstName || !lastName || !dob || !edd) {
+
+    if (!firstName || !lastName || !dob) {
       setFormError("Please complete all profile fields.");
       return;
     }
 
-    const parsedEdd = parseIsoDate(edd);
-    if (!parsedEdd) {
-      setFormError("Estimated due date must be in YYYY-MM-DD format.");
-      return;
-    }
-
-    if (isPastDate(parsedEdd)) {
-      setFormError("Estimated due date cannot be in the past.");
-      return;
-    }
-    
-    if (isNaN(gestational_week) || gestational_week < 1 || gestational_week > 42) {
-      setFormError("Gestational week must be between 1 and 42.");
-      return;
-    }
 
     try {
       if (isNotFound) {
@@ -128,16 +68,13 @@ export default function EditProfileScreen() {
           first_name: firstName,
           last_name: lastName,
           date_of_birth: dob,
-          gestational_week,
-          estimated_due_date: edd,
+
         });
       } else {
         await updateProfile.mutateAsync({
           first_name: firstName,
           last_name: lastName,
           date_of_birth: dob,
-          gestational_week,
-          estimated_due_date: edd,
         });
       }
       router.replace("/tabs/profile");
@@ -178,7 +115,7 @@ export default function EditProfileScreen() {
                   {isNotFound ? "Create your care profile" : "Edit your care profile"}
                 </Text>
                 <Text style={styles.subtitle}>
-                  Keep the essentials current so MumCare can support your week,
+                  Keep the essentials current so safeborn can support your week,
                   reminders, and pregnancy guidance with more care.
                 </Text>
               </View>
@@ -235,35 +172,8 @@ export default function EditProfileScreen() {
 
               <View style={styles.sectionDivider} />
 
-              <View style={styles.cardHeader}>
-                <View style={styles.cardIcon}>
-                  <Ionicons name="heart-outline" size={23} color={AUTH_UI.linkBerry} />
-                </View>
-                <View style={styles.cardHeaderCopy}>
-                  <Text style={styles.cardTitle}>Pregnancy timeline</Text>
-                  <Text style={styles.cardHint}>
-                    A few dates help MumCare show the right weekly context.
-                  </Text>
-                </View>
-              </View>
 
               <View style={[styles.row, !isWide && styles.rowStack]}>
-                <View style={styles.field}>
-                  <Text style={styles.label}>Current week</Text>
-                  <View style={styles.inputShell}>
-                    <Ionicons name="calendar-clear-outline" size={18} color={AUTH_UI.mutedIcon} />
-                    <TextInput
-                      style={styles.input}
-                      value={form.week}
-                      onChangeText={(v) => setForm({...form, week: v})}
-                      keyboardType="number-pad"
-                      placeholder="24"
-                      placeholderTextColor={AUTH_UI.textBlack}
-                    />
-                  </View>
-                  <Text style={styles.fieldHint}>Enter a week from 1 to 42.</Text>
-                </View>
-
                 <View style={styles.field}>
                   <Text style={styles.label}>Date of birth</Text>
                   <View style={styles.inputShell}>
@@ -278,23 +188,6 @@ export default function EditProfileScreen() {
                   </View>
                   <Text style={styles.fieldHint}>Use YYYY-MM-DD.</Text>
                 </View>
-              </View>
-
-              <View style={styles.field}>
-                <Text style={styles.label}>Estimated due date</Text>
-                <View style={styles.inputShell}>
-                  <Ionicons name="calendar-number-outline" size={18} color={AUTH_UI.mutedIcon} />
-                  <TextInput
-                    style={styles.input}
-                    value={form.edd}
-                    onChangeText={handleEddChange}
-                    placeholder="2026-08-20"
-                    placeholderTextColor={AUTH_UI.textBlack}
-                  />
-                </View>
-                <Text style={styles.fieldHint}>
-                  Use YYYY-MM-DD. Today or a future date only.
-                </Text>
               </View>
 
               <TouchableOpacity

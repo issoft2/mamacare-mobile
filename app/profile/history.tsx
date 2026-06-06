@@ -13,7 +13,9 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { usePregnancyState } from "@/lib/pregnancyState";
-import { useStartNewPregnancy } from "@mumcare/api";
+import { useStartNewPregnancy } from "@safeborn/api";
+import type { Pregnancy } from "@safeborn/types";
+import { ctaGradientColors } from "../../components/styles/ctaButton";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 function formatDate(dateString?: string | null) {
@@ -32,8 +34,32 @@ export default function PregnancyHistoryScreen() {
   const { activePregnancy, pregnancyHistory, isLoading, isError } = usePregnancyState();
   const startNewPregnancy = useStartNewPregnancy();
 
+  function handleStartNewPregnancy() {
+    // Start only when there's no active pregnancy. The button is disabled otherwise.
+    (async () => {
+      try {
+        await startNewPregnancy.mutateAsync();
+        router.replace("/tabs/home");
+      } catch (error) {
+        Alert.alert(
+          "Could not start a new pregnancy",
+          error instanceof Error ? error.message : "Could not start a new pregnancy."
+        );
+      }
+    })();
+  }
+
+  function handleGoBack() {
+    if (router.canGoBack()) {
+      router.push('/tabs/profile');
+      return;
+    }
+
+    void router.replace("/tabs/home");
+  }
+
   const sortedHistory = useMemo(() => {
-    const history = (pregnancyHistory ?? []).slice();
+    const history: Pregnancy[] = (pregnancyHistory ?? []).slice();
     const activeId = activePregnancy?.id;
     if (activeId) {
       return history
@@ -44,6 +70,7 @@ export default function PregnancyHistoryScreen() {
   }, [pregnancyHistory, activePregnancy]);
 
   const emptyState = !isLoading && !isError && sortedHistory.length === 0 && !activePregnancy;
+  const activeOnlyState = !isLoading && !isError && activePregnancy && sortedHistory.length === 0;
 
   return (
     <LinearGradient colors={[AUTH_UI.overlayStart, AUTH_UI.overlayEnd]} style={styles.screen}>
@@ -51,6 +78,16 @@ export default function PregnancyHistoryScreen() {
         contentContainerStyle={[styles.content, isWide && styles.contentWide]}
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.headerTop}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={handleGoBack}
+            activeOpacity={0.78}
+          >
+            <Ionicons name="arrow-back" size={20} color={AUTH_UI.linkBerry} />
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.headerArea}>
           <Text style={styles.screenTitle}>Pregnancy history</Text>
           <Text style={styles.screenSubtitle}>
@@ -90,6 +127,15 @@ export default function PregnancyHistoryScreen() {
               </View>
             )}
 
+            {activeOnlyState && (
+              <View style={styles.messageBox}>
+                <Text style={styles.messageTitle}>Your current pregnancy is active</Text>
+                <Text style={styles.messageSubtitle}>
+                  Your active pregnancy is being tracked now. Any past pregnancies will appear here once your current journey ends or is archived.
+                </Text>
+              </View>
+            )}
+
             {sortedHistory.map((item) => (
               <View key={item.id} style={styles.historyCard}>
                 <View style={styles.cardHeader}>
@@ -107,23 +153,32 @@ export default function PregnancyHistoryScreen() {
         )}
 
         <View style={styles.ctaSection}>
+          {activePregnancy && (
+            <View style={styles.messageBox}>
+              <Text style={styles.messageTitle}>Complete or archive your current journey first</Text>
+              <Text style={styles.messageSubtitle}>
+                The "Start new journey" button will be available once you complete or archive your active pregnancy. This keeps your past data and chat history safe in your records.
+              </Text>
+            </View>
+          )}
+
           <TouchableOpacity
-            style={[styles.ctaButton, startNewPregnancy.isLoading && styles.ctaButtonDisabled]}
-            onPress={async () => {
-              try {
-                await startNewPregnancy.mutateAsync();
-                router.replace("/tabs/home");
-              } catch (error) {
-                Alert.alert(
-                  "Could not start a new pregnancy",
-                  error instanceof Error ? error.message : "Could not start a new pregnancy."
-                );
-              }
-            }}
+            style={[
+              styles.ctaButton,
+              (startNewPregnancy.isPending || !!activePregnancy) && styles.ctaButtonDisabled,
+            ]}
+            onPress={handleStartNewPregnancy}
             activeOpacity={0.84}
-            disabled={startNewPregnancy.isLoading}
+            disabled={startNewPregnancy.isPending || !!activePregnancy}
           >
-            <Text style={styles.ctaLabel}>Start a new pregnancy</Text>
+            <LinearGradient
+              colors={ctaGradientColors}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.ctaButtonGradient}
+            >
+              <Text style={styles.ctaLabel}>Start new journey</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -172,6 +227,17 @@ const styles = StyleSheet.create({
   },
   historyGrid: { gap: 14 },
   historyGridWide: { flexDirection: "row", flexWrap: "wrap", gap: 14 },
+  headerTop: { marginBottom: 18 },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: AUTH_UI.lineSoftWarm,
+    backgroundColor: AUTH_UI.textWhite,
+  },
   historyCard: {
     backgroundColor: AUTH_UI.textWhite,
     borderRadius: AUTH_UI.cardRadius,
@@ -227,8 +293,13 @@ const styles = StyleSheet.create({
   },
   ctaSection: { paddingVertical: 16 },
   ctaButton: {
-    backgroundColor: AUTH_UI.brandNavy,
     borderRadius: 16,
+    overflow: "hidden",
+    elevation: 8,
+    shadowColor: "#C97B6E",
+    shadowOpacity: 0.3,
+  },
+  ctaButtonGradient: {
     paddingVertical: 18,
     alignItems: "center",
   },

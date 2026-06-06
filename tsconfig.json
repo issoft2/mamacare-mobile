@@ -4,13 +4,13 @@
     "strict": true,
     "paths": {
       "@/*": ["./*"],
-      "@mumcare/types": [
+      "@safeborn/types": [
         "../packages/types/src/index.ts"
       ],
-      "@mumcare/api": [
+      "@safeborn/api": [
         "../packages/api/src/index.ts"
       ],
-      "@mumcare/ui": [
+      "@safeborn/ui": [
         "../packages/ui/src/index.ts"
       ]
     }

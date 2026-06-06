@@ -18,8 +18,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
-import { useSubscription, useUsage } from "@mumcare/api";
-import { colors, shadows } from "@mumcare/ui";
+import { useSubscription, useUsage } from "@safeborn/api";
+import { colors, shadows } from "@safeborn/ui";
 import { ctaButtonStyles, ctaGradientColors } from "@/components/styles/ctaButton";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 import { getActiveLegalDocument, getActiveLegalRoute } from "@/lib/legal";
@@ -38,7 +38,7 @@ export default function SubscriptionScreen() {
   const userEmail = user?.primaryEmailAddress?.emailAddress ?? "";
 
   const openWhatsApp = async (planName: string) => {
-    const msg = `Hi mumcare team, I'd like to learn more about the ${planName} plan. My account is ${userEmail}.`;
+    const msg = `Hi safeborn team, I'd like to learn more about the ${planName} plan. My account is ${userEmail}.`;
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
     
     try {

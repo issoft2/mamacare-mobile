@@ -19,9 +19,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { ctaButtonStyles, ctaGradientColors } from "@/components/styles/ctaButton";
-import { useAddCareTeamMember } from "@mumcare/api";
-import { colors } from "@mumcare/ui";
-import type { CareTeamMember } from "@mumcare/types";
+import { useAddCareTeamMember } from "@safeborn/api";
+import { colors } from "@safeborn/ui";
+import type { CareTeamMember } from "@safeborn/types";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 type RoleId = CareTeamMember["role"];

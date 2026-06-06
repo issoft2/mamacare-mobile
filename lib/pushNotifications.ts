@@ -1,7 +1,7 @@
 import { Platform } from "react-native";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ApiRequestError, apiRequest } from "@mumcare/api";
+import { ApiRequestError, apiRequest } from "@safeborn/api";
 
 const DEFAULT_CHANNEL_ID = "default";
 const PUSH_TOKEN_CACHE_PREFIX = "pushToken";

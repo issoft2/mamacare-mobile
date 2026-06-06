@@ -8,8 +8,8 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
-import { useLogMood, useMoodLogs, useProfile } from "@mumcare/api";
-import type { Mood } from "@mumcare/types";
+import { useLogMood, useMoodLogs, useProfile } from "@safeborn/api";
+import type { Mood } from "@safeborn/types";
 import { Ionicons } from '@expo/vector-icons';
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 import promptFinishOnboarding from "@/lib/onboardingPrompt";
@@ -107,7 +107,7 @@ export default function MoodLogScreen() {
               <View style={styles.headerCopy}>
                 <Text style={styles.eyebrow}>Emotional care</Text>
                 <Text style={styles.title}>Emotional Check-in</Text>
-                <Text style={styles.subtitle}>Capture how you feel today so MumCare can support you with warmth and better guidance.</Text>
+                <Text style={styles.subtitle}>Capture how you feel today so safeborn can support you with warmth and better guidance.</Text>
               </View>
             </View>
 

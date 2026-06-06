@@ -1,6 +1,6 @@
 /**
- * @mumcare/types — main entry point
- * TypeScript mirrors of all mumcare AI Python Pydantic schemas.
+ * @safeborn/types — main entry point
+ * TypeScript mirrors of all safeborn AI Python Pydantic schemas.
  */
 
 export * from "./common";

@@ -32,14 +32,14 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
-import { colors } from "@mumcare/ui";
+import { colors } from "@safeborn/ui";
 import {
-  useProfile,
   useWeekContent,
   useCreateChatSession,
   apiRequest,
   type WeeklyContent,
-} from "@mumcare/api";
+  useActivePregnancy,
+} from "@safeborn/api";
 import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
 import { ctaButtonStyles, ctaGradientColors } from "../styles/ctaButton";
 
@@ -119,8 +119,8 @@ export function WeeklyContentCard() {
   const isCompact = width < 380;
   const isLargeText = fontScale >= 1.2;
   const router = useRouter();
-  const { data: profile, isLoading: isProfileLoading } = useProfile();
-  const currentWeek = useMemo(() => resolveCurrentGestationalWeek(profile), [profile]);
+  const {data: pregnancy, isLoading: isActivePregnancyLoading } = useActivePregnancy();
+  const currentWeek = useMemo(() => resolveCurrentGestationalWeek(pregnancy), [pregnancy]);
   const { data: weekResponse, isLoading: isWeekLoading } = useWeekContent(currentWeek ?? 0);
   const content = weekResponse?.content;
   const createSession = useCreateChatSession();
@@ -130,7 +130,8 @@ export function WeeklyContentCard() {
     () => (content?.tips ? getDailyTip(content.tips) : ""),
     [content?.tips]
   );
-
+   console.log("What is the value of this  current week");
+   console.log(currentWeek);
   async function handleTap() {
     if (!content || !currentWeek) return;
     if (opening) return;
@@ -170,7 +171,7 @@ export function WeeklyContentCard() {
   }
 
   // ── Loading ────────────────────────────────────────────────────────────────
-  if (isProfileLoading || (currentWeek != null && isWeekLoading)) {
+  if (isActivePregnancyLoading || (currentWeek != null && isWeekLoading)) {
     return (
       <View style={[styles.card, isCompact && styles.cardCompact, isLargeText && styles.cardLargeText, styles.loadingCard]}>
         <ActivityIndicator color={colors.rose[300]} size="small" />
@@ -298,7 +299,7 @@ export function WeeklyContentCard() {
               </View>
               <View style={styles.chatPromptCopy}>
                 <Text style={ctaButtonStyles.text}>
-                  Chat with MumCare about week {current_week}
+                  Chat with safeborn about week {current_week}
                 </Text>
                 <Text style={ctaButtonStyles.text}>
                   Tap for a warm breakdown of what to expect.

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { getActiveLegalDocument, getActiveLegalRoute } from "@/lib/legal";
-import { colors } from "@mumcare/ui";
+import { colors } from "@safeborn/ui";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 export default function ReconsentScreen() {

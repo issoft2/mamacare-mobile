@@ -12,9 +12,9 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
-import { useAppointments } from "@mumcare/api";
-import { colors, spacing, shadows } from "@mumcare/ui";
-import type { Appointment } from "@mumcare/types";
+import { useAppointments } from "@safeborn/api";
+import { colors, spacing, shadows } from "@safeborn/ui";
+import type { Appointment } from "@safeborn/types";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
 export default function AppointmentsScreen() {

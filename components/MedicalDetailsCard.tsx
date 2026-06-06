@@ -7,11 +7,11 @@
 
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
-import { colors, spacing } from "@mumcare/ui";
+import { colors, spacing } from "@safeborn/ui";
 import { LinearGradient } from "expo-linear-gradient";
 import { ctaButtonStyles, ctaGradientColors } from "@/components/styles/ctaButton";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
-import type { Profile } from "@mumcare/types";
+import type { Profile } from "@safeborn/types";
 
 type Props = {
   profile: Profile;
@@ -28,9 +28,6 @@ export function shouldShowMedicalDetailsPrompt(profile: Profile | null | undefin
   // Show the prompt if ANY of the optional fields are missing.
   return (
     !profile.blood_type ||
-    !profile.lmp_date ||
-    profile.gravida == null ||
-    profile.parity == null ||
     !profile.known_conditions?.length ||
     !profile.allergies?.length
   
@@ -92,9 +89,6 @@ export function MedicalDetailsCard({ profile, onDismiss }: Props) {
 function countCompletedOptionalFields(profile: Profile): number {
   let count = 0;
   if (profile.blood_type) count++;
-  if (profile.lmp_date) count++;
-  if (profile.gravida != null) count++;
-  if (profile.parity != null) count++;
   if (profile.known_conditions?.length) count++;
   if (profile.allergies?.length) count++;
   return count;

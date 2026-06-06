@@ -1,5 +1,5 @@
 /**
- * @mumcare/api — main entry point
+ * @safeborn/api — main entry point
  */
 
 export {

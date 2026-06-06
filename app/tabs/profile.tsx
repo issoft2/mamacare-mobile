@@ -17,11 +17,11 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from '@expo/vector-icons';
-import { useProfile, useSubscription } from "@mumcare/api";
-import { colors } from "@mumcare/ui";
+import { useProfile, useSubscription, useStartNewPregnancy } from "@safeborn/api";
+import { colors } from "@safeborn/ui";
 import { signOutWithPushCleanup } from "@/lib/pushNotifications";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
-import { useStartNewPregnancy } from "@mumcare/api";
+import { usePregnancyState } from "@/lib/pregnancyState";
 
 export default function ProfileScreen() {
   const { user } = useUser();
@@ -31,14 +31,24 @@ export default function ProfileScreen() {
   const isWide = Platform.OS === "web" && width >= 980;
   const { data: profile } = useProfile();
   const { data: subscription } = useSubscription();
+  const { activePregnancy } = usePregnancyState();
   const startNewPregnancy = useStartNewPregnancy();
+
+  function handleGoBack() {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    void router.replace("/tabs/home");
+  }
 
   const menuItems = [
     { label: "Personal Details", path: "/profile/edit", icon: "person" },
     { label: "Medical Details", path: "/profile/medical", icon: "medkit", meta: "High priority" },
     { label: "Care Team", path: "/profile/care-team", icon: "people" },
     { label: "Pregnancy history", path: "/profile/history", icon: "time" },
-    { label: "Start a new pregnancy", action: () => handleStartNewPregnancy(), icon: "add-circle" },
+    { label: "Start a new journey", action: () => handleStartNewPregnancy(), icon: "add-circle", meta: activePregnancy ? "Available when current journey is completed or archived" : undefined, disabled: !!activePregnancy },
     { label: "Subscription", path: "/profile/subscription", icon: "star" },
     ...(!isWide
       ? [{ label: "Notifications", path: "/profile/notifications", icon: "notifications" }]
@@ -47,7 +57,7 @@ export default function ProfileScreen() {
 
   function handleStartNewPregnancy() {
     Alert.alert(
-      "Start a new pregnancy",
+      "Start a new journey",
       "Starting a new journey will safely archive your current week data and chat histories into your profile records, allowing you to begin a fresh milestone tracker. Would you like to continue, mama?",
       [
         { text: "Cancel", style: "cancel" },
@@ -78,6 +88,12 @@ export default function ProfileScreen() {
             contentContainerStyle={[styles.content, isWide && styles.contentWide]}
             showsVerticalScrollIndicator={false}
           >
+            <View style={styles.headerTop}>
+              <TouchableOpacity style={styles.backButton} onPress={handleGoBack} activeOpacity={0.78}>
+                <Ionicons name="arrow-back" size={20} color={AUTH_UI.linkBerry} />
+              </TouchableOpacity>
+            </View>
+
             <View style={styles.headerArea}>
               <Text style={styles.screenTitle}>Your profile</Text>
               <Text style={styles.screenSubtitle}>Manage your care information and account settings.</Text>
@@ -108,15 +124,17 @@ export default function ProfileScreen() {
               <View style={[styles.menuContainer, isWide && styles.menuContainerWide]}>
                 {menuItems.map((item) => (
                   <TouchableOpacity 
-                    key={item.path} 
-                    style={[styles.menuTile, isWide && styles.menuTileWide]} 
+                    key={item.path ?? item.label} 
+                    style={[styles.menuTile, (item as any).disabled && styles.menuTileDisabled, isWide && styles.menuTileWide]} 
                     onPress={() => {
+                      if ((item as any).disabled) return;
                       if (item.action) {
                         item.action();
                         return;
                       }
                       void router.push(item.path as any);
                     }}
+                    activeOpacity={(item as any).disabled ? 1 : 0.84}
                   >
                     <View style={styles.tileLeft}>
                       <View style={styles.iconBox}>
@@ -124,7 +142,7 @@ export default function ProfileScreen() {
                       </View>
                       <View>
                         <Text style={styles.tileLabel}>{item.label}</Text>
-                        {item.meta && <Text style={styles.tileMeta}>{item.meta}</Text>}
+                        {item.meta && <Text style={[styles.tileMeta, (item as any).disabled && styles.tileMetaDisabled]}>{item.meta}</Text>}
                       </View>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={AUTH_UI.semanticNeutral} />
@@ -222,6 +240,19 @@ const styles = StyleSheet.create({
     borderWidth: AUTH_UI.borderWidth,
     borderColor: colors.rose[200],
   },
+  headerTop: {
+    marginBottom: 18,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: AUTH_UI.borderWidth,
+    borderColor: colors.rose[200],
+    backgroundColor: AUTH_UI.textWhite,
+  },
   menuTileWide: { width: "48.5%", minHeight: 78 },
   tileLeft: { flexDirection: "row", alignItems: "center", gap: 14 },
   iconBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: AUTH_UI.warmBackground, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.rose[200] },
@@ -242,5 +273,11 @@ const styles = StyleSheet.create({
     color: AUTH_UI.dangerMutedText,
     fontWeight: "600",
     fontFamily: FONT_FRIENDLY_SANS,
+  },
+  menuTileDisabled: {
+    opacity: 0.65,
+  },
+  tileMetaDisabled: {
+    color: AUTH_UI.semanticNeutral,
   },
 });

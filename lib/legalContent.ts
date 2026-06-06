@@ -6,7 +6,7 @@ Effective date: 2026-05-26
 Region: Nigeria (NG)
 Language: English
 
-MumCare ("we", "us", "our") explains in this Privacy Policy how we collect, use, disclose, and protect your information when you use our services.
+safeborn ("we", "us", "our") explains in this Privacy Policy how we collect, use, disclose, and protect your information when you use our services.
 
 This version is drafted for Nigeria-focused compliance, including NDPA 2023 and NDPR principles.
 
@@ -18,7 +18,7 @@ This version is drafted for Nigeria-focused compliance, including NDPA 2023 and 
 
 2. Purposes of Processing
 We process data to:
-- provide and maintain the MumCare service,
+- provide and maintain the safeborn service,
 - personalize care and educational guidance,
 - support safety and service quality,
 - manage account security and fraud prevention,
@@ -69,7 +69,7 @@ If the service is used by or for minors, processing is handled under applicable 
 We may release new versions of this Privacy Policy. Material updates may require renewed acknowledgment.
 
 12. Contact
-Privacy contact: privacy@mumcare.com`,
+Privacy contact: privacy@safeborn.com`,
 
   "privacy/uk/en/v1.0.md": `Privacy Policy (United Kingdom)
 
@@ -78,7 +78,7 @@ Effective date: 2026-05-26
 Region: United Kingdom (UK)
 Language: English
 
-MumCare ("we", "us", "our") explains in this Privacy Policy how we collect, use, disclose, and protect personal data when you use our services.
+safeborn ("we", "us", "our") explains in this Privacy Policy how we collect, use, disclose, and protect personal data when you use our services.
 
 This version is drafted for UK-focused compliance, including UK GDPR and Data Protection Act 2018 principles.
 
@@ -131,7 +131,7 @@ We use technical and organizational security controls, including encryption in t
 New policy versions may be published. Material changes may require renewed acknowledgment.
 
 10. Contact
-Privacy contact: privacy@mumcare.com`,
+Privacy contact: privacy@safeborn.com`,
 
   "terms/ng/en/v1.0.md": `Terms of Service (Nigeria)
 
@@ -140,22 +140,22 @@ Effective date: 2026-05-26
 Region: Nigeria (NG)
 Language: English
 
-By using MumCare, you agree to these Terms.
+By using safeborn, you agree to these Terms.
 
 1. Service Scope
-MumCare provides digital health support and care coordination features. Content is informational and does not replace professional clinical judgment.
+safeborn provides digital health support and care coordination features. Content is informational and does not replace professional clinical judgment.
 
 2. Eligibility and Accounts
 You must provide accurate account details and keep credentials secure. You are responsible for activity on your account.
 
 3. Health Disclaimer
-MumCare is not an emergency service and does not replace medical advice. In urgent situations, contact emergency services or your clinician.
+safeborn is not an emergency service and does not replace medical advice. In urgent situations, contact emergency services or your clinician.
 
 4. Acceptable Use
 You agree not to misuse the service, interfere with operations, or upload unlawful or harmful content.
 
 5. User Content
-You retain rights in your content. You grant MumCare a limited license to process content for service operation and improvement under applicable law.
+You retain rights in your content. You grant safeborn a limited license to process content for service operation and improvement under applicable law.
 
 6. Pricing and Plan Changes
 Plan availability and features may change. Paid terms (if introduced) will be shown before purchase.
@@ -164,7 +164,7 @@ Plan availability and features may change. Paid terms (if introduced) will be sh
 We may suspend or terminate access for legal, security, or serious policy reasons.
 
 8. Liability
-To the maximum extent permitted by law, MumCare is not liable for indirect or consequential losses.
+To the maximum extent permitted by law, safeborn is not liable for indirect or consequential losses.
 
 9. Governing Law
 These terms are governed by applicable Nigerian law, unless mandatory law states otherwise.
@@ -173,7 +173,7 @@ These terms are governed by applicable Nigerian law, unless mandatory law states
 New versions may be published. Continued use after effective date means acceptance, except where explicit re-acceptance is required.
 
 11. Contact
-Support: support@mumcare.com`,
+Support: support@safeborn.com`,
 
   "terms/uk/en/v1.0.md": `Terms of Service (United Kingdom)
 
@@ -182,22 +182,22 @@ Effective date: 2026-05-26
 Region: United Kingdom (UK)
 Language: English
 
-By using MumCare, you agree to these Terms.
+By using safeborn, you agree to these Terms.
 
 1. Service Scope
-MumCare offers digital support and care-coordination functionality. It is not a substitute for professional medical diagnosis or treatment.
+safeborn offers digital support and care-coordination functionality. It is not a substitute for professional medical diagnosis or treatment.
 
 2. Eligibility and Account Responsibility
 You must provide accurate information and keep account credentials secure. You are responsible for activity under your account.
 
 3. Medical and Emergency Disclaimer
-MumCare is not an emergency service. For urgent care, contact emergency services or a licensed healthcare professional.
+safeborn is not an emergency service. For urgent care, contact emergency services or a licensed healthcare professional.
 
 4. Acceptable Use
 You must not use the service unlawfully, attempt unauthorized access, or submit harmful content.
 
 5. User Content and License
-You retain ownership of content you submit. You grant MumCare a limited license to host/process content for service delivery and lawful improvement.
+You retain ownership of content you submit. You grant safeborn a limited license to host/process content for service delivery and lawful improvement.
 
 6. Plans, Billing, and Changes
 If paid plans are offered, billing terms and cancellation details will be presented before purchase.
@@ -215,5 +215,5 @@ These terms are governed by applicable UK law, unless mandatory law requires oth
 We may publish new versions. Material changes may require renewed acceptance.
 
 11. Contact
-Support: support@mumcare.com`,
+Support: support@safeborn.com`,
 };

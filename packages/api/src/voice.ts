@@ -27,7 +27,7 @@ export type TextToSpeechRequest = {
 
 export function useTranscribeVoice() {
   return useMutation({
-    mutationFn: async ({ audio, filename = "mumcare-voice.webm" }: TranscribeVoiceRequest) => {
+    mutationFn: async ({ audio, filename = "safeborn-voice.webm" }: TranscribeVoiceRequest) => {
       const form = new FormData();
       form.append("file", audio, filename);
 

@@ -14,9 +14,9 @@ import {
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useSymptomLogs, useSymptomPatterns } from "@mumcare/api";
-import { colors } from "@mumcare/ui";
-import type { SymptomLogListItem } from "@mumcare/types";
+import { useSymptomLogs, useSymptomPatterns } from "@safeborn/api";
+import { colors } from "@safeborn/ui";
+import type { SymptomLogListItem } from "@safeborn/types";
 import { ctaGradientColors } from "../../components/styles/ctaButton";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 

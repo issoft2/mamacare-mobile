@@ -1,5 +1,5 @@
 {
-  "name": "@mumcare/api",
+  "name": "@safeborn/api",
   "version": "0.0.1",
   "private": true,
   "main": "./src/index.ts",
@@ -8,7 +8,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@mumcare/types": "workspace:*",
+    "@safeborn/types": "workspace:*",
     "@tanstack/react-query": "^5.40.0"
   },
   "peerDependencies": {

@@ -10,7 +10,7 @@ import type {
   SymptomLog,
   SymptomLogListPage,
   SymptomPatternsResponse,
-} from "@mumcare/types";
+} from "@safeborn/types";
 
 export const symptomKeys = {
   all: ["symptoms"] as const,

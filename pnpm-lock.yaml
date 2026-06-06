@@ -17,13 +17,13 @@ importers:
       '@hookform/resolvers':
         specifier: ^3.6.0
         version: 3.10.0(react-hook-form@7.75.0(react@19.1.0))
-      '@mumcare/api':
+      '@safeborn/api':
         specifier: workspace:*
         version: link:packages/api
-      '@mumcare/types':
+      '@safeborn/types':
         specifier: workspace:*
         version: link:packages/types
-      '@mumcare/ui':
+      '@safeborn/ui':
         specifier: workspace:*
         version: link:packages/ui
       '@react-native-async-storage/async-storage':
@@ -141,7 +141,7 @@ importers:
 
   packages/api:
     dependencies:
-      '@mumcare/types':
+      '@safeborn/types':
         specifier: workspace:*
         version: link:../types
       '@tanstack/react-query':

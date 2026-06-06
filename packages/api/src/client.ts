@@ -5,7 +5,7 @@
  * Attaches Bearer token from Clerk on every request.
  */
 
-import type { ApiError } from "@mumcare/types";
+import type { ApiError } from "@safeborn/types";
 
 export type TokenGetter = () => Promise<string | null>;
 
@@ -17,7 +17,7 @@ export function configureApiClient(getToken: TokenGetter): void {
 
 /**
  * Optional base URL set by the host app (Expo, tests). Prefer this over reading
- * process.env inside @mumcare/api: the published package is precompiled (dist/),
+ * process.env inside @safeborn/api: the published package is precompiled (dist/),
  * and Metro does not inline EXPO_PUBLIC_* in node_modules, so env-based lookup
  * falls through to localhost for Expo Web / native unless overridden here.
  */

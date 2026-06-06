@@ -17,7 +17,7 @@ import type {
   SleepDurationBand,
   SleepLog,
   SleepQuality,
-} from "@mumcare/types";
+} from "@safeborn/types";
 
 export const trackerKeys = {
   kicks: () => ["tracker", "kicks"] as const,

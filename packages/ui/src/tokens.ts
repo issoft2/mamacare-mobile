@@ -1,7 +1,7 @@
 /**
  * packages/ui/src/tokens.ts
  *
- * mumcare AI Design Tokens
+ * safeborn AI Design Tokens
  * Used across mobile (React Native) and admin (Next.js).
  */
 
@@ -83,7 +83,7 @@ export const colors = {
     notify_midwife:    "#D97230",
     notify_doctor:     "#C05070",
     emergency:         "#A32D2D",
-    /** Matches `UrgencyTier` from @mumcare/types (agent / API). */
+    /** Matches `UrgencyTier` from @safeborn/types (agent / API). */
     emergency_advised: "#A32D2D",
   },
 } as const;

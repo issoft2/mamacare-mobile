@@ -11,7 +11,7 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 import { apiRequest } from "./client";
-import type { Plan, SubscriptionResponse, UsageResponse } from "@mumcare/types";
+import type { Plan, SubscriptionResponse, UsageResponse } from "@safeborn/types";
 
 export const billingKeys = {
   subscription: () => ["billing", "subscription"] as const,
