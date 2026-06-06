@@ -86,7 +86,7 @@ function getTrimesterStatusText(trimester: number, week: number): string {
  * the weekly content card. Written as a natural user message so
  * it fits the existing chat pipeline without any backend changes.
  */
-function buildWeeklyPrompt(content: WeeklyContent, week: number): string {
+function buildWeeklyPrompt_bk(content: WeeklyContent, week: number): string {
   const lines: string[] = [
     `I'm in week ${week} of my pregnancy (${trimesterLabel(content.trimester)}).`,
     `Can you give me a warm overview of what's happening this week?`,
@@ -120,6 +120,20 @@ function buildWeeklyPrompt(content: WeeklyContent, week: number): string {
   );
 
   return lines.join("\n");
+}
+
+
+function buildWeeklyPrompt(content: WeeklyContent, week: number): string {
+  // Pass the exact size asset label so the AI text syncs perfectly with the card image UI
+  const sizeLabel = content.baby_size_label ?? "growing beautifully";
+  const currentTrimester = trimesterLabel(content.trimester);
+
+  return [
+    `Hi SafeBorn! I am officially in week ${week} of my pregnancy, running through my ${currentTrimester}.`,
+    `My homepage tracking card says my little one is about the size of a ${sizeLabel} right now! 🥰`,
+    `Can you give me a warm, older-sister overview of what is happening inside my body and with my baby's development this specific week?`,
+    `I would love some practical, reassuring advice on how to comfortably navigate changes at this stage, what self-care routines I should keep up with, and what standard warning signs I should keep in mind to stay safe. Thank you!`
+  ].join("\n\n");
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -283,7 +297,7 @@ export function WeeklyContentCard() {
               <View style={styles.ctaContentRow}>
                 <Ionicons name="chatbubble-ellipses-outline" size={16} color="#FFF" />
                 <Text style={[ctaButtonStyles.text, styles.ctaSingleLineText]}>
-                  Discuss Week {currentWeek} with Safeborn AI
+                  Discuss Week {currentWeek} with Safeborn Agent
                 </Text>
                 <Ionicons name="chevron-forward" size={16} color="#FFF" />
               </View>
