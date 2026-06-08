@@ -67,7 +67,7 @@ export function getActiveLegalContent(docType: LegalDocType, region?: LegalRegio
 export async function checkConsentVersion(): Promise<boolean> {
   // Simulate API call to check consent version
   const storedVersion: string = "v1.0"; // Replace with actual stored version logic
-  const activeVersion: string = "v1.1"; // Replace with actual active version logic
+  const activeVersion: string = "v1.0"; // Replace with actual active version logic
   return storedVersion !== activeVersion;
 }
 
