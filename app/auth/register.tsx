@@ -179,7 +179,6 @@ export default function RegisterScreen() {
           console.log("Register setActive completed for session:", result.createdSessionId ?? null);
         }
 
-        router.replace("/onboarding/profile-setup");
       }
     } catch (err: unknown) {
       if (typeof __DEV__ !== "undefined" && __DEV__) {
