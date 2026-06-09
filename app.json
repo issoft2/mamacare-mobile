@@ -37,7 +37,13 @@
       "backgroundColor": "#FFF8F4"
     },
     "plugins": [
+
+      [
       "expo-router",
+      {
+        "origin": "https://safeborn.app/"
+      }
+    ],
       "expo-secure-store",
       [
         "expo-notifications",
