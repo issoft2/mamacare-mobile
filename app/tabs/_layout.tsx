@@ -123,17 +123,24 @@ function TabsWithGuard() {
   const { activePregnancy, isLoading: isPregnancyLoading, isError: isPregnancyError } = usePregnancyState();
   const isDesktop = Platform.OS === "web" && width >= DESKTOP_BREAKPOINT;
 
+
   // Full tab bar height including device bottom inset (gesture bar / home indicator)
   const tabBarHeight = TAB_BAR_BASE_HEIGHT + insets.bottom;
   const mobileHeaderHeight = MOBILE_HEADER_HEIGHT + insets.top;
 
   useEffect(() => {
+
+   
     if (isPregnancyLoading || isPregnancyError) {
       return;
     }
 
     if (activePregnancy === null) {
+      const timer = setTimeout(() => {
       void router.replace("/onboarding/profile-setup");
+    }, 1000);
+
+    return () => clearTimeout(timer)
     }
   }, [activePregnancy, isPregnancyError, isPregnancyLoading, router]);
 
