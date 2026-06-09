@@ -85,7 +85,7 @@ export function SocialSignInButtons({
         const ssoParams:  {strategy: SupportedOAuthStrategy; redirectUrl?: string} = { strategy }
 
         if (strategy === "oauth_facebook") {
-          ssoParams.redirectUrl = `safeborn://sso-callback?cb=${Date.now()}`;
+          ssoParams.redirectUrl = "safeborn://sso-callback";
         }
 
         // 2. Pass 
