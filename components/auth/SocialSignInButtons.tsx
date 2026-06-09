@@ -31,6 +31,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors, spacing } from "@safeborn/ui";
 import { getErrorMessage } from "@/lib/errors";
 import { GoogleIcon } from "@/components/icons/GoogleIcon";
+import * as WebBrowser from "expo-web-browser";
 
 const TEXT_BLACK = "#111111";
 const LINK_BERRY = "#9A3E4D";
@@ -60,6 +61,8 @@ function normalizeClerkTarget(value: unknown): string | null {
 
   return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 }
+
+WebBrowser.maybeCompleteAuthSession();
 
 export function SocialSignInButtons({
   afterAuthHref = "/tabs/home",
