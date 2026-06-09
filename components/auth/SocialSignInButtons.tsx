@@ -80,8 +80,17 @@ export function SocialSignInButtons({
           console.log("Social sign-in started:", strategy);
         }
 
+        // 1. Build parameters dynamically 
+        // We append a timestamp cache-burster to completely elimate 304 loop
+        const ssoParams:  {strategy: SupportedOAuthStrategy; redirectUrl?: string} = { strategy }
+
+        if (strategy === "oauth_facebook") {
+          ssoParams.redirectUrl = `safeborn://sso-callback?cb=${Date.now()}`;
+        }
+
+        // 2. Pass 
         const { createdSessionId, setActive, authSessionResult } =
-          await startSSOFlow({ strategy });
+          await startSSOFlow(ssoParams);
 
         if (typeof __DEV__ !== "undefined" && __DEV__) {
           console.log("Social sign-in result:", {
