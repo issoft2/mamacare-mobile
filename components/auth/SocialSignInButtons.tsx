@@ -185,26 +185,7 @@ export function SocialSignInButtons({
         </TouchableOpacity>
 
         {/* Microsoft */}
-        <TouchableOpacity
-          style={[
-            styles.socialBtn,
-            stackButtons && styles.socialBtnStacked,
-            busy === "oauth_microsoft" && styles.btnBusy,
-          ]}
-          onPress={() => void run("oauth_microsoft")}
-          disabled={busy !== null}
-          activeOpacity={0.8}
-        >
-          {busy === "oauth_microsoft" ? (
-            <ActivityIndicator color={colors.rose[400]} size="small" />
-          ) : (
-            <>
-              <Ionicons name="logo-microsoft" size={20} color="#5B6472" />
-              <Text style={styles.socialBtnText}>Microsoft</Text>
-            </>
-          )}
-        </TouchableOpacity>
-
+        
         {/* Apple */}
         {Platform.OS === "ios" ? (
           <TouchableOpacity
