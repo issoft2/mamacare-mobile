@@ -36,7 +36,7 @@ const TEXT_BLACK = "#111111";
 const LINK_BERRY = "#9A3E4D";
 const FONT_FRIENDLY_SANS = Platform.select({ ios: "System", android: "Roboto", default: "sans-serif" });
 
-type SupportedOAuthStrategy = "oauth_google" | "oauth_microsoft" | "oauth_apple" | "oauth_facebook";
+type SupportedOAuthStrategy = "oauth_google" | "oauth_apple" | "oauth_facebook";
 
 function normalizeClerkTarget(value: unknown): string | null {
   if (typeof value !== "string") {
