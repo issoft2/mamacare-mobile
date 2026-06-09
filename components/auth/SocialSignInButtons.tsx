@@ -37,7 +37,7 @@ const TEXT_BLACK = "#111111";
 const LINK_BERRY = "#9A3E4D";
 const FONT_FRIENDLY_SANS = Platform.select({ ios: "System", android: "Roboto", default: "sans-serif" });
 
-type SupportedOAuthStrategy = "oauth_google" | "oauth_apple" | "oauth_facebook";
+type SupportedOAuthStrategy = "oauth_google" | "oauth_facebook";
 
 function normalizeClerkTarget(value: unknown): string | null {
   if (typeof value !== "string") {
@@ -202,26 +202,7 @@ export function SocialSignInButtons({
         </TouchableOpacity>
 
         {/* Apple */}
-        <TouchableOpacity
-          style={[
-            styles.socialBtn,
-            stackButtons && styles.socialBtnStacked,
-            busy === "oauth_apple" && styles.btnBusy,
-          ]}
-          onPress={() => void run("oauth_apple")}
-          disabled={busy !== null}
-          activeOpacity={0.8}
-        >
-          {busy === "oauth_apple" ? (
-            <ActivityIndicator color={colors.rose[400]} size="small" />
-          ) : (
-            <>
-              <Ionicons name="logo-apple" size={20} color="#000000" />
-              <Text style={styles.socialBtnText}>Apple</Text>
-            </>
-          )}
-        </TouchableOpacity>
-
+        
 
       </View>
     </View>
