@@ -1,9 +1,5 @@
-/**
- * Expo config — loads .env from several locations (later files override) so a single
- * file at repo root or frontend/ is enough; mobile/.env wins for the same key.
- */
 /* eslint-disable @typescript-eslint/no-require-imports */
-const { existsSync, readFileSync } = require("node:fs");
+const { existsSync } = require("node:fs");
 const path = require("node:path");
 const { config: loadEnv } = require("dotenv");
 
@@ -19,7 +15,14 @@ for (const p of searchPaths) {
   }
 }
 
-const appJson = JSON.parse(readFileSync(path.join(root, "app.json"), "utf8"));
-
 /** @type {import('@expo/config').ExpoConfig} */
-module.exports = { expo: appJson.expo };
+module.exports = ({ config }) => {
+  return {
+    ...config, // 🚀 Pulls in everything from app.json perfectly
+    slug: "safeborn-assistant",
+    owner: "specisaac",
+    extra: {
+      ...config.extra // 🛡️ Crucial: Preserves the new projectId block so it doesn't read as undefined!
+    }
+  };
+};
