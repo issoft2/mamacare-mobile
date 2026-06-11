@@ -37,13 +37,12 @@
       "backgroundColor": "#FFF8F4"
     },
     "plugins": [
-
       [
-      "expo-router",
-      {
-        "origin": "https://safeborn.app/"
-      }
-    ],
+        "expo-router",
+        {
+          "origin": "https://safeborn.app/"
+        }
+      ],
       "expo-secure-store",
       [
         "expo-notifications",
@@ -55,11 +54,14 @@
     "experiments": {
       "typedRoutes": true
     },
+    "sdkVersion": "54.0.0",
     "extra": {
+      "router": {
+        "origin": "https://safeborn.app/"
+      },
       "eas": {
-        "projectId": "fddb02b4-179b-4cf3-9cc8-afc29f1d228e"
+        "projectId": "e9e3f0bd-b8f9-41ef-83d9-992975318884"
       }
-    },
-    "sdkVersion": "54.0.0"
+    }
   }
 }

@@ -12,7 +12,11 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+       "cache": {
+        "key": "production-cache-v1",
+        "paths": ["node_modules", ".pnpm-store"]
+      }
     }
   },
   "submit": {

@@ -131,10 +131,7 @@ export default function ChatConversationScreen() {
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRef = useRef<TextInput>(null);
   const supportAnim = useRef(new Animated.Value(0)).current;
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
-  const audioUrlRef = useRef<string | null>(null);
+
 
   const messages = data?.messages ?? [];
   const hasUsageLimitNotice = messages.some(
