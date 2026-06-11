@@ -14,7 +14,7 @@
  */
 
 import { useRouter } from "expo-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -149,6 +149,8 @@ export function WeeklyContentCard() {
   const content = weekResponse?.content;
   const createSession = useCreateChatSession();
   const [opening, setOpening] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
+  const timerRef = useRef<number | null>(null);
 
   const dailyTip = useMemo(
     () => (content?.tips ? getDailyTip(content.tips) : ""),
@@ -160,6 +162,15 @@ export function WeeklyContentCard() {
     if (opening) return;
 
     setOpening(true);
+     
+    // Initial arm, welcome message 
+    setLoadingMessage("Coneecting with your Safe Born Assistant... Take a deep breath, we're preparing a beautify space for you and your little one. 💕");
+
+    // Second message after 2 seconds if still loading
+    timerRef.current = setTimeout(() => {
+      setLoadingMessage("Still working on it, mama! We're getting everything ready for you. Just a tiny moment more... ✨👶")
+    }, 2000);
+
     try {
       const session = await createSession.mutateAsync({
         gestational_week: currentWeek,
