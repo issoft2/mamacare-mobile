@@ -23,6 +23,52 @@ import { Ionicons } from "@expo/vector-icons";
 import { useChatSession, useSendMessage } from "@safeborn/api";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
+
+/**
+ * Custom lightweight inline markdown parser for React Native Text components.
+ * Safely handles bold structures (**text**), line breaks, and consistent typography tokens.
+ */
+function parseTextToStyledNodes(text: string, baseStyle: any, boldStyle: any) {
+  // Normalize double line-breaks to prevent large gaps, splitting text by structural paragraphs
+  const paragraphs = text.split("\n");
+
+  return paragraphs.map((paragraph, pIdx) => {
+    // Check if the line is intended to be a list item
+    const isListItem = paragraph.trim().startsWith("•") || paragraph.trim().startsWith("-");
+    let cleanParagraph = paragraph;
+    
+    if (isListItem) {
+      // Remove the raw symbol so we can render a clean bullet point layout element
+      cleanParagraph = paragraph.replace(/^[\s•\-*]+/, "");
+    }
+
+    // Split words by bold syntax markers (**text**)
+    const parts = cleanParagraph.split(/(\*\*.*?\*\*)/g);
+    
+    const renderedParts = parts.map((part, partIdx) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        // Strip the astreisks and return an inline styled bold node
+        const cleanBoldText = part.slice(2, -2);
+        return (
+          <Text key={`bold-${partIdx}`} style={boldStyle}>
+            {cleanBoldText}
+          </Text>
+        );
+      }
+      return part;
+    });
+
+    return (
+      <Text key={`p-${pIdx}`} style={[baseStyle, isListItem && styles.listItemText]}>
+        {isListItem ? "•  " : ""}
+        {renderedParts}
+        {pIdx < paragraphs.length - 1 ? "\n" : ""}
+      </Text>
+    );
+  });
+}
+
+
 function normalizeAssistantBranding(text: string): string {
   return text.replace(/MamaCare Assistant/gi, "safeborn Assistant");
 }
@@ -215,6 +261,7 @@ export default function ChatConversationScreen() {
   }
 
   // ── Render message ─────────────────────────────────────────────────────────
+  // ── Render message ─────────────────────────────────────────────────────────
   function renderMessage({ item }: { item: any }) {
     const isUser = item.role === "user";
     const renderedMessage = getRenderedMessageText(item.role, item.content);
@@ -227,9 +274,20 @@ export default function ChatConversationScreen() {
           </View>
         )}
         <View style={[styles.bubble, isUser ? styles.userBubble : styles.assistantBubble]}>
-          <Text style={[styles.bubbleText, isUser ? styles.userText : styles.assistantText]}>
-            {renderedMessage}
-          </Text>
+          {isUser ? (
+            <Text style={[styles.bubbleText, styles.userText]}>
+              {renderedMessage}
+            </Text>
+          ) : (
+            // Assistant text receives structural style node processing
+            <View style={styles.markdownContainer}>
+              {parseTextToStyledNodes(
+                renderedMessage, 
+                [styles.bubbleText, styles.assistantText], 
+                styles.assistantBoldText
+              )}
+            </View>
+          )}
         </View>
       </View>
     );
@@ -496,4 +554,17 @@ const styles = StyleSheet.create({
   sendBtn:      { borderRadius: 20, overflow: "hidden" },
   sendGradient: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   sendDisabled: { opacity: 0.35 },
+
+  markdownContainer: {
+    flexDirection: "column",
+  },
+  assistantBoldText: {
+    fontWeight: "700",
+    color: AUTH_UI.textHeading, // Gives bold accents a rich coffee contrast tone
+    fontFamily: FONT_FRIENDLY_SANS,
+  },
+  listItemText: {
+    paddingLeft: 8,
+    lineHeight: 24,
+  },
 });
