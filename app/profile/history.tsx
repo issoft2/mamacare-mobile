@@ -1,3 +1,8 @@
+/**
+ * mobile/app/history.tsx
+ * Deeply Refined Pregnancy History Logs - Architectural Optimization
+ */
+
 import { useRouter } from "expo-router";
 import { useMemo } from "react";
 import {
@@ -17,6 +22,7 @@ import { useStartNewPregnancy } from "@safeborn/api";
 import type { Pregnancy } from "@safeborn/types";
 import { ctaGradientColors } from "../../components/styles/ctaButton";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
+import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
 
 function formatDate(dateString?: string | null) {
   if (!dateString) return "Unknown";
@@ -34,8 +40,13 @@ export default function PregnancyHistoryScreen() {
   const { activePregnancy, pregnancyHistory, isLoading, isError } = usePregnancyState();
   const startNewPregnancy = useStartNewPregnancy();
 
+  // ✅ Single source of truth calculation for the current active week
+  const dynamicCurrentWeek = useMemo(() => {
+    if (!activePregnancy) return null;
+    return resolveCurrentGestationalWeek(activePregnancy);
+  }, [activePregnancy]);
+
   function handleStartNewPregnancy() {
-    // Start only when there's no active pregnancy. The button is disabled otherwise.
     (async () => {
       try {
         await startNewPregnancy.mutateAsync();
@@ -49,24 +60,25 @@ export default function PregnancyHistoryScreen() {
     })();
   }
 
+  // ✅ Fixed Loop Bug: Safely pop screen from history stack instead of pushing forwards
   function handleGoBack() {
     if (router.canGoBack()) {
-      router.push('/tabs/profile');
+      router.back();
       return;
     }
-
-    void router.replace("/tabs/home");
+    router.replace("/tabs/home");
   }
 
+  // ✅ Fixed Shallow Mutation Bug: Deep-spread items securely to prevent component cache poisoning
   const sortedHistory = useMemo(() => {
-    const history: Pregnancy[] = (pregnancyHistory ?? []).slice();
+    const history: Pregnancy[] = (pregnancyHistory ?? []).map((p) => ({ ...p }));
     const activeId = activePregnancy?.id;
-    if (activeId) {
-      return history
-        .filter((item) => item.id !== activeId)
-        .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
-    }
-    return history.sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
+    
+    const targetHistory = activeId 
+      ? history.filter((item) => item.id !== activeId)
+      : history;
+
+    return targetHistory.sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
   }, [pregnancyHistory, activePregnancy]);
 
   const emptyState = !isLoading && !isError && sortedHistory.length === 0 && !activePregnancy;
@@ -97,7 +109,8 @@ export default function PregnancyHistoryScreen() {
 
         {isLoading ? (
           <View style={styles.loaderContainer}>
-            <ActivityIndicator size="large" color={AUTH_UI.brandNavy} />
+            {/* ✅ Color palette alignment: warm berry spinner instead of standard navy */}
+            <ActivityIndicator size="large" color={AUTH_UI.linkBerry} />
           </View>
         ) : isError ? (
           <View style={styles.messageBox}>
@@ -123,7 +136,7 @@ export default function PregnancyHistoryScreen() {
                 </View>
                 <Text style={styles.cardTitle}>{activePregnancy.baby_nickname ?? "Active journey"}</Text>
                 <Text style={styles.cardMeta}>Due {formatDate(activePregnancy.estimated_due_date)}</Text>
-                <Text style={styles.cardMeta}>Week {activePregnancy.gestational_week ?? "—"}</Text>
+                <Text style={styles.cardMeta}>Week {dynamicCurrentWeek ?? "—"}</Text>
               </View>
             )}
 
@@ -139,13 +152,27 @@ export default function PregnancyHistoryScreen() {
             {sortedHistory.map((item) => (
               <View key={item.id} style={styles.historyCard}>
                 <View style={styles.cardHeader}>
-                  <Text style={styles.cardLabel}>{item.status === "archived" ? "Archived pregnancy" : item.status === "completed" ? "Completed pregnancy" : "Pregnancy"}</Text>
-                  <View style={[styles.statusBadge, item.status === "completed" && styles.completedBadge, item.status === "archived" && styles.archivedBadge]}>
+                  <Text style={styles.cardLabel}>
+                    {item.status === "archived" 
+                      ? "Archived pregnancy" 
+                      : item.status === "completed" 
+                      ? "Completed pregnancy" 
+                      : "Pregnancy"}
+                  </Text>
+                  <View style={[
+                    styles.statusBadge, 
+                    item.status === "completed" && styles.completedBadge, 
+                    item.status === "archived" && styles.archivedBadge
+                  ]}>
                     <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
                   </View>
                 </View>
                 <Text style={styles.cardTitle}>{item.baby_nickname ?? "Milestone record"}</Text>
-                <Text style={styles.cardMeta}>{item.delivery_date ? `Delivered ${formatDate(item.delivery_date)}` : `Due ${formatDate(item.estimated_due_date)}`}</Text>
+                <Text style={styles.cardMeta}>
+                  {item.delivery_date 
+                    ? `Delivered ${formatDate(item.delivery_date)}` 
+                    : `Due ${formatDate(item.estimated_due_date)}`}
+                </Text>
                 <Text style={styles.cardMeta}>Created {formatDate(item.created_at)}</Text>
               </View>
             ))}
@@ -186,6 +213,7 @@ export default function PregnancyHistoryScreen() {
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: AUTH_UI.cream },
   content: { paddingHorizontal: 24, paddingTop: 52, paddingBottom: 40, gap: 24 },
@@ -227,16 +255,20 @@ const styles = StyleSheet.create({
   },
   historyGrid: { gap: 14 },
   historyGridWide: { flexDirection: "row", flexWrap: "wrap", gap: 14 },
-  headerTop: { marginBottom: 18 },
+  headerTop: { marginBottom: 12 },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 42,
+    height: 42,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: AUTH_UI.borderWidth,
     borderColor: AUTH_UI.lineSoftWarm,
     backgroundColor: AUTH_UI.textWhite,
+    elevation: 2,
+    shadowColor: AUTH_UI.shadowRose,
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
   },
   historyCard: {
     backgroundColor: AUTH_UI.textWhite,
@@ -248,11 +280,11 @@ const styles = StyleSheet.create({
   },
   activeCard: {
     borderColor: AUTH_UI.semanticSevere,
-    shadowColor: AUTH_UI.semanticSevere,
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
+    shadowColor: AUTH_UI.shadowRose,
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   cardLabel: {
@@ -268,42 +300,45 @@ const styles = StyleSheet.create({
     fontFamily: FONT_WARM_SERIF,
   },
   cardMeta: {
-    color: AUTH_UI.textBlack,
+    color: AUTH_UI.textWarm,
     fontSize: 14,
     lineHeight: 20,
     fontFamily: FONT_FRIENDLY_SANS,
   },
   statusBadge: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
     backgroundColor: AUTH_UI.semanticBlueSoft,
   },
   completedBadge: {
-    backgroundColor: AUTH_UI.semanticNeutral,
+    backgroundColor: AUTH_UI.semanticNeutralSofter,
   },
   archivedBadge: {
-    backgroundColor: AUTH_UI.semanticSevereBg,
+    backgroundColor: AUTH_UI.semanticSevereBgSubtle,
   },
   statusText: {
     color: AUTH_UI.textWarmStrong,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "800",
+    letterSpacing: 0.5,
     fontFamily: FONT_FRIENDLY_SANS,
   },
   ctaSection: { paddingVertical: 16 },
   ctaButton: {
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: "hidden",
-    elevation: 8,
-    shadowColor: "#C97B6E",
-    shadowOpacity: 0.3,
+    elevation: 6,
+    shadowColor: AUTH_UI.shadowRose,
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
   },
   ctaButtonGradient: {
     paddingVertical: 18,
     alignItems: "center",
   },
-  ctaButtonDisabled: { opacity: 0.7 },
+  ctaButtonDisabled: { opacity: 0.45 },
   ctaLabel: {
     color: AUTH_UI.textWhite,
     fontSize: 16,
