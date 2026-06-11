@@ -2,15 +2,7 @@
  * mobile/components/home/WeeklyContentCard.tsx
  *
  * Displays the current week's pregnancy content on the home screen.
- * Optimized to prevent layout bloat and fix trimester welcome text bugs.
- *
- * On tap:
- *  1. Creates a new chat session for the current gestational week
- *  2. Sends an opening message built from the week's content data
- *     using a direct apiRequest (not a hook) so the session ID is
- *     available immediately without waiting for a state update
- *  3. Navigates into the chat session — AI response will arrive
- *     via the polling loop in the chat screen
+ * Aligned with the single source of truth design token palette and fonts.
  */
 
 import { useRouter } from "expo-router";
@@ -28,7 +20,6 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
-import { colors } from "@safeborn/ui";
 import {
   useWeekContent,
   useCreateChatSession,
@@ -39,10 +30,32 @@ import {
 } from "@safeborn/api";
 import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
 import { ctaButtonStyles, ctaGradientColors } from "../styles/ctaButton";
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
-const TEXT_BLACK = "#111111";
-const FONT_WARM_SERIF = Platform.OS === "ios" ? "Georgia" : "serif";
-const FONT_FRIENDLY_SANS = Platform.OS === "ios" ? "Avenir Next" : "sans-serif";
+// ── Weekly Size Visual Tokens Map ─────────────────────────────────────────────
+/**
+ * Maps gestational benchmarks to illustrative visual tokens.
+ * Designed to easily switch strings out for local assets later,
+ * e.g., asset: require("@/assets/baby/week-12.png")
+ */
+const WEEKLY_SIZE_VISUALS: Record<number, { emoji: string; tint: string }> = {
+  4:  { emoji: "🌱", tint: "#EBF7ED" }, // Poppy Seed
+  8:  { emoji: "🍇", tint: "#F5EEFF" }, // Raspberry
+  12: { emoji: "🍋", tint: "#FFFDE6" }, // Lime
+  16: { emoji: "🥑", tint: "#EAF6EA" }, // Avocado
+  20: { emoji: "🍌", tint: "#FFFBEB" }, // Banana
+  24: { emoji: "🍈", tint: "#F4FBEA" }, // Cantaloupe
+  28: { emoji: "🍆", tint: "#FAEEFF" }, // Eggplant
+  32: { emoji: "🍍", tint: "#FFF9E6" }, // Pineapple
+  36: { emoji: "🍉", tint: "#FFF0F2" }, // Watermelon
+  40: { emoji: "🎃", tint: "#FFF3EB" }, // Pumpkin
+};
+
+function getWeeklySizeVisual(week: number) {
+  const keys = Object.keys(WEEKLY_SIZE_VISUALS).map(Number).sort((a, b) => b - a);
+  const matchedKey = keys.find((k) => week >= k) || 4;
+  return WEEKLY_SIZE_VISUALS[matchedKey];
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -61,10 +74,6 @@ function trimesterLabel(t: number): string {
   return "3rd trimester";
 }
 
-/**
- * Dynamically resolves status copy to prevent displaying "Welcome to Trimester 2" 
- * to a user deep into their 24th week of pregnancy.
- */
 function getTrimesterStatusText(trimester: number, week: number): string {
   if (trimester === 1) {
     return week <= 4 ? "Welcome to Trimester 1" : "Growing in Trimester 1";
@@ -82,50 +91,7 @@ function getTrimesterStatusText(trimester: number, week: number): string {
   return "Your weekly update";
 }
 
-/**
- * Builds the opening message sent to the AI when the user taps
- * the weekly content card. Written as a natural user message so
- * it fits the existing chat pipeline without any backend changes.
- */
-function buildWeeklyPrompt_bk(content: WeeklyContent, week: number): string {
-  const lines: string[] = [
-    `I'm in week ${week} of my pregnancy (${trimesterLabel(content.trimester)}).`,
-    `Can you give me a warm overview of what's happening this week?`,
-    ``,
-    `Here's what I know about this week:`,
-    `- My baby is about the size of ${content.baby_size_label ?? "growing beautifully"}.`,
-  ];
-
-  if (content.baby_development) {
-    lines.push(`- Baby development: ${content.baby_development}`);
-  }
-  if (content.common_symptoms?.length) {
-    lines.push(
-      `- Common symptoms this week: ${content.common_symptoms.slice(0, 4).join(", ")}.`
-    );
-  }
-  if (content.warning_signs?.length) {
-    lines.push(
-      `- Warning signs to watch for: ${content.warning_signs.slice(0, 3).join(", ")}.`
-    );
-  }
-  if (content.tips?.length) {
-    lines.push(`- Tips I've seen: ${content.tips.slice(0, 2).join("; ")}.`);
-  }
-
-  lines.push(``);
-  lines.push(
-    `Please give me warm, reassuring advice about what to expect, ` +
-    `what I should be doing, and any self-care tips for week ${week}. ` +
-    `Also let me know gently what warning signs I should never ignore.`
-  );
-
-  return lines.join("\n");
-}
-
-
 function buildWeeklyPrompt(content: WeeklyContent, week: number): string {
-  // Pass the exact size asset label so the AI text syncs perfectly with the card image UI
   const sizeLabel = content.baby_size_label ?? "growing beautifully";
   const currentTrimester = trimesterLabel(content.trimester);
 
@@ -144,45 +110,46 @@ export function WeeklyContentCard() {
   const isCompact = width < 380;
   const isLargeText = fontScale >= 1.2;
   const router = useRouter();
+  
   const { data: pregnancy, isLoading: isActivePregnancyLoading } = useActivePregnancy();
   const currentWeek = useMemo(() => resolveCurrentGestationalWeek(pregnancy), [pregnancy]);
+  
   const { data: weekResponse, isLoading: isWeekLoading } = useWeekContent(currentWeek ?? 0);
   const content = weekResponse?.content;
+  
   const createSession = useCreateChatSession();
   const [opening, setOpening] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");
-  const timerRef = useRef<number | null>(null);
-  const {data: chatSessions } = useChatSessions()
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { data: chatSessions } = useChatSessions();
 
   const dailyTip = useMemo(
     () => (content?.tips ? getDailyTip(content.tips) : ""),
     [content?.tips]
   );
 
+  const sizeVisual = useMemo(() => {
+    return currentWeek ? getWeeklySizeVisual(currentWeek) : { emoji: "🌱", tint: "#EBF7ED" };
+  }, [currentWeek]);
+
   async function handleTap() {
     if (!content || !currentWeek) return;
     if (opening) return;
 
-    // Check if a session for this week already exists in here history
     const existingWeeklySession = chatSessions?.find(
       (session: any) => session.gestational_week === currentWeek
     );
 
-    // if it exists, skip creation and route her straight to her current room!
     if (existingWeeklySession) {
       router.push(`/chat/${existingWeeklySession.id}`);
       return;
     }
 
-
     setOpening(true);
-     
-    // Initial  welcome message 
-    setLoadingMessage("Connecting you with your Safe Born Assistant... Take a deep breath, we're preparing a beautify space for you and your little one. 💕");
+    setLoadingMessage("Connecting you with your Safe Born Assistant... Take a deep breath, we're preparing a beautiful space for you and your little one. 💕");
 
-    // Update message safely after 2 seconds if request is still active
     timerRef.current = setTimeout(() => {
-      setLoadingMessage("Still working on it, mama! We're getting everything ready for you. Just a tiny moment more... ✨👶")
+      setLoadingMessage("Still working on it, mama! We're getting everything ready for you. Just a tiny moment more... ✨👶");
     }, 2000);
 
     try {
@@ -198,17 +165,14 @@ export function WeeklyContentCard() {
         body: JSON.stringify({ content: prompt }),
       });
 
-       if (timerRef.current) clearTimeout(timerRef.current)
-
-      router.push( `/chat/${sessionId}` );
+      if (timerRef.current) clearTimeout(timerRef.current);
+      router.push(`/chat/${sessionId}`);
 
     } catch (err) {
       if (timerRef.current) clearTimeout(timerRef.current);
-
       console.error("WeeklyContentCard error:", err);
       Alert.alert(
          "We're so sorry, mama",
-
          "We had a little trouble creating your chat room. Please give it just a moment and try again. We're right with you! ❤️"
        );
     } finally {
@@ -221,7 +185,7 @@ export function WeeklyContentCard() {
   if (isActivePregnancyLoading || (currentWeek != null && isWeekLoading)) {
     return (
       <View style={[styles.card, isCompact && styles.cardCompact, isLargeText && styles.cardLargeText, styles.loadingCard]}>
-        <ActivityIndicator color={colors.rose[300]} size="small" />
+        <ActivityIndicator color={AUTH_UI.linkBerry} size="small" />
         <Text style={styles.loadingText}>Loading your weekly update…</Text>
       </View>
     );
@@ -236,13 +200,13 @@ export function WeeklyContentCard() {
         activeOpacity={0.88}
       >
         <LinearGradient
-          colors={["#FFF7F2", "#FFFBF7"]}
+          colors={[AUTH_UI.roseSoftBg, AUTH_UI.warmBackground]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[styles.gradient, isLargeText && styles.gradientLargeText]}
         >
           <View style={styles.noWeekIconWrap}>
-            <Ionicons name="calendar-outline" size={28} color={colors.rose[300]} />
+            <Ionicons name="calendar-outline" size={26} color={AUTH_UI.shadowRose} />
           </View>
           <Text style={styles.noWeekTitle}>What week are you on, mama?</Text>
           <Text style={styles.noWeekSubtitle}>
@@ -250,7 +214,7 @@ export function WeeklyContentCard() {
           </Text>
           <View style={styles.noWeekCta}>
             <Text style={styles.noWeekCtaText}>Set my due date</Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.rose[400]} />
+            <Ionicons name="chevron-forward" size={14} color={AUTH_UI.linkBerry} />
           </View>
         </LinearGradient>
       </TouchableOpacity>
@@ -266,7 +230,7 @@ export function WeeklyContentCard() {
       disabled={opening}
     >
       <LinearGradient
-        colors={["#FFF4EE", "#FFFBF7"]}
+        colors={[AUTH_UI.roseSoftBg, AUTH_UI.warmBackground]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.gradient, isLargeText && styles.gradientLargeText]}
@@ -285,30 +249,33 @@ export function WeeklyContentCard() {
               {getTrimesterStatusText(content.trimester, currentWeek)}
             </Text>
           </View>
-          <Ionicons name="heart" size={18} color={colors.rose[200]} style={styles.heartAccent} />
+          <Ionicons name="heart" size={18} color={AUTH_UI.shadowRose} style={styles.heartAccent} />
         </View>
 
         {/* ── Divider ─────────────────────────────────────────── */}
         <View style={styles.divider} />
 
-        {/* ── Baby Size Data Row ──────────────────────────────── */}
+        {/* ── Baby Size Data Row (Refactored to row-badge design layout) ── */}
         {content.baby_size_label ? (
-          <View style={styles.babySizeRow}>
-            <Text style={styles.babySizeEmoji}>🌱</Text>
-            <Text style={styles.babySizeText}>
-              Your baby is about the size of{" "}
-              <Text style={styles.babySizeHighlight}>
+          <View style={styles.sizeRowContainer}>
+            <View style={[styles.visualBadge, { backgroundColor: sizeVisual.tint }]}>
+              {/* Ready to be replaced by an Image component when assets arrive */}
+              <Text style={styles.badgeVisualText}>{sizeVisual.emoji}</Text>
+            </View>
+            <View style={styles.sizeTextWrap}>
+              <Text style={styles.sizeLabelText}>YOUR BABY IS THE SIZE OF A</Text>
+              <Text style={styles.sizeValueText}>
                 {content.baby_size_label}
+                {content.baby_size_cm ? ` (${content.baby_size_cm} cm)` : ""}
               </Text>
-              {content.baby_size_cm ? ` · ${content.baby_size_cm} cm` : ""}
-            </Text>
+            </View>
           </View>
         ) : null}
 
         {/* ── Daily Personalized Tip ──────────────────────────── */}
         {dailyTip ? (
           <View style={styles.tipBox}>
-            <Ionicons name="sparkles" size={14} color={colors.rose[400]} />
+            <Ionicons name="sparkles" size={14} color={AUTH_UI.linkBerry} />
             <Text style={styles.tipText} numberOfLines={2}>
               {dailyTip}
             </Text>
@@ -325,16 +292,16 @@ export function WeeklyContentCard() {
           >
             {opening ? (
               <View style={styles.ctaContentRow}>
-                <ActivityIndicator size="small" color="#FFF" />
+                <ActivityIndicator size="small" color={AUTH_UI.textWhite} />
                 <Text style={ctaButtonStyles.text}>Opening weekly chat…</Text>
               </View>
             ) : (
               <View style={styles.ctaContentRow}>
-                <Ionicons name="chatbubble-ellipses-outline" size={16} color="#FFF" />
+                <Ionicons name="chatbubble-ellipses-outline" size={16} color={AUTH_UI.textWhite} />
                 <Text style={[ctaButtonStyles.text, styles.ctaSingleLineText]}>
                   Discuss Week {currentWeek} with Safeborn Agent
                 </Text>
-                <Ionicons name="chevron-forward" size={16} color="#FFF" />
+                <Ionicons name="chevron-forward" size={16} color={AUTH_UI.textWhite} />
               </View>
             )}
           </LinearGradient>
@@ -352,20 +319,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     overflow: "hidden",
     borderWidth: 1.5,
-    borderColor: "rgba(140,90,82,0.14)",
+    borderColor: AUTH_UI.lineSoftWarm,
     ...Platform.select({
       ios: {
-        shadowColor: "#C97B6E",
+        shadowColor: AUTH_UI.shadowRose,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
+        shadowOpacity: 0.12,
         shadowRadius: 12,
       },
-      android: { elevation: 4 },
+      android: { elevation: 3 },
     }),
   },
   cardCompact: { borderRadius: 20 },
   cardLargeText: { marginBottom: 20 },
-  gradient: { padding: 18 }, // Reduced slightly from 20 to tighten screen space
+  gradient: { padding: 18 },
   gradientLargeText: { padding: 20 },
 
   loadingCard: {
@@ -373,33 +340,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    backgroundColor: "#FFF5F7",
-    paddingVertical: 24,
+    backgroundColor: AUTH_UI.overlayCard,
+    paddingVertical: 28,
   },
   loadingText: {
-    fontSize: 16,
-    color: TEXT_BLACK,
+    fontSize: 15,
+    color: AUTH_UI.textWarm,
     fontFamily: FONT_FRIENDLY_SANS,
   },
 
   noWeekIconWrap: {
     width: 52, height: 52, borderRadius: 26,
-    backgroundColor: colors.rose[50],
+    backgroundColor: AUTH_UI.avatarRoseBg,
     justifyContent: "center", alignItems: "center",
     marginBottom: 12, alignSelf: "center",
   },
   noWeekTitle: {
-    fontSize: 18, fontWeight: "700", color: TEXT_BLACK,
+    fontSize: 18, fontWeight: "700", color: AUTH_UI.textHeading,
     textAlign: "center", marginBottom: 8,
     fontFamily: FONT_WARM_SERIF,
   },
   noWeekSubtitle: {
-    fontSize: 16, color: TEXT_BLACK,
-    textAlign: "center", lineHeight: 24, marginBottom: 16,
+    fontSize: 15, color: AUTH_UI.textBlack,
+    textAlign: "center", lineHeight: 22, marginBottom: 16,
     fontFamily: FONT_FRIENDLY_SANS,
   },
   noWeekCta: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4 },
-  noWeekCtaText: { fontSize: 15, fontWeight: "700", color: colors.rose[400], fontFamily: FONT_FRIENDLY_SANS },
+  noWeekCtaText: { fontSize: 14, fontWeight: "700", color: AUTH_UI.linkBerry, fontFamily: FONT_FRIENDLY_SANS },
 
   topRow: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 12 },
   topRowCompact: { gap: 10, marginBottom: 10 },
@@ -407,44 +374,88 @@ const styles = StyleSheet.create({
   weekBadge: {
     width: 54, height: 54, borderRadius: 27,
     justifyContent: "center", alignItems: "center",
-    backgroundColor: "#C97B6E",
+    backgroundColor: AUTH_UI.linkBerry,
     ...Platform.select({
       ios: {
-        shadowColor: colors.rose[400],
+        shadowColor: AUTH_UI.linkBerry,
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
+        shadowOpacity: 0.25,
         shadowRadius: 6,
       },
-      android: { elevation: 4 },
+      android: { elevation: 3 },
     }),
   },
-  weekBadgeNumber: { fontSize: 20, fontWeight: "800", color: "#FFF", lineHeight: 22 },
+  weekBadgeNumber: { fontSize: 20, fontWeight: "800", color: AUTH_UI.textWhite, lineHeight: 22 },
   weekBadgeCompact: { width: 50, height: 50, borderRadius: 25 },
-  weekBadgeLabel: { fontSize: 11, fontWeight: "600", color: "rgba(255,255,255,0.8)", letterSpacing: 0.2 },
-  topRight: { flex: 1, gap: 3 },
-  trimesterLabel: { fontSize: 13, fontWeight: "700", color: "#8E5A54", letterSpacing: 0.2, fontFamily: FONT_FRIENDLY_SANS },
-  contentTitle: { fontSize: 18, fontWeight: "700", color: TEXT_BLACK, fontFamily: FONT_WARM_SERIF },
+  weekBadgeLabel: { fontSize: 10, fontWeight: "700", color: "rgba(255,255,255,0.82)", letterSpacing: 0.2 },
+  topRight: { flex: 1, gap: 2 },
+  trimesterLabel: { fontSize: 12, fontWeight: "700", color: AUTH_UI.textWarmStrong, letterSpacing: 0.4, fontFamily: FONT_FRIENDLY_SANS },
+  contentTitle: { fontSize: 19, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF },
   contentTitleCompact: { fontSize: 17 },
-  heartAccent: { alignSelf: "flex-start", marginTop: 2 },
+  heartAccent: { alignSelf: "flex-start", marginTop: 4 },
 
-  divider: { height: 1, backgroundColor: colors.rose[100], marginBottom: 12 },
+  divider: { height: 1, backgroundColor: AUTH_UI.lineSoftWarm, marginBottom: 14 },
 
-  babySizeRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
-  babySizeEmoji: { fontSize: 18 },
-  babySizeText: { fontSize: 15, color: TEXT_BLACK, flex: 1, lineHeight: 22, fontFamily: FONT_FRIENDLY_SANS },
-  babySizeHighlight: { color: "#8E5A54", fontWeight: "700", fontFamily: FONT_FRIENDLY_SANS },
+  // ── Layout adjustments for the structural size visuals ──
+  sizeRowContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: AUTH_UI.overlayCard,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: AUTH_UI.mutedBorder20,
+    marginBottom: 14,
+  },
+  visualBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  badgeVisualText: {
+    fontSize: 24,
+    textAlign: "center",
+  },
+  sizeTextWrap: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  sizeLabelText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: AUTH_UI.textWarm,
+    letterSpacing: 0.6,
+    fontFamily: FONT_FRIENDLY_SANS,
+    marginBottom: 1,
+  },
+  sizeValueText: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: AUTH_UI.textHeading,
+    fontFamily: FONT_WARM_SERIF,
+  },
 
   tipBox: {
-    flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: "rgba(201,123,110,0.08)",
-    borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 4,
-    borderLeftWidth: 3, borderLeftColor: "#C97B6E",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: AUTH_UI.avatarRoseBg,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 6,
+    borderLeftWidth: 3,
+    borderLeftColor: AUTH_UI.shadowRose,
   },
-  tipText: { flex: 1, fontSize: 14, color: TEXT_BLACK, lineHeight: 20, fontFamily: FONT_FRIENDLY_SANS },
+  tipText: { flex: 1, fontSize: 14, color: AUTH_UI.textWarmStrong, lineHeight: 20, fontFamily: FONT_FRIENDLY_SANS },
 
   ctaSlimOverride: {
     height: 48,
-    marginTop: 10,
+    marginTop: 8,
     borderRadius: 14,
     overflow: "hidden",
   },
