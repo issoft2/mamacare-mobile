@@ -3,8 +3,7 @@
  * Refined Chat Sessions - High Depth List
  */
 
-import { useEffect } from "react";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter } from "expo-router";
 import {
   FlatList,
   Platform,
@@ -17,45 +16,17 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 
-import {
-  useChatSessions,
-  useCreateChatSession,
-  useActivePregnancy
-} from "@safeborn/api";
-import { colors, shadows } from "@safeborn/ui";
+import { useChatSessions } from "@safeborn/api";
+import { colors } from "@safeborn/ui";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
-import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
 
 export default function ChatScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 980;
+  
+  // Cleanly pull list of historical conversations
   const { data: sessions } = useChatSessions();
-  const { data: pregnancy} = useActivePregnancy();
-  const createSession = useCreateChatSession();
-
-  // ✅ Inside the component — hooks must always live here
-  const { prompt } = useLocalSearchParams<{ prompt?: string }>();
-
-  // If arriving from WeeklyContentCard, auto-create a session
-  // and navigate into it with the prompt pre-filled
-  useEffect(() => {
-    if (!prompt) return;
-
-    async function openWithPrompt() {
-      const week = resolveCurrentGestationalWeek(pregnancy) ?? 1;
-      const session = await createSession.mutateAsync({
-        gestational_week: week,
-      });
-      router.push({
-        pathname: `/chat/${session.id}` as any,
-        params: { prompt },
-      });
-    }
-
-    void openWithPrompt();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // runs once on mount
 
   function getSessionTitle(item: any): string {
     const rawTitle = (item.title ?? "").trim();
@@ -99,32 +70,32 @@ export default function ChatScreen() {
         style={styles.bgOverlay}
       >
         <View style={[styles.page, isWide && styles.pageWide]}>
-        <View style={styles.header}>
-          <Text style={styles.screenTitle}>Conversations with safeborn Assistant</Text>
-        </View>
+          <View style={styles.header}>
+            <Text style={styles.screenTitle}>Conversations with safeborn Assistant</Text>
+          </View>
 
-        <FlatList
-          data={sessions ?? []}
-          keyExtractor={(item) => item.id}
-          renderItem={renderSession}
-          contentContainerStyle={styles.list}
-          ListEmptyComponent={
-            <View style={styles.emptyWrap}>
-              <Text style={styles.emptyText}>
-                No conversations yet. Open your weekly pregnancy note from Home
-                to begin a guided chat.
-              </Text>
-              <TouchableOpacity
-                style={styles.homeCta}
-                onPress={() => router.push("/tabs/home")}
-                activeOpacity={0.84}
-              >
-                <Text style={styles.homeCtaText}>Go to weekly note</Text>
-                <Ionicons name="chevron-forward" size={16} color={AUTH_UI.linkBerry} />
-              </TouchableOpacity>
-            </View>
-          }
-        />
+          <FlatList
+            data={sessions ?? []}
+            keyExtractor={(item) => item.id}
+            renderItem={renderSession}
+            contentContainerStyle={styles.list}
+            ListEmptyComponent={
+              <View style={styles.emptyWrap}>
+                <Text style={styles.emptyText}>
+                  No conversations yet. Open your weekly pregnancy note from Home
+                  to begin a guided chat.
+                </Text>
+                <TouchableOpacity
+                  style={styles.homeCta}
+                  onPress={() => router.push("/tabs/home")}
+                  activeOpacity={0.84}
+                >
+                  <Text style={styles.homeCtaText}>Go to weekly note</Text>
+                  <Ionicons name="chevron-forward" size={16} color={AUTH_UI.linkBerry} />
+                </TouchableOpacity>
+              </View>
+            }
+          />
         </View>
       </LinearGradient>
     </View>
