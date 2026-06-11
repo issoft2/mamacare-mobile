@@ -35,6 +35,7 @@ import {
   apiRequest,
   type WeeklyContent,
   useActivePregnancy,
+  useChatSessions,
 } from "@safeborn/api";
 import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
 import { ctaButtonStyles, ctaGradientColors } from "../styles/ctaButton";
@@ -151,6 +152,7 @@ export function WeeklyContentCard() {
   const [opening, setOpening] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");
   const timerRef = useRef<number | null>(null);
+  const {data: chatSessions } = useChatSessions()
 
   const dailyTip = useMemo(
     () => (content?.tips ? getDailyTip(content.tips) : ""),
@@ -161,12 +163,24 @@ export function WeeklyContentCard() {
     if (!content || !currentWeek) return;
     if (opening) return;
 
+    // Check if a session for this week already exists in here history
+    const existingWeeklySession = chatSessions?.find(
+      (session: any) => session.gestational_week === currentWeek
+    );
+
+    // if it exists, skip creation and route her straight to her current room!
+    if (existingWeeklySession) {
+      router.push(`/chat/${existingWeeklySession.id}`);
+      return;
+    }
+
+
     setOpening(true);
      
-    // Initial arm, welcome message 
-    setLoadingMessage("Coneecting with your Safe Born Assistant... Take a deep breath, we're preparing a beautify space for you and your little one. 💕");
+    // Initial  welcome message 
+    setLoadingMessage("Connecting you with your Safe Born Assistant... Take a deep breath, we're preparing a beautify space for you and your little one. 💕");
 
-    // Second message after 2 seconds if still loading
+    // Update message safely after 2 seconds if request is still active
     timerRef.current = setTimeout(() => {
       setLoadingMessage("Still working on it, mama! We're getting everything ready for you. Just a tiny moment more... ✨👶")
     }, 2000);
@@ -184,12 +198,22 @@ export function WeeklyContentCard() {
         body: JSON.stringify({ content: prompt }),
       });
 
-      router.push(`/chat/${sessionId}`);
+       if (timerRef.current) clearTimeout(timerRef.current)
+
+      router.push( `/chat/${sessionId}` );
+
     } catch (err) {
+      if (timerRef.current) clearTimeout(timerRef.current);
+
       console.error("WeeklyContentCard error:", err);
-      Alert.alert("Couldn't open chat", "Please try again in a moment.");
+      Alert.alert(
+         "We're so sorry, mama",
+
+         "We had a little trouble creating your chat room. Please give it just a moment and try again. We're right with you! ❤️"
+       );
     } finally {
       setOpening(false);
+      setLoadingMessage("");
     }
   }
 
