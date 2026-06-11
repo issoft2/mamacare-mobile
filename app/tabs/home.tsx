@@ -1096,7 +1096,7 @@ const styles = StyleSheet.create({
   screen:    { flex: 1, backgroundColor: AUTH_UI.warmBackground },
   bgOverlay: { flex: 1 },
   content: {
-    padding: 20,
+    padding: 15,
     paddingTop: 16,
     paddingBottom: 56,
   },
