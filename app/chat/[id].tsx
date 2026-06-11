@@ -1,11 +1,6 @@
 /**
  * mobile/app/chat/[id].tsx
- * Refined Messaging UI - Full Keyboard Fix & High Depth
- *
- * Key fix: polls every 2 seconds until the AI response arrives.
- * This handles the WeeklyContentCard flow where the opening message
- * is sent before navigation and the AI may not have responded yet
- * when the screen first mounts.
+ * Emotionally Tuned Maternal Messaging Screen
  */
 
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -25,28 +20,28 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { ApiRequestError, useChatSession, useSendMessage } from "@safeborn/api";
-import { colors } from "@safeborn/ui";
+import { useChatSession, useSendMessage } from "@safeborn/api";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
-
-const WEEKLY_PROMPT_MARKER = "Here's what I know about this week:";
-
 function normalizeAssistantBranding(text: string): string {
-  return text.replace(/MamaCare Assistant/gi, "safeborn  Assistant");
+  return text.replace(/MamaCare Assistant/gi, "safeborn Assistant");
 }
 
+/**
+ * Parses user prompt initialization safely to render a cozy conversation title card
+ */
 function getWeeklyStarterDisplayText(content: string): string | null {
-  if (!content.includes(WEEKLY_PROMPT_MARKER)) {
+  if (!content.includes("Hi SafeBorn!") && !content.includes("safeborn Agent")) {
     return null;
   }
 
   const weekMatch = content.match(/week\s+(\d+)/i);
   const week = weekMatch?.[1];
+  
   if (!week) {
-    return "Hi safeborn, can you tell me what to expect this week?";
+    return "Hi safeborn, can you tell me what to expect this week? ✨";
   }
-  return `Hi safeborn, can you tell me what to expect in week ${week}?`;
+  return `✨ Exploring Week ${week} Together`;
 }
 
 function getRenderedMessageText(role: string, content: string): string {
@@ -68,8 +63,6 @@ function isUsageLimitMessage(content: string): boolean {
   return /usage limit|limit reached|quota|upgrade/i.test(content);
 }
 
-
-
 // ── Typing indicator ──────────────────────────────────────────────────────────
 
 function TypingIndicator() {
@@ -90,7 +83,7 @@ function TypingIndicator() {
     animate(dot1, 0);
     animate(dot2, 150);
     animate(dot3, 300);
-  }, []);
+  }, [dot1, dot2, dot3]);
 
   const dotStyle = (anim: Animated.Value) => ({
     opacity: anim,
@@ -108,7 +101,7 @@ function TypingIndicator() {
           <Animated.View style={[styles.dot, dotStyle(dot2)]} />
           <Animated.View style={[styles.dot, dotStyle(dot3)]} />
         </View>
-        <Text style={styles.typingLabel}>safeborn is thinking…</Text>
+        <Text style={styles.typingLabel}>safeborn is crafting your response... 💕</Text>
       </View>
     </View>
   );
@@ -119,25 +112,24 @@ function TypingIndicator() {
 export default function ChatConversationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  
   const { data, isLoading, refetch } = useChatSession(id);
   const sendMessage = useSendMessage(id);
+  
   const [input, setInput] = useState("");
   const [isWaitingForAI, setIsWaitingForAI] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
-  const [voiceNotice, setVoiceNotice] = useState("");
-  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+  
   const listRef = useRef<FlatList>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRef = useRef<TextInput>(null);
   const supportAnim = useRef(new Animated.Value(0)).current;
-
 
   const messages = data?.messages ?? [];
   const hasUsageLimitNotice = messages.some(
     (msg) => msg.role === "assistant" && isUsageLimitMessage(msg.content)
   );
   const showSupportOptions = hasUsageLimitNotice && !isWaitingForAI;
+
   const supportOptionsAnimStyle = {
     opacity: supportAnim,
     transform: [
@@ -150,11 +142,7 @@ export default function ChatConversationScreen() {
     ],
   };
 
-
   // ── Polling logic ─────────────────────────────────────────────────────────
-  // When the screen mounts, check if the last message is from the user.
-  // If so, the AI hasn't responded yet — start polling every 2 seconds
-  // until the assistant message arrives, then stop.
   useEffect(() => {
     function stopPolling() {
       if (pollingRef.current) {
@@ -178,15 +166,12 @@ export default function ChatConversationScreen() {
 
     if (needsPolling) {
       setIsWaitingForAI(true);
-      // Poll immediately then every 2 seconds
       poll();
       pollingRef.current = setInterval(poll, 2000);
     }
 
     return () => stopPolling();
-    // Only run on mount — messages dependency intentionally excluded
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [id, messages.length, refetch]);
 
   // ── Scroll to bottom ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -194,8 +179,6 @@ export default function ChatConversationScreen() {
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 200);
     }
   }, [messages.length]);
-
- 
 
   useEffect(() => {
     const timeout = setTimeout(() => inputRef.current?.focus(), 450);
@@ -210,10 +193,9 @@ export default function ChatConversationScreen() {
         duration: 260,
         useNativeDriver: true,
       }).start();
-      return;
+    } else {
+      supportAnim.setValue(0);
     }
-
-    supportAnim.setValue(0);
   }, [showSupportOptions, supportAnim]);
 
   // ── Send message ───────────────────────────────────────────────────────────
@@ -232,14 +214,11 @@ export default function ChatConversationScreen() {
     }
   }
 
-
-
   // ── Render message ─────────────────────────────────────────────────────────
   function renderMessage({ item }: { item: any }) {
     const isUser = item.role === "user";
-    const isSpeaking = speakingMessageId === item.id;
     const renderedMessage = getRenderedMessageText(item.role, item.content);
-    const canUseReadAloud = Platform.OS === "web";
+    
     return (
       <View style={[styles.messageRow, isUser ? styles.userRow : styles.assistantRow]}>
         {!isUser && (
@@ -257,13 +236,11 @@ export default function ChatConversationScreen() {
   }
 
   function renderSupportOptions() {
-    if (!showSupportOptions) {
-      return null;
-    }
+    if (!showSupportOptions) return null;
 
     return (
       <Animated.View style={[styles.supportOptionsWrap, supportOptionsAnimStyle]}>
-        <Text style={styles.supportOptionsTitle}>Need support while chat is paused?</Text>
+        <Text style={styles.supportOptionsTitle}>Need immediate support while chat is paused?</Text>
         <View style={styles.supportChipRow}>
           <TouchableOpacity
             style={styles.supportChip}
@@ -271,7 +248,7 @@ export default function ChatConversationScreen() {
             onPress={() => router.push("/tabs/home")}
           >
             <Ionicons name="book-outline" size={14} color={AUTH_UI.linkBerry} />
-            <Text style={styles.supportChipText}>View Week Article</Text>
+            <Text style={styles.supportChipText}>Read Weekly Article</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -280,7 +257,7 @@ export default function ChatConversationScreen() {
             onPress={() => router.push("/profile/care-team")}
           >
             <Ionicons name="call-outline" size={14} color={AUTH_UI.linkBerry} />
-            <Text style={styles.supportChipText}>Contact My Midwife</Text>
+            <Text style={styles.supportChipText}>Call My Midwife</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -289,7 +266,7 @@ export default function ChatConversationScreen() {
             onPress={() => router.push("/tabs/tracker")}
           >
             <Ionicons name="fitness-outline" size={14} color={AUTH_UI.linkBerry} />
-            <Text style={styles.supportChipText}>Browse Safe Exercises</Text>
+            <Text style={styles.supportChipText}>Safe Exercises</Text>
           </TouchableOpacity>
         </View>
       </Animated.View>
@@ -299,8 +276,8 @@ export default function ChatConversationScreen() {
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.rose[500]} />
-        <Text style={styles.loadingText}>Opening your chat…</Text>
+        <ActivityIndicator size="large" color={AUTH_UI.linkBerry} />
+        <Text style={styles.loadingText}>Preparing your quiet space…</Text>
       </View>
     );
   }
@@ -327,7 +304,7 @@ export default function ChatConversationScreen() {
             <View>
               <Text style={styles.headerTitle}>safeborn Assistant</Text>
               <Text style={styles.headerStatus}>
-                {isWaitingForAI ? "Thinking…" : "Always here for you"}
+                {isWaitingForAI ? "Gathering gentle thoughts…" : "Holding space for you, mama ✨"}
               </Text>
             </View>
           </View>
@@ -346,10 +323,10 @@ export default function ChatConversationScreen() {
               ListEmptyComponent={
                 isWaitingForAI ? null : (
                   <View style={styles.emptyContainer}>
-                    <Text style={styles.welcomeEmoji}>🌸</Text>
-                    <Text style={styles.welcomeTitle}>safeborn is here with you</Text>
+                    <Text style={styles.welcomeEmoji}>✨🤰✨</Text>
+                    <Text style={styles.welcomeTitle}>Your quiet sanctuary</Text>
                     <Text style={styles.welcomeSubtitle}>
-                      Ask me anything about your pregnancy journey.
+                      Whether you have questions about changes in your body, your baby, or just want a validating voice—I'm here for you. What's on your heart?
                     </Text>
                   </View>
                 )
@@ -365,16 +342,6 @@ export default function ChatConversationScreen() {
 
           {/* ── Input bar ───────────────────────────────────────── */}
           <View style={styles.inputContainer}>
-            {voiceNotice ? (
-              <View style={styles.voiceNotice}>
-                <Ionicons
-                name={isListening ? "mic" : isTranscribing ? "sync" : "information-circle-outline"}
-                size={15}
-                  color={isListening || isTranscribing ? colors.rose[500] : AUTH_UI.textBlack}
-              />
-              <Text style={styles.voiceNoticeText}>{voiceNotice}</Text>
-              </View>
-            ) : null}
             <View style={styles.composer}>
               <Pressable
                 style={styles.inputSurface}
@@ -383,8 +350,8 @@ export default function ChatConversationScreen() {
                 <TextInput
                   ref={inputRef}
                   style={styles.textInput}
-                  placeholder={isListening ? "Listening..." : "Message safeborn"}
-                  placeholderTextColor={AUTH_UI.textBlack}
+                  placeholder="Type a message or question..."
+                  placeholderTextColor={AUTH_UI.textWarmMuted}
                   value={input}
                   onChangeText={setInput}
                   multiline
@@ -395,7 +362,6 @@ export default function ChatConversationScreen() {
                 />
 
                 <View style={styles.composerActions}>
-                
                   <TouchableOpacity
                     style={[
                       styles.sendBtn,
@@ -418,12 +384,12 @@ export default function ChatConversationScreen() {
                         <Ionicons
                           name="send"
                           size={18}
-                          color={input.trim() ? AUTH_UI.textWhite : AUTH_UI.mutedText}
+                          color={AUTH_UI.textWhite}
                         />
                       )}
                     </LinearGradient>
                   </TouchableOpacity>
-              </View>
+                </View>
               </Pressable>
             </View>
           </View>
@@ -434,226 +400,100 @@ export default function ChatConversationScreen() {
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
   screen:    { flex: 1, backgroundColor: AUTH_UI.warmBackground },
   bgOverlay: { flex: 1 },
   flex:      { flex: 1 },
   center: {
-    flex: 1, justifyContent: "center", alignItems: "center", gap: 12,
+    flex: 1, justifyContent: "center", alignItems: "center", gap: 12, backgroundColor: AUTH_UI.warmBackground,
   },
-  loadingText: { fontSize: 15, color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
+  loadingText: { fontSize: 16, color: AUTH_UI.textWarm, fontFamily: FONT_FRIENDLY_SANS },
 
   chatHeader: {
     paddingTop: 60, paddingBottom: 15, paddingHorizontal: 20,
     flexDirection: "row", alignItems: "center",
     backgroundColor: AUTH_UI.overlaySoft,
-    borderBottomWidth: 1, borderBottomColor: AUTH_UI.lineFaint,
+    borderBottomWidth: 1, borderBottomColor: AUTH_UI.lineSoftWarm,
   },
   backBtn:      { marginRight: 15 },
-  headerTitle:  { fontSize: 26, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF },
-  headerStatus: { fontSize: 12, color: AUTH_UI.textBlack, fontWeight: "600", fontFamily: FONT_FRIENDLY_SANS },
+  headerTitle:  { fontSize: 24, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF },
+  headerStatus: { fontSize: 13, color: AUTH_UI.textWarm, fontWeight: "600", fontFamily: FONT_FRIENDLY_SANS },
 
-  messageListContainer: {
-    flex: 1,
-    overflow: "hidden",
-  },
-  messageScroller: {
-    flex: 1,
-  },
-  messageList: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 30 },
-  messageRow:   { flexDirection: "row", marginBottom: 15, alignItems: "flex-end" },
+  messageListContainer: { flex: 1 },
+  messageScroller: { flex: 1 },
+  messageList: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 30 },
+  messageRow:   { flexDirection: "row", marginBottom: 18, alignItems: "flex-end" },
   userRow:      { justifyContent: "flex-end" },
   assistantRow: { justifyContent: "flex-start", alignItems: "flex-start" },
 
   assistantAvatar: {
-    width: 32, height: 32, borderRadius: 16, backgroundColor: AUTH_UI.textWhite,
-    alignItems: "center", justifyContent: "center", marginRight: 16,
-    marginTop: 1,
+    width: 36, height: 36, borderRadius: 18, backgroundColor: AUTH_UI.avatarRoseBg,
+    alignItems: "center", justifyContent: "center", marginRight: 12,
     alignSelf: "flex-start",
-    elevation: 3, shadowOpacity: 0.1, shadowRadius: 5,
+    elevation: 2, shadowColor: AUTH_UI.shadowRose, shadowOpacity: 0.15, shadowRadius: 4,
   },
-  avatarEmoji: { fontSize: 16 },
+  avatarEmoji: { fontSize: 18 },
 
   bubble: {
-    maxWidth: "80%", padding: 15, borderRadius: 22,
-    elevation: 2, shadowColor: AUTH_UI.textBlack, shadowOpacity: 0.05, shadowRadius: 5,
+    maxWidth: "82%", paddingHorizontal: 16, paddingVertical: 13, borderRadius: AUTH_UI.cardRadius,
+    elevation: 1, shadowColor: AUTH_UI.shadowRose, shadowOpacity: 0.08, shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
   },
   userBubble: {
-    backgroundColor: colors.rose[500], borderBottomRightRadius: 4,
-    shadowColor: colors.rose[500], shadowOpacity: 0.25,
-    marginRight: 8,
+    backgroundColor: AUTH_UI.linkBerry,
+    shadowColor: AUTH_UI.linkBerry,
+    shadowOpacity: 0.18,
+    marginRight: 4,
   },
   assistantBubble: {
-    backgroundColor: AUTH_UI.textWhite,
-    borderBottomLeftRadius: 4,
-    marginLeft: 8,
-  },
-  typingBubble:    { paddingVertical: 12, paddingHorizontal: 16 },
-
-  bubbleText:    { fontSize: 15, lineHeight: 22, fontFamily: FONT_FRIENDLY_SANS },
-  userText:      { color: AUTH_UI.textWhite, fontWeight: "500", fontFamily: FONT_FRIENDLY_SANS },
-  assistantText: { color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
-  readAloudBtn: {
-    alignSelf: "flex-start",
-    marginTop: 10,
-    minHeight: 32,
-    borderRadius: 16,
-    paddingHorizontal: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: colors.rose[50],
-  },
-  readAloudBtnActive: {
-    backgroundColor: colors.rose[500],
-  },
-  readAloudText: {
-    color: AUTH_UI.linkBerry,
-    fontSize: 12,
-    fontWeight: "800",
-    fontFamily: FONT_FRIENDLY_SANS,
-  },
-  readAloudTextActive: {
-    color: AUTH_UI.textWhite,
-  },
-
-  typingDots: { flexDirection: "row", gap: 5, alignItems: "center" },
-  dot: {
-    width: 7, height: 7, borderRadius: 4,
-    backgroundColor: colors.rose[300],
-  },
-  typingLabel: {
-    fontSize: 11, color: AUTH_UI.textBlack,
-    marginTop: 4,
-    fontFamily: FONT_FRIENDLY_SANS,
-  },
-
-  emptyContainer: {
-    flex: 1, alignItems: "center", justifyContent: "center",
-    marginTop: 100, paddingHorizontal: 32, gap: 8,
-  },
-  supportOptionsWrap: {
-    marginTop: 20,
-    marginBottom: 4,
-    paddingHorizontal: 6,
-    gap: 10,
-  },
-  supportOptionsTitle: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: AUTH_UI.textWarm,
-    fontFamily: FONT_FRIENDLY_SANS,
-  },
-  supportChipRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  supportChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: AUTH_UI.textWhite,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: AUTH_UI.semanticSevereBorder20,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  supportChipText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: AUTH_UI.linkBerry,
-    fontFamily: FONT_FRIENDLY_SANS,
-  },
-  welcomeEmoji:    { fontSize: 40, marginBottom: 4 },
-  welcomeTitle:    { color: AUTH_UI.textHeading, fontSize: 18, fontWeight: "700", textAlign: "center", fontFamily: FONT_WARM_SERIF },
-  welcomeSubtitle: { color: AUTH_UI.textBlack, fontSize: 14, textAlign: "center", lineHeight: 21, fontFamily: FONT_FRIENDLY_SANS },
-
-  inputContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: Platform.OS === "ios" ? 26 : 18,
-    backgroundColor: AUTH_UI.roseSoftBg,
-    borderTopWidth: 1,
-    borderTopColor: AUTH_UI.lineSoft,
-  },
-  voiceNotice: {
-    alignSelf: "center",
-    maxWidth: "92%",
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
     backgroundColor: AUTH_UI.overlayCard,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  voiceNoticeText: {
-    flex: 1,
-    color: AUTH_UI.textBlack,
-    fontSize: 12,
-    fontWeight: "600",
-    fontFamily: FONT_FRIENDLY_SANS,
-  },
-  composer: {
-    width: "100%",
-  },
-  inputSurface: {
-    width: "100%",
-    minHeight: 54,
-    maxHeight: 124,
-    borderRadius: 27,
-    backgroundColor: AUTH_UI.overlayElevated,
     borderWidth: 1,
     borderColor: AUTH_UI.mutedBorder,
-    paddingLeft: 18,
-    paddingRight: 8,
-    paddingVertical: 6,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    shadowColor: AUTH_UI.textHeading,
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
+    marginLeft: 4,
+  },
+  typingBubble: { paddingVertical: 14, paddingHorizontal: 18 },
+
+  bubbleText:    { fontSize: 15, lineHeight: 22, fontFamily: FONT_FRIENDLY_SANS },
+  userText:      { color: AUTH_UI.textWhite, fontWeight: "500" },
+  assistantText: { color: AUTH_UI.textWarmStrong },
+
+  typingDots: { flexDirection: "row", gap: 5, alignItems: "center" },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: AUTH_UI.shadowRose },
+  typingLabel: { fontSize: 12, color: AUTH_UI.textWarm, marginTop: 6, fontFamily: FONT_FRIENDLY_SANS, fontStyle: "italic" },
+
+  emptyContainer: { flex: 1, alignItems: "center", justifyContent: "center", marginTop: 80, paddingHorizontal: 28, gap: 10 },
+  supportOptionsWrap: { marginTop: 20, marginBottom: 4, paddingHorizontal: 6, gap: 10 },
+  supportOptionsTitle: { fontSize: 14, fontWeight: "700", color: AUTH_UI.textWarm, fontFamily: FONT_FRIENDLY_SANS },
+  supportChipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  supportChip: {
+    flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: AUTH_UI.overlayCard,
+    borderRadius: 999, borderWidth: 1, borderColor: AUTH_UI.mutedBorder20,
+    paddingHorizontal: 14, paddingVertical: 10,
+    elevation: 1, shadowColor: AUTH_UI.shadowRose, shadowOpacity: 0.04, shadowRadius: 2,
+  },
+  supportChipText: { fontSize: 12, fontWeight: "700", color: AUTH_UI.linkBerry, fontFamily: FONT_FRIENDLY_SANS },
+  welcomeEmoji:    { fontSize: 44, marginBottom: 6 },
+  welcomeTitle:    { color: AUTH_UI.textHeading, fontSize: 20, fontWeight: "700", textAlign: "center", fontFamily: FONT_WARM_SERIF },
+  welcomeSubtitle: { color: AUTH_UI.textWarm, fontSize: 14, textAlign: "center", lineHeight: 22, fontFamily: FONT_FRIENDLY_SANS },
+
+  inputContainer: {
+    paddingHorizontal: 16, paddingTop: 12, paddingBottom: Platform.OS === "ios" ? 28 : 20,
+    backgroundColor: AUTH_UI.roseSoftBg, borderTopWidth: 1, borderTopColor: AUTH_UI.lineSoftWarm,
+  },
+  composer: { width: "100%" },
+  inputSurface: {
+    width: "100%", minHeight: 54, maxHeight: 124, borderRadius: AUTH_UI.cardRadius,
+    backgroundColor: AUTH_UI.overlayElevated, borderWidth: 1, borderColor: AUTH_UI.mutedBorder18,
+    paddingLeft: 18, paddingRight: 8, paddingVertical: 6, flexDirection: "row", alignItems: "flex-end",
+    shadowColor: AUTH_UI.textHeading, shadowOpacity: 0.05, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 6,
   },
   textInput: {
-    flex: 1,
-    minWidth: 0,
-    minHeight: 38,
-    maxHeight: 92,
-    color: AUTH_UI.textBlack,
-    fontSize: 16,
-    lineHeight: 22,
-    paddingTop: 8,
-    paddingBottom: 9,
-    paddingHorizontal: 0,
-    marginRight: 8,
+    flex: 1, minWidth: 0, minHeight: 38, maxHeight: 92, color: AUTH_UI.textBlack,
+    fontSize: 16, lineHeight: 22, paddingTop: 8, paddingBottom: 9, paddingHorizontal: 0, marginRight: 8,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
-  composerActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingBottom: 1,
-  },
-  voiceBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.rose[50],
-  },
-  voiceBtnActive: {
-    backgroundColor: colors.rose[500],
-  },
-  voiceBtnDisabled: {
-    opacity: 0.45,
-  },
+  composerActions: { flexDirection: "row", alignItems: "center", gap: 6, paddingBottom: 1 },
   sendBtn:      { borderRadius: 20, overflow: "hidden" },
   sendGradient: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
-  sendDisabled: { opacity: 0.4 },
+  sendDisabled: { opacity: 0.35 },
 });
