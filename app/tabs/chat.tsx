@@ -1,5 +1,5 @@
 /**
- * mobile/app/(tabs)/chat.tsx
+ * app/(tabs)/chat.tsx
  * Refined Chat Sessions - High Depth List
  */
 
@@ -49,13 +49,20 @@ export default function ChatScreen() {
         onPress={() => router.push(`/chat/${item.id}`)}
       >
         <View style={styles.sessionInfo}>
-          <Text style={styles.sessionTitle} numberOfLines={1}>
-            {getSessionTitle(item)}
-          </Text>
-          <Text style={styles.sessionMeta}>
-            Week {item.gestational_week} • {item.message_count} messages
-          </Text>
+          {/* Wrappers collapse calculation box widths on Native Android builds */}
+          <View style={styles.textWrapper}>
+            <Text style={styles.sessionTitle} numberOfLines={1}>
+              {getSessionTitle(item)}
+            </Text>
+          </View>
+          
+          <View style={styles.textWrapper}>
+            <Text style={styles.sessionMeta}>
+              Week {item.gestational_week} • {item.message_count} messages
+            </Text>
+          </View>
         </View>
+        
         <View style={styles.arrowCircle}>
           <Ionicons name="chevron-forward" size={18} color={AUTH_UI.linkBerry} />
         </View>
@@ -121,16 +128,30 @@ const styles = StyleSheet.create({
     borderColor: colors.rose[200],
     elevation: 3,
     shadowOpacity: 0.05,
+    overflow: "hidden", // Enforces strict rendering constraints for custom borders/shadows on APK
   },
-  sessionInfo: { flex: 1 },
+  sessionInfo: { 
+    flex: 1,
+    backgroundColor: "transparent",
+  },
+  textWrapper: {
+    alignSelf: "flex-start", // Collapses layout bounding frame directly onto string bounds
+    backgroundColor: "transparent",
+  },
   sessionTitle: {
     fontSize: 17,
     fontWeight: "700",
     color: AUTH_UI.textHeading,
     marginBottom: 4,
     fontFamily: FONT_FRIENDLY_SANS,
+    backgroundColor: "transparent",
   },
-  sessionMeta: { fontSize: 13, color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
+  sessionMeta: { 
+    fontSize: 13, 
+    color: AUTH_UI.textBlack, 
+    fontFamily: FONT_FRIENDLY_SANS,
+    backgroundColor: "transparent",
+  },
   arrowCircle: {
     width: 32,
     height: 32,
