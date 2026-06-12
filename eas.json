@@ -13,9 +13,12 @@
     },
     "production": {
       "autoIncrement": true,
-       "cache": {
+      "cache": {
         "key": "production-cache-v1",
         "paths": ["node_modules", ".pnpm-store"]
+      },
+      "android": {
+        "buildType": "apk"
       }
     }
   },

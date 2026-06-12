@@ -71,7 +71,7 @@ export default function ChatScreen() {
       >
         <View style={[styles.page, isWide && styles.pageWide]}>
           <View style={styles.header}>
-            <Text style={styles.screenTitle}>Conversations with safeborn Assistant</Text>
+            <Text style={styles.screenTitle}>Conversations with Safeborn Assistant</Text>
           </View>
 
           <FlatList
