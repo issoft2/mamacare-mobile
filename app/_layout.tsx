@@ -395,7 +395,7 @@ function PushNotificationRuntimeHandlers() {
     route: string;
   }) {
     const next = {
-      title: payload.title?.trim() || "New update from safeborn",
+      title: payload.title?.trim() || "New update from Safeborn",
       body: payload.body?.trim() || "Tap to view your latest reminder.",
       route: payload.route,
     };

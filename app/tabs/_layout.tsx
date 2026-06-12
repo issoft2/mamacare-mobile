@@ -332,7 +332,7 @@ function ResponsiveTabBar({
               />
             </View>
             <View>
-              <Text style={styles.brandName}>safeborn</Text>
+              <Text style={styles.brandName}>Safeborn</Text>
               <Text style={styles.brandSub}>Pregnancy care hub</Text>
             </View>
           </View>
@@ -401,7 +401,7 @@ function ResponsiveTabBar({
               activeOpacity={0.84}
             >
               <Text style={styles.installTitle}>Install app</Text>
-              <Text style={styles.installHint}>Open safeborn like a mobile app</Text>
+              <Text style={styles.installHint}>Open Safeborn like a mobile app</Text>
             </TouchableOpacity>
           )}
         
@@ -430,7 +430,7 @@ function ResponsiveTabBar({
           <View style={styles.mobileLogoPlate}>
             <Image source={BRAND_LOGO} style={styles.mobileLogo} resizeMode="cover" />
           </View>
-          <Text style={styles.mobileBrandText}>safeborn</Text>
+          <Text style={styles.mobileBrandText}>Safeborn</Text>
         </View>
       </View>
 
@@ -458,7 +458,7 @@ function ResponsiveTabBar({
                 />
               </View>
               <View style={styles.drawerTitleWrap}>
-                <Text style={styles.brandName}>safeborn</Text>
+                <Text style={styles.brandName}>Safeborn</Text>
                 <Text style={styles.brandSub}>Pregnancy care hub</Text>
               </View>
               <TouchableOpacity
@@ -559,7 +559,7 @@ function ResponsiveTabBar({
                   activeOpacity={0.84}
                 >
                   <Text style={styles.installTitle}>Install app</Text>
-                  <Text style={styles.installHint}>Open safeborn like a mobile app</Text>
+                  <Text style={styles.installHint}>Open Safeborn like a mobile app</Text>
                 </TouchableOpacity>
               )}
             </View>

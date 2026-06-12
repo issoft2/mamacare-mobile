@@ -218,7 +218,12 @@ export default function ChatConversationScreen() {
   // ── Render message ─────────────────────────────────────────────────────────
   function renderMessage({ item }: { item: any }) {
     const isUser = item.role === "user";
-    const renderedMessage = getRenderedMessageText(item.role, item.content);
+    let renderedMessage = getRenderedMessageText(item.role, item.content);
+    
+    if (!isUser) {
+      // Force padding surrounding block headers to ensure clean cross-platform parsing
+      renderedMessage = renderedMessage.replace(/(##\s+.+)/g, '\n$1\n');
+    }
     
     return (
       <View style={[styles.messageRow, isUser ? styles.userRow : styles.assistantRow]}>
@@ -328,7 +333,7 @@ export default function ChatConversationScreen() {
               ListEmptyComponent={
                 isWaitingForAI ? null : (
                   <View style={styles.emptyContainer}>
-                    <Text style={styles.welcomeEmoji}>✨🤰✨</Text>
+                    <Text style={welcomeEmoji}>✨🤰✨</Text>
                     <Text style={styles.welcomeTitle}>Your quiet sanctuary</Text>
                     <Text style={styles.welcomeSubtitle}>
                       Whether you have questions about changes in your body, your baby, or just want a validating voice—I'm here for you. What's on your heart?
@@ -496,6 +501,11 @@ const styles = StyleSheet.create({
     flex: 1, minWidth: 0, minHeight: 38, maxHeight: 92, color: AUTH_UI.textBlack,
     fontSize: 16, lineHeight: 22, paddingTop: 8, paddingBottom: 9, paddingHorizontal: 0, marginRight: 8,
     fontFamily: FONT_FRIENDLY_SANS,
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none',
+      } as any
+    })
   },
   composerActions: { flexDirection: "row", alignItems: "center", gap: 6, paddingBottom: 1 },
   sendBtn:      { borderRadius: 20, overflow: "hidden" },

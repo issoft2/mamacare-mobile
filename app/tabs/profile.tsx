@@ -48,7 +48,7 @@ export default function ProfileScreen() {
     { label: "Medical Details", path: "/profile/medical", icon: "medkit", meta: "High priority" },
     { label: "Care Team", path: "/profile/care-team", icon: "people" },
     { label: "Pregnancy history", path: "/profile/history", icon: "time" },
-    { label: "Start a new journey", action: () => handleStartNewPregnancy(), icon: "add-circle", meta: activePregnancy ? "Available when current journey is completed" : undefined, disabled: !!activePregnancy },
+    { label: "Start a new journey", action: () => handleStartNewPregnancy(), icon: "add-circle", meta: activePregnancy ? "" : undefined, disabled: !!activePregnancy },
     { label: "Subscription", path: "/profile/subscription", icon: "star" },
     ...(!isWide
       ? [{ label: "Notifications", path: "/profile/notifications", icon: "notifications" }]
