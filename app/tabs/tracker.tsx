@@ -18,10 +18,12 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from '@expo/vector-icons';
 import {
   useTodayFolicAcidLog,
-  useHydrationLogs, useKickSessions,
+  useHydrationLogs, 
+  useKickSessions,
   useLogFolicAcid,
-  useLogHydration, useMoodLogs,
-  useSleepLogs, useStartKickSession,
+  useLogHydration, 
+  useMoodLogs,
+  useSleepLogs, 
   useProfile,
   useActivePregnancy
 } from "@safeborn/api";
@@ -53,19 +55,21 @@ export default function TrackerScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 980;
+  
   const { data: profile } = useProfile();
-  const { data: pregnancy} = useActivePregnancy();
+  const { data: pregnancy } = useActivePregnancy();
   const hasCompletedOnboarding = Boolean(profile);
+  
   const { data: kicks } = useKickSessions();
   const { data: hydration } = useHydrationLogs();
   const { data: todayFolicAcidLog } = useTodayFolicAcidLog();
   const { data: sleep } = useSleepLogs();
   const { data: mood } = useMoodLogs();
 
-  const startKick = useStartKickSession();
   const logWater = useLogHydration();
   const logFolicAcid = useLogFolicAcid();
   const [folicTakenLocal, setFolicTakenLocal] = useState(false);
+  
   const todayDateKey = getLocalDateKey(new Date());
   const gestationalWeek = resolveCurrentGestationalWeek(pregnancy) ?? 0;
   const canUseKickCounter = gestationalWeek >= KICK_COUNTER_MIN_WEEK;
@@ -169,7 +173,9 @@ export default function TrackerScreen() {
                   </View>
                   <Text style={styles.cardTitle}>Kick Counter</Text>
                 </View>
-                <Text style={styles.cardValue}>{activeKick ? activeKick.kick_count : "0"} <Text style={styles.unit}>kicks today</Text></Text>
+                <Text style={styles.cardValue}>
+                  {activeKick ? activeKick.kick_count : "0"} <Text style={styles.unit}>kicks today</Text>
+                </Text>
                 <TouchableOpacity 
                   style={[
                     styles.widgetBtn,
@@ -177,13 +183,15 @@ export default function TrackerScreen() {
                     (!canUseKickCounter || !hasCompletedOnboarding) && styles.widgetBtnDisabled,
                   ]}
                   disabled={!canUseKickCounter || !hasCompletedOnboarding}
-                  onPress={async () => {
+                  onPress={() => {
                     if (!hasCompletedOnboarding) { promptFinishOnboarding(router); return; }
                     if (!canUseKickCounter) return;
-                    if(activeKick) router.push(`/tracker/kick/${activeKick.id}` as any);
-                    else {
-                      const session = await startKick.mutateAsync(gestationalWeek || 12);
-                      router.push(`/tracker/kick/${session.id}` as any);
+                    
+                    // ── FIX: Pure Routing Redirection Only (No API mutations triggered here) ──
+                    if (activeKick) {
+                      router.push(`/tracker/kick/${activeKick.id}` as any);
+                    } else {
+                      router.push("/tracker/kick" as any);
                     }
                   }}
                 >
@@ -226,7 +234,7 @@ const styles = StyleSheet.create({
   bgOverlay: { flex: 1 },
   content: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 32 },
   contentWide: { width: "100%", maxWidth: 1180, alignSelf: "center", padding: 32 },
-  screenTitle: { fontSize: 30, fontWeight: "800", color: AUTH_UI.textHeading, marginBottom: 25, fontFamily: FONT_WARM_SERIF, letterSpacing: -0.6 },
+  screenTitle: { fontSize: 30, fontWeight: "800", color: AUTH_UI.textHeading, marginBottom: 25, fontFamily: FONT_WARY_SERIF, letterSpacing: -0.6 },
   dashboardGrid: { gap: 15 },
   dashboardGridWide: { flexDirection: "row", flexWrap: "wrap", alignItems: "stretch" },
   glassCard: {
