@@ -21,63 +21,18 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useChatSession, useSendMessage } from "@safeborn/api";
+import { SafeMarkdown } from "@safeborn/ui";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
-
-/**
- * Custom lightweight inline markdown parser for React Native Text components.
- * Safely handles bold structures (**text**), line breaks, and consistent typography tokens.
- */
-function parseTextToStyledNodes(text: string, baseStyle: any, boldStyle: any) {
-  // Normalize double line-breaks to prevent large gaps, splitting text by structural paragraphs
-  const paragraphs = text.split("\n");
-
-  return paragraphs.map((paragraph, pIdx) => {
-    // Check if the line is intended to be a list item
-    const isListItem = paragraph.trim().startsWith("•") || paragraph.trim().startsWith("-");
-    let cleanParagraph = paragraph;
-    
-    if (isListItem) {
-      // Remove the raw symbol so we can render a clean bullet point layout element
-      cleanParagraph = paragraph.replace(/^[\s•\-*]+/, "");
-    }
-
-    // Split words by bold syntax markers (**text**)
-    const parts = cleanParagraph.split(/(\*\*.*?\*\*)/g);
-    
-    const renderedParts = parts.map((part, partIdx) => {
-      if (part.startsWith("**") && part.endsWith("**")) {
-        // Strip the astreisks and return an inline styled bold node
-        const cleanBoldText = part.slice(2, -2);
-        return (
-          <Text key={`bold-${partIdx}`} style={boldStyle}>
-            {cleanBoldText}
-          </Text>
-        );
-      }
-      return part;
-    });
-
-    return (
-      <Text key={`p-${pIdx}`} style={[baseStyle, isListItem && styles.listItemText]}>
-        {isListItem ? "•  " : ""}
-        {renderedParts}
-        {pIdx < paragraphs.length - 1 ? "\n" : ""}
-      </Text>
-    );
-  });
-}
-
-
 function normalizeAssistantBranding(text: string): string {
-  return text.replace(/MamaCare Assistant/gi, "safeborn Assistant");
+  return text.replace(/MamaCare Assistant/gi, "Safeborn Assistant");
 }
 
 /**
  * Parses user prompt initialization safely to render a cozy conversation title card
  */
 function getWeeklyStarterDisplayText(content: string): string | null {
-  if (!content.includes("Hi SafeBorn!") && !content.includes("safeborn Agent")) {
+  if (!content.includes("Hi SafeBorn!") && !content.includes("Safeborn Agent")) {
     return null;
   }
 
@@ -85,7 +40,7 @@ function getWeeklyStarterDisplayText(content: string): string | null {
   const week = weekMatch?.[1];
   
   if (!week) {
-    return "Hi safeborn, can you tell me what to expect this week? ✨";
+    return "Hi Safeborn, can you tell me what to expect this week? ✨";
   }
   return `✨ Exploring Week ${week} Together`;
 }
@@ -147,7 +102,7 @@ function TypingIndicator() {
           <Animated.View style={[styles.dot, dotStyle(dot2)]} />
           <Animated.View style={[styles.dot, dotStyle(dot3)]} />
         </View>
-        <Text style={styles.typingLabel}>safeborn is crafting your response... 💕</Text>
+        <Text style={styles.typingLabel}>Safeborn is crafting your response... 💕</Text>
       </View>
     </View>
   );
@@ -261,7 +216,6 @@ export default function ChatConversationScreen() {
   }
 
   // ── Render message ─────────────────────────────────────────────────────────
-  // ── Render message ─────────────────────────────────────────────────────────
   function renderMessage({ item }: { item: any }) {
     const isUser = item.role === "user";
     const renderedMessage = getRenderedMessageText(item.role, item.content);
@@ -279,14 +233,7 @@ export default function ChatConversationScreen() {
               {renderedMessage}
             </Text>
           ) : (
-            // Assistant text receives structural style node processing
-            <View style={styles.markdownContainer}>
-              {parseTextToStyledNodes(
-                renderedMessage, 
-                [styles.bubbleText, styles.assistantText], 
-                styles.assistantBoldText
-              )}
-            </View>
+            <SafeMarkdown content={renderedMessage} />
           )}
         </View>
       </View>
@@ -360,7 +307,7 @@ export default function ChatConversationScreen() {
               <Ionicons name="chevron-back" size={28} color={AUTH_UI.textHeading} />
             </TouchableOpacity>
             <View>
-              <Text style={styles.headerTitle}>safeborn Assistant</Text>
+              <Text style={styles.headerTitle}>Safeborn Assistant</Text>
               <Text style={styles.headerStatus}>
                 {isWaitingForAI ? "Gathering gentle thoughts…" : "Holding space for you, mama ✨"}
               </Text>
@@ -554,17 +501,4 @@ const styles = StyleSheet.create({
   sendBtn:      { borderRadius: 20, overflow: "hidden" },
   sendGradient: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   sendDisabled: { opacity: 0.35 },
-
-  markdownContainer: {
-    flexDirection: "column",
-  },
-  assistantBoldText: {
-    fontWeight: "700",
-    color: AUTH_UI.textHeading, // Gives bold accents a rich coffee contrast tone
-    fontFamily: FONT_FRIENDLY_SANS,
-  },
-  listItemText: {
-    paddingLeft: 8,
-    lineHeight: 24,
-  },
 });

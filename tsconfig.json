@@ -2,22 +2,25 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "jsx": "react-jsx",
     "paths": {
       "@/*": ["./*"],
       "@safeborn/types": [
-        "../packages/types/src/index.ts"
+        "./packages/types/src/index.ts"
       ],
       "@safeborn/api": [
-        "../packages/api/src/index.ts"
+        "./packages/api/src/index.ts"
       ],
       "@safeborn/ui": [
-        "../packages/ui/src/index.ts"
+        "./packages/ui/src/index.ts"
       ]
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    "packages/**/*.ts",
+    "packages/**/*.tsx",
     ".expo/types/**/*.d.ts",
     "expo-env.d.ts",
     ".expo/types/**/*.ts"

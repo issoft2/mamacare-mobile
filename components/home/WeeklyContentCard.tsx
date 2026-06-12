@@ -288,20 +288,24 @@ export function WeeklyContentCard() {
             colors={ctaGradientColors}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={ctaButtonStyles.gradient}
+            style={styles.ctaGradientWrapper}
           >
             {opening ? (
               <View style={styles.ctaContentRow}>
                 <ActivityIndicator size="small" color={AUTH_UI.textWhite} />
-                <Text style={ctaButtonStyles.text}>Opening weekly chat…</Text>
+                <Text style={[ctaButtonStyles.text, styles.ctaSingleLineText]}>Opening weekly chat…</Text>
               </View>
             ) : (
               <View style={styles.ctaContentRow}>
-                <Ionicons name="chatbubble-ellipses-outline" size={16} color={AUTH_UI.textWhite} />
-                <Text style={[ctaButtonStyles.text, styles.ctaSingleLineText]}>
+                <Ionicons name="chatbubble-ellipses-outline" size={15} color={AUTH_UI.textWhite} style={styles.ctaIconVerticalFix} />
+                <Text 
+                  style={[ctaButtonStyles.text, styles.ctaSingleLineText]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
                   Discuss Week {currentWeek} with Safeborn Agent
                 </Text>
-                <Ionicons name="chevron-forward" size={16} color={AUTH_UI.textWhite} />
+                <Ionicons name="chevron-forward" size={15} color={AUTH_UI.textWhite} style={styles.ctaIconVerticalFix} />
               </View>
             )}
           </LinearGradient>
@@ -453,25 +457,46 @@ const styles = StyleSheet.create({
   },
   tipText: { flex: 1, fontSize: 14, color: AUTH_UI.textWarmStrong, lineHeight: 20, fontFamily: FONT_FRIENDLY_SANS },
 
+  // ── Refactored Fixed Button Wrapper ──
   ctaSlimOverride: {
-    height: 48,
-    marginTop: 8,
-    borderRadius: 14,
+    height: "auto",             // 🌟 Wipes old static 48px restriction out entirely
+    minHeight: 48,              // Guarantees accessibility touch targets are tall enough
+    marginTop: 10,
+    borderRadius: 16,
     overflow: "hidden",
+    padding: 0,                 // Explicitly clears parent spacing interferences
+  },
+  ctaGradientWrapper: {
+    width: "100%",
+    paddingVertical: 12,        // 🌟 Replaces hard height with vertical padding for clean expansion
+    paddingHorizontal: 14,
+    justifyContent: "center",
+    alignItems: "center",
   },
   ctaContentRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     width: "100%",
-    height: "100%",
-    gap: 8,
-    paddingHorizontal: 16,
+    gap: 6,                     // Optimized spatial separation
   },
   ctaSingleLineText: {
+    flex: 1,                    // 🌟 Forces long text to dynamically share row space with icon tags
     fontSize: 14,
     fontWeight: "700",
+    color: AUTH_UI.textWhite,
+    textAlign: "center",
     marginTop: 0,
     marginBottom: 0,
+    lineHeight: Platform.OS === "ios" ? 18 : 20, // Clean text line heights per system
+    ...Platform.select({
+      android: {
+        includeFontPadding: false, // 🤖 CRITICAL FIX: Wipes out Android's hidden typography clipping boxes
+        textAlignVertical: "center",
+      },
+    }),
+  },
+  ctaIconVerticalFix: {
+    alignSelf: "center",        // Centers action icons precisely against line scales
   },
 });
