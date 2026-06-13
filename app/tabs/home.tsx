@@ -1,14 +1,6 @@
 /**
  * mobile/app/tabs/home.tsx
- * Refined for High Depth & Emotional Presence
- *
- * Care grid:
- *  - Hydration  — glasses progress bar
- *  - Mood       — today's mood
- *  - Rest       — sleep quality colour coded (<4h/4-6h/6-8h/8h+)
- *  - Symptoms   — today's log count + severity badge (replaces Next Visit)
- *
- * Next Visit — dismissible banner at top of screen when appointment exists
+ * Refined for High Depth, Emotional Presence, and Tactile Interactions
  */
 
 import { useUser } from "@clerk/clerk-expo";
@@ -54,7 +46,7 @@ import type { DailyTrackerReminderItem, Mood, Severity } from "@safeborn/types";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type CareIconName = "chat" | "symptoms" | "water" | "mood" | "sleep";
+type CareIconName = "chat" | "symptoms" | "water" | "mood" | "sleep" | "folic";
 type Feeling = "steady" | "tired" | "anxious" | "hopeful";
 type FeelingChoice = Feeling | "other";
 type SleepQuality = "poor" | "fair" | "great";
@@ -70,7 +62,7 @@ const FEELINGS: { key: Feeling; label: string; emoji: string }[] = [
 
 const FEELING_CHOICES: { key: FeelingChoice; label: string; emoji: string }[] = [
   ...FEELINGS,
-  { key: "other", label: "More", emoji: "+" },
+  { key: "other", label: "More", emoji: "✨" },
 ];
 
 const EXTRA_FEELING_OPTIONS: { label: string; mappedFeeling: Feeling }[] = [
@@ -97,10 +89,11 @@ const MOOD_TO_FEELING: Record<Mood, Feeling> = {
 };
 
 const CARE_CARD_COLORS = {
-  water:    { icon: colors.rose[400],  bg: AUTH_UI.semanticSevereBgSoft },
-  folic:    { icon: AUTH_UI.linkBerry,  bg: colors.rose[50] },
-  mood:     { icon: AUTH_UI.linkBerry,  bg: colors.rose[50] },
-  symptoms: { icon: colors.rose[300],  bg: AUTH_UI.semanticSevereBgSubtle },
+  water:    { icon: "#2B87E3", bg: "#EBF3FC" },
+  folic:    { icon: "#D65A8A", bg: "#FDF0F5" },
+  mood:     { icon: "#B36BBF", bg: "#F8EFFF" },
+  symptoms: { icon: "#E06D53", bg: "#FDF1EE" },
+  sleep:    { icon: "#4A52A3", bg: "#EEF0FC" },
 };
 
 const KICK_COUNTER_MIN_WEEK = 16;
@@ -130,12 +123,11 @@ function getSeverityInfo(severity: Severity | undefined): SeverityInfo {
     case "severe":
       return { color: colors.rose[500], bg: AUTH_UI.semanticSevereBg, label: "Severe" };
     default:
-      return { color: AUTH_UI.semanticNeutral, bg: AUTH_UI.semanticNeutralBg, label: "Unspecified" };
+      return { color: AUTH_UI.textWarm, bg: AUTH_UI.overlayCard, label: "None" };
   }
 }
 
 // ── Sleep quality colour coding ───────────────────────────────────────────────
-// <4h → Poor → Rose red | 4–6h → Fair → Amber | 6–8h/8h+ → Great → Green
 
 interface SleepQualityInfo {
   quality: SleepQuality;
@@ -152,29 +144,29 @@ function getSleepQuality(band: string | undefined): SleepQualityInfo {
   const n = band.toLowerCase().replace(/\s/g, "");
 
   if (n.includes("<4") || n.startsWith("0") || n.startsWith("1") || n.startsWith("2") || n.startsWith("3")) {
-    return { quality: "poor",  qualityLabel: "Poor",  color: colors.rose[500], bgColor: AUTH_UI.semanticSevereBg, progress: 28 };
+    return { quality: "poor",  qualityLabel: "Poor Rest",  color: colors.rose[500], bgColor: AUTH_UI.semanticSevereBg, progress: 28 };
   }
   if (n.includes("4_6") || n.includes("4-6") || n.startsWith("4") || n.startsWith("5")) {
-    return { quality: "fair",  qualityLabel: "Fair",  color: AUTH_UI.semanticModerate, bgColor: AUTH_UI.semanticModerateBg,  progress: 58 };
+    return { quality: "fair",  qualityLabel: "Fair Rest",  color: AUTH_UI.semanticModerate, bgColor: AUTH_UI.semanticModerateBg,  progress: 58 };
   }
   if (n.includes("8+") || n.includes("+") || n.startsWith("9") || n.startsWith("10")) {
-    return { quality: "great", qualityLabel: "Great", color: AUTH_UI.semanticMild, bgColor: AUTH_UI.semanticMildBg, progress: 100 };
+    return { quality: "great", qualityLabel: "Great Rest", color: AUTH_UI.semanticMild, bgColor: AUTH_UI.semanticMildBg, progress: 100 };
   }
   if (n.includes("6_8") || n.includes("6-8") || n.startsWith("6") || n.startsWith("7") || n.startsWith("8")) {
-    return { quality: "great", qualityLabel: "Great", color: AUTH_UI.semanticMild, bgColor: AUTH_UI.semanticMildBg, progress: 82 };
+    return { quality: "great", qualityLabel: "Great Rest", color: AUTH_UI.semanticMild, bgColor: AUTH_UI.semanticMildBg, progress: 82 };
   }
-  return { quality: "fair", qualityLabel: "Fair", color: AUTH_UI.semanticModerate, bgColor: AUTH_UI.semanticModerateBg, progress: 50 };
+  return { quality: "fair", qualityLabel: "Fair Rest", color: AUTH_UI.semanticModerate, bgColor: AUTH_UI.semanticModerateBg, progress: 50 };
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatSleepDuration(raw: string | undefined): string {
-  if (!raw) return "Log rest";
+  if (!raw) return "Not logged today";
   return raw.replace(/_/g, "–");
 }
 
 function capitaliseMood(raw: string | undefined): string {
-  if (!raw) return "Not set";
+  if (!raw) return "Tap to set mood";
   return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
@@ -188,13 +180,13 @@ function formatAppointmentDate(iso: string): string {
 }
 
 function formatKickDuration(totalMinutes: number): string {
-  if (totalMinutes <= 0) return "No duration";
-  if (totalMinutes < 60) return `${totalMinutes}m today`;
+  if (totalMinutes <= 0) return "No duration recorded";
+  if (totalMinutes < 60) return `${totalMinutes}m logged today`;
 
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  if (minutes === 0) return `${hours}h today`;
-  return `${hours}h ${minutes}m today`;
+  if (minutes === 0) return `${hours}h logged today`;
+  return `${hours}h ${minutes}m logged today`;
 }
 
 function getLocalDateKey(value: Date): string {
@@ -250,6 +242,9 @@ function CareIcon({
       {name === "sleep" && (
         <Path d="M16.5 15A6 6 0 0 1 9.3 7.8 6.5 6.5 0 1 0 16.5 15z" {...common} />
       )}
+      {name === "folic" && (
+        <Path d="M12 4v16m-8-8h16" {...common} />
+      )}
     </Svg>
   );
 }
@@ -273,18 +268,15 @@ function NextVisitBanner({
         end={{ x: 1, y: 0 }}
         style={styles.bannerGradient}
       >
-        {/* Left — calendar icon */}
         <View style={styles.bannerIconWrap}>
           <Ionicons name="calendar" size={18} color={colors.rose[400]} />
         </View>
 
-        {/* Middle — text */}
         <View style={styles.bannerText}>
           <Text style={styles.bannerTitle}>Upcoming appointment</Text>
           <Text style={styles.bannerDate}>{formatAppointmentDate(date)}</Text>
         </View>
 
-        {/* Right — chevron + dismiss */}
         <View style={styles.bannerActions}>
           <Ionicons name="chevron-forward" size={16} color={colors.rose[300]} />
           <TouchableOpacity
@@ -348,7 +340,7 @@ function TrackerReminderBanner({
   );
 }
 
-// ── Screen ────────────────────────────────────────────────────────────────────
+// ── Main Screen ────────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
   const { user } = useUser();
@@ -366,7 +358,7 @@ export default function HomeScreen() {
   const [showMoodSheet, setShowMoodSheet] = useState(false);
 
   const { data: profile, isPending: isProfilePending } = useProfile();
-  const {data: pregnancy} = useActivePregnancy();
+  const { data: pregnancy } = useActivePregnancy();
   
   const { data: symptomLogs }  = useSymptomLogs(10, 0);
   const { data: hydration }    = useHydrationLogs();
@@ -375,10 +367,6 @@ export default function HomeScreen() {
     useDailyTrackerReminderStatus();
   const { data: kickSessions } = useKickSessions();
 
-  // Only treat onboarding as incomplete once the profile query has resolved
-  // without a result. While the query is still in-flight (isProfilePending),
-  // stay neutral so we don't flash the "Finish setup first" banner or fire
-  // onboarding redirects for users who do have a profile.
   const hasCompletedOnboarding = isProfilePending ? true : Boolean(profile);
   const onboardingRedirectPath = "/onboarding/profile-setup";
 
@@ -409,7 +397,7 @@ export default function HomeScreen() {
           }
         }
       } catch {
-        // Ignore local cache errors and continue with server source.
+        // Ignore local cache options safely.
       }
 
       try {
@@ -428,7 +416,7 @@ export default function HomeScreen() {
           setDailyTrackerRemindersEnabled(prefs.hydration_reminders);
         }
       } catch {
-        // Keep current preference fallback.
+        // Fallback gracefully.
       }
     })();
 
@@ -440,7 +428,7 @@ export default function HomeScreen() {
   const firstName = profile?.first_name ?? '';
   const todayDateKey = getLocalDateKey(new Date());
 
-  // Hydration
+  // Hydration state tracking variables
   const todayHydrationLog = useMemo(
     () =>
       hydration?.find((entry) => {
@@ -485,16 +473,14 @@ export default function HomeScreen() {
     }
     if (folicTakenToday || logFolicAcid.isPending) return;
 
-    // Optimistic local update so card never feels broken if API is temporarily unavailable.
     setFolicTakenLocal(true);
-
     try {
       await logFolicAcid.mutateAsync({
         taken: true,
         log_date: todayDateKey,
       });
     } catch {
-      // Keep UI stable; server sync will retry on next interaction/session.
+      // Retain optimistic state safely.
     }
   };
 
@@ -539,7 +525,7 @@ export default function HomeScreen() {
     }
   };
   
-  // Sleep
+  // Sleep state variables
   const todaySleepLog = useMemo(
     () =>
       sleep?.find((entry) => {
@@ -551,7 +537,7 @@ export default function HomeScreen() {
   const sleepBand = todaySleepLog?.duration_band;
   const sleepQuality = useMemo(() => getSleepQuality(sleepBand), [sleepBand]);
 
-  // Symptoms — today's logs
+  // Symptoms tracking
   const todayStart = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -568,11 +554,8 @@ export default function HomeScreen() {
 
   const latestSeverity   = todaySymptoms[0]?.severity;
   const severityInfo     = getSeverityInfo(latestSeverity);
-  const hasUrgentSymptom = todaySymptoms.some(
-    (s) => s.urgency_tier === "notify_doctor" || s.urgency_tier === "emergency_advised"
-  );
 
-  // Next appointment
+  // Next scheduled appointment
   const nextAppointment = useMemo(
     () => {
       const now = new Date();
@@ -598,23 +581,11 @@ export default function HomeScreen() {
 
   const localPendingTrackerItems = useMemo(() => {
     const pending: string[] = [];
-
-    if (!todayHydrationLog) {
-      pending.push("Hydration");
-    }
-    if (!folicTakenToday) {
-      pending.push("Folic acid");
-    }
-    if (!todayMoodLog) {
-      pending.push("Mood");
-    }
-    if (!todaySleepLog) {
-      pending.push("Rest");
-    }
-    if (todaySymptoms.length === 0) {
-      pending.push("Symptoms");
-    }
-
+    if (!todayHydrationLog) pending.push("Hydration");
+    if (!folicTakenToday) pending.push("Folic acid");
+    if (!todayMoodLog) pending.push("Mood");
+    if (!todaySleepLog) pending.push("Rest");
+    if (todaySymptoms.length === 0) pending.push("Symptoms");
     return pending;
   }, [folicTakenToday, todayHydrationLog, todayMoodLog, todaySleepLog, todaySymptoms.length]);
 
@@ -661,11 +632,6 @@ export default function HomeScreen() {
     [todayKickSessions]
   );
 
-  const activeKickSession = useMemo(
-    () => todayKickSessions.find((session) => !session.ended_at) ?? kickSessions?.find((session) => !session.ended_at),
-    [todayKickSessions, kickSessions]
-  );
-
   const greeting = useMemo(() => getTimeBasedGreeting(), []);
 
   return (
@@ -674,7 +640,7 @@ export default function HomeScreen() {
         colors={[AUTH_UI.overlayStart, AUTH_UI.overlayEnd]}
         style={styles.bgOverlay}
       >
-        {/* ── Next Visit Banner ─────────────────────────────────── */}
+        {/* ── Scheduled Banner ─────────────────────────────────── */}
         {showBanner && (
           <NextVisitBanner
             date={nextAppointment.scheduled_at}
@@ -701,18 +667,11 @@ export default function HomeScreen() {
           ]}
           showsVerticalScrollIndicator={false}
         >
-          {/* ── Hero ─────────────────────────────────────────────── */}
-          <Text
-            style={[
-              styles.greetingText,
-              styles.greetingTextStandalone,
-              isLargeText && styles.greetingTextStandaloneLarge,
-            ]}
-          >
+          {/* ── Greeting Hero Header ────────────────────────────── */}
+          <Text style={[styles.greetingText, styles.greetingTextStandalone, isLargeText && styles.greetingTextStandaloneLarge]}>
             {firstName ? (
               <>
-                {greeting}, {firstName}{" "}
-                <Text style={styles.sparkle}>✨</Text>
+                {greeting}, {firstName} <Text style={styles.sparkle}>✨</Text>
               </>
             ) : ''}
           </Text>
@@ -726,12 +685,12 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* ── Weekly content card ───────────────────────────────── */}
+          {/* ── Autonomous Weekly Content ─────────────────────────── */}
           <WeeklyContentCard />
 
-          {/* ── How are you feeling? ──────────────────────────────── */}
+          {/* ── Emotional Presence Quick Row ────────────────────── */}
           <View style={[styles.section, isLargeText && styles.sectionLarge]}>
-            <Text style={styles.sectionTitle}>How are you feeling?</Text>
+            <Text style={styles.sectionTitle}>How is your beautiful heart feeling right now, mama?</Text>
             <View style={[styles.feelingRow, isLargeText && styles.feelingRowWrap]}>
               {FEELING_CHOICES.map((f) => (
                 <TouchableOpacity
@@ -758,714 +717,357 @@ export default function HomeScreen() {
                   <View
                     style={[
                       styles.moodCircle,
-                      f.key === "other" && styles.moodCircleMore,
                       activeFeeling === f.key && styles.moodCircleActive,
+                      f.key === "other" && activeFeeling && !FEELINGS.some(item => item.key === activeFeeling) && styles.moodCircleActive,
                     ]}
                   >
-                    <Text style={[styles.moodEmoji, f.key === "other" && styles.moodEmojiMore]}>{f.emoji}</Text>
+                    <Text style={[styles.moodEmoji, f.key === "other" && styles.moodEmojiMore]}>
+                      {f.key === "other" && activeFeeling && !FEELINGS.some(item => item.key === activeFeeling)
+                        ? "💖"
+                        : f.emoji}
+                    </Text>
                   </View>
-                  <Text
-                    style={[
-                      styles.moodLabel,
-                        activeFeeling === f.key && styles.moodLabelActive,
-                    ]}
-                  >
-                    {f.label}
+                  <Text style={[styles.moodLabel, activeFeeling === f.key && styles.moodLabelActive]}>
+                    {f.key === "other" && activeFeeling && !FEELINGS.some(item => item.key === activeFeeling)
+                      ? "Customized"
+                      : f.label}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
 
-          {/* ── Today's care ──────────────────────────────────────── */}
+          {/* ── GROUP 1: Nourishing Your Body ───────────────────── */}
           <View style={[styles.section, isLargeText && styles.sectionLarge]}>
-            <Text style={styles.sectionTitle}>Today's care</Text>
-            <View style={styles.careGrid}>
-
-              {/* Hydration */}
-                <TouchableOpacity
-                  style={[styles.careCard, !hasCompletedOnboarding && styles.careCardDisabled, isWide && styles.careCardWide]}
-                  onPress={handleHydrationTap}
-                  activeOpacity={0.85}
-                  disabled={!hasCompletedOnboarding || logWater.isPending}
-                  accessibilityRole="button"
-                  accessibilityLabel="Hydration card"
-                >
-                  <View style={[styles.iconBox, { backgroundColor: CARE_CARD_COLORS.water.bg }]}>
-                    <CareIcon name="water" color={CARE_CARD_COLORS.water.icon} size={20} />
-                  </View>
-                  <Text style={styles.careCardLabel}>Hydration</Text>
-                  <Text style={styles.careCardVal} numberOfLines={1} adjustsFontSizeToFit>
-                    {glassesCount}/{targetGlasses} Glasses
-                  </Text>
-                  <View style={styles.miniTrack}>
-                    <View style={[styles.miniFill, { width: `${hydrationProgress}%`, backgroundColor: CARE_CARD_COLORS.water.icon }]} />
-                  </View>
-                  <View style={styles.cardHintRow}>
-                    <Ionicons name="add-circle-outline" size={12} color={colors.navy[300]} />
-                    <Text style={styles.cardHintText}>Tap to add a glass</Text>
-                  </View>
-                </TouchableOpacity>
-
-
-              {/* Mood */}
-              <TouchableOpacity
-                style={[styles.careCard, !hasCompletedOnboarding && styles.careCardDisabled, isWide && styles.careCardWide]}
-                onPress={() =>
-                  hasCompletedOnboarding
-                    ? router.push(
-                        activeMood
-                          ? (`/tracker/mood?mood=${activeMood}` as any)
-                          : ("/tracker/mood" as any)
-                      )
-                    : router.push(onboardingRedirectPath)
-                }
-                activeOpacity={0.85}
-                disabled={!hasCompletedOnboarding}
-                accessibilityRole="button"
-                accessibilityLabel="Mood card"
-              >
-                  <View style={[styles.iconBox, { backgroundColor: CARE_CARD_COLORS.mood.bg }]}>
-                    <CareIcon name="mood" color={CARE_CARD_COLORS.mood.icon} size={20} />
-                  </View>
-                  <Text style={styles.careCardLabel}>Mood</Text>
-                  <Text style={styles.careCardVal} numberOfLines={1} adjustsFontSizeToFit>
-                    {capitaliseMood(todayMoodLog?.mood)}
-                  </Text>
-                  <View style={styles.miniTrackPlaceholder} />
-                  <View style={styles.cardHintRow}>
-                    <Ionicons name="pencil-outline" size={12} color={colors.navy[300]} />
-                    <Text style={styles.cardHintText}>Tap to update mood</Text>
-                  </View>
-              </TouchableOpacity>
-
+            <Text style={styles.sectionTitle}>Nourishing Your Body</Text>
+            <View style={styles.gridRowTwoColumn}>
               
-
-              {/* Rest — dynamic colour coding */}
-
-                <TouchableOpacity
-                  style={[styles.careCard, !hasCompletedOnboarding && styles.careCardDisabled, isWide && styles.careCardWide]}
-                  onPress={() =>
-                    hasCompletedOnboarding
-                      ? router.push("/tracker/sleep" as any)
-                      : router.push(onboardingRedirectPath)
-                  }
-                  activeOpacity={0.85}
-                  disabled={!hasCompletedOnboarding}
-                  accessibilityRole="button"
-                  accessibilityLabel="Rest card"
-                >
-
-                    <View style={[styles.iconBox, { backgroundColor: sleepQuality.bgColor }]}>
-                      <CareIcon name="sleep" color={sleepQuality.color} size={20} />
-                    </View>
-                    <Text style={styles.careCardLabel}>Rest</Text>
-                    <Text style={styles.careCardVal} numberOfLines={1} adjustsFontSizeToFit>
-                      {formatSleepDuration(sleepBand)}
-                    </Text>
-                      {sleepBand ? (
-                        <View style={[styles.qualityBadge, { backgroundColor: sleepQuality.bgColor }]}> 
-                          <Text style={[styles.qualityBadgeText, { color: sleepQuality.color }]}> 
-                            {sleepQuality.qualityLabel}
-                          </Text>
-                        </View>
-                      ) : null}
-                    {sleepQuality.progress > 0 && (
-                      <View style={styles.miniTrack}>
-                        <View style={[styles.miniFill, { width: `${sleepQuality.progress}%`, backgroundColor: sleepQuality.color }]} />
-                      </View>
-                    )}
-                    <View style={styles.cardHintRow}>
-                      <Ionicons name="moon-outline" size={12} color={colors.navy[300]} />
-                      <Text style={styles.cardHintText}>Tap to log rest</Text>
-                    </View>
-                </TouchableOpacity>
-
-              {/* Folic Acid */}
+              {/* Hydration Interactive Bounding Box Card */}
               <TouchableOpacity
-                style={[styles.careCard, !hasCompletedOnboarding && styles.careCardDisabled, isWide && styles.careCardWide]}
-                onPress={handleFolicAcidTap}
-                activeOpacity={0.85}
-                disabled={!hasCompletedOnboarding || folicTakenToday || logFolicAcid.isPending}
+                style={[styles.interactiveGridCard, !hasCompletedOnboarding && styles.careCardDisabled]}
+                onPress={handleHydrationTap}
+                activeOpacity={0.82}
+                disabled={!hasCompletedOnboarding || logWater.isPending}
+                accessible={true}
                 accessibilityRole="button"
-                accessibilityLabel="Folic acid card"
+                accessibilityLabel={`Hydration progress. ${glassesCount} of ${targetGlasses} glasses added. Tap anywhere to add another glass.`}
               >
-                <View style={[styles.iconBox, { backgroundColor: CARE_CARD_COLORS.folic.bg }]}> 
-                  <Ionicons name="medkit-outline" size={18} color={CARE_CARD_COLORS.folic.icon} />
-                </View>
-                <Text style={styles.careCardLabel}>Folic Acid</Text>
-                <Text style={styles.careCardVal} numberOfLines={1} adjustsFontSizeToFit>
-                  {folicTakenToday ? "1/1" : "0/1"}
-                </Text>
-                <Text style={styles.careCardSubtle} numberOfLines={1} adjustsFontSizeToFit>
-                  {folicTakenToday ? "Taken today" : "Not logged today"}
-                </Text>
-                <View style={styles.miniTrackPlaceholder} />
-                <View style={styles.cardHintRow}>
-                  <Ionicons
-                    name={folicTakenToday ? "checkmark-circle-outline" : "add-circle-outline"}
-                    size={12}
-                    color={colors.navy[300]}
-                  />
-                  <Text style={styles.cardHintText}>
-                    {folicTakenToday ? "Already logged" : "Tap to log intake"}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-
-              {/* Symptoms — replaces Next Visit */}
-              <TouchableOpacity
-                style={[styles.careCard, !hasCompletedOnboarding && styles.careCardDisabled, isWide && styles.careCardWide]}
-                onPress={() =>
-                  hasCompletedOnboarding
-                    ? router.push("/tabs/symptoms")
-                    : router.push(onboardingRedirectPath)
-                }
-                activeOpacity={0.85}
-                disabled={!hasCompletedOnboarding}
-                accessibilityRole="button"
-                accessibilityLabel="Symptoms card"
-              >
-                <View style={[
-                  styles.iconBox,
-                  { backgroundColor: todaySymptoms.length > 0 ? severityInfo.bg : CARE_CARD_COLORS.symptoms.bg },
-                ]}>
-                  <CareIcon
-                    name="symptoms"
-                    color={todaySymptoms.length > 0 ? severityInfo.color : CARE_CARD_COLORS.symptoms.icon}
-                    size={20}
-                  />
-                  {/* Urgent dot */}
-                  {hasUrgentSymptom && <View style={styles.urgentDot} />}
-                </View>
-                <Text style={styles.careCardLabel}>Symptoms</Text>
-                <Text style={styles.careCardVal} numberOfLines={1} adjustsFontSizeToFit>
-                  {todaySymptoms.length > 0
-                    ? `${todaySymptoms.length} logged`
-                    : "None today"}
-                </Text>
-                {todaySymptoms.length > 0 ? (
-                  <View style={[styles.qualityBadge, { backgroundColor: severityInfo.bg }]}>
-                    <Text style={[styles.qualityBadgeText, { color: severityInfo.color }]}>
-                      {severityInfo.label}
-                    </Text>
+                <View style={styles.cardHeaderActionRow}>
+                  <View style={[styles.iconBox, { backgroundColor: CARE_CARD_COLORS.water.bg }]}>
+                    <CareIcon name="water" color={CARE_CARD_COLORS.water.icon} size={18} />
                   </View>
-                ) : (
-                  <View style={styles.miniTrackPlaceholder} />
-                )}
-                <View style={styles.cardHintRow}>
-                  <Ionicons name="list-outline" size={12} color={colors.navy[300]} />
-                  <Text style={styles.cardHintText}>Tap to view symptoms</Text>
+                  <View style={styles.actionCircleTrigger}>
+                    <Ionicons name="add" size={16} color={CARE_CARD_COLORS.water.icon} />
+                  </View>
+                </View>
+                <Text style={styles.careCardLabel}>Hydration</Text>
+                <Text style={styles.careCardValueText}>
+                  {glassesCount}/{targetGlasses} <Text style={styles.careCardUnitText}>glasses</Text>
+                </Text>
+                <View style={styles.miniTrack}>
+                  <View style={[styles.miniFill, { width: `${hydrationProgress}%`, backgroundColor: CARE_CARD_COLORS.water.icon }]} />
                 </View>
               </TouchableOpacity>
 
-              {/* Kick Counter */}
+              {/* Folic Acid Dynamic Checkbox Card */}
               <TouchableOpacity
                 style={[
-                  styles.careCard,
-                  isWide && styles.careCardWide,
-                  !canUseKickCounter && styles.careCardDisabled,
+                  styles.interactiveGridCard, 
+                  folicTakenToday && { backgroundColor: "#FDFDFD", borderColor: AUTH_UI.lineSoftWarm },
+                  !hasCompletedOnboarding && styles.careCardDisabled
                 ]}
-                onPress={() =>
-                  canUseKickCounter
-                    ? activeKickSession
-                      ? router.push(`/tracker/kick/${activeKickSession.id}` as any)
-                      : router.push("/tabs/tracker")
-                    : undefined
-                }
-                activeOpacity={0.85}
-                disabled={!canUseKickCounter}
-                accessibilityRole="button"
-                accessibilityLabel="Kick Counter card"
+                onPress={handleFolicAcidTap}
+                activeOpacity={0.82}
+                disabled={!hasCompletedOnboarding || folicTakenToday || logFolicAcid.isPending}
+                accessible={true}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: folicTakenToday }}
+                accessibilityLabel="Folic Acid prenatal intake tracking card."
               >
-                <View
-                  style={[
-                    styles.iconBox,
-                    {
-                      backgroundColor: canUseKickCounter
-                        ? colors.rose[50]
-                        : AUTH_UI.semanticNeutralBg,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name="heart"
-                    size={18}
-                    color={canUseKickCounter ? colors.rose[400] : AUTH_UI.mutedIcon}
+                <View style={styles.cardHeaderActionRow}>
+                  <View style={[styles.iconBox, { backgroundColor: CARE_CARD_COLORS.folic.bg }]}>
+                    <Ionicons name="medkit-outline" size={18} color={CARE_CARD_COLORS.folic.icon} />
+                  </View>
+                  <Ionicons 
+                    name={folicTakenToday ? "checkmark-circle" : "ellipse-outline"} 
+                    size={22} 
+                    color={folicTakenToday ? AUTH_UI.linkBerry : "#E1D5CB"} 
                   />
                 </View>
-                <Text style={styles.careCardLabel}>Kick Counter</Text>
-                <Text style={styles.careCardVal} numberOfLines={1} adjustsFontSizeToFit>
-                  {canUseKickCounter ? `${todayKickCount} kicks` : `Starts at week ${KICK_COUNTER_MIN_WEEK}`}
+                <Text style={styles.careCardLabel}>Folic Acid</Text>
+                <Text style={[styles.careCardValueText, folicTakenToday && styles.completedValueText]}>
+                  {folicTakenToday ? "Completed" : "0/1 logged"}
                 </Text>
-                <Text style={styles.careCardSubtle} numberOfLines={1} adjustsFontSizeToFit>
-                  {canUseKickCounter ? formatKickDuration(todayKickDurationMinutes) : `Current week ${gestationalWeek}`}
+                <Text style={styles.cardContextCaption}>
+                  {folicTakenToday ? "Logged for today ✨" : "Tap to record intake"}
                 </Text>
-                <View style={styles.miniTrackPlaceholder} />
-                <View style={[styles.cardHintRow, !canUseKickCounter && styles.cardHintRowMuted]}>
-                  <Ionicons
-                    name={canUseKickCounter ? "timer-outline" : "lock-closed-outline"}
-                    size={12}
-                    color={canUseKickCounter ? colors.navy[300] : AUTH_UI.mutedText}
-                  />
-                  <Text style={[styles.cardHintText, !canUseKickCounter && styles.cardHintTextMuted]}>
-                    {canUseKickCounter ? "Tap to open counter" : "Counter unlocks from week 16"}
-                  </Text>
-                </View>
               </TouchableOpacity>
 
-              {/* Appointment */}
+            </View>
+          </View>
+
+          {/* ── GROUP 2: My Well-being Today ────────────────────── */}
+          <View style={[styles.section, isLargeText && styles.sectionLarge]}>
+            <Text style={styles.sectionTitle}>My Well-being Today</Text>
+            <View style={styles.gridRowTwoColumn}>
+
+              {/* Mood Synchronized Routing Card */}
               <TouchableOpacity
-                style={[styles.careCard, !hasCompletedOnboarding && styles.careCardDisabled, isWide && styles.careCardWide]}
+                style={[styles.interactiveGridCard, !hasCompletedOnboarding && styles.careCardDisabled]}
                 onPress={() =>
                   hasCompletedOnboarding
-                    ? router.push("/profile/appointments")
+                    ? router.push(activeMood ? (`/tracker/mood?mood=${activeMood}` as any) : ("/tracker/mood" as any))
                     : router.push(onboardingRedirectPath)
+                }
+                activeOpacity={0.82}
+                disabled={!hasCompletedOnboarding}
+              >
+                <View style={styles.cardHeaderActionRow}>
+                  <View style={[styles.iconBox, { backgroundColor: CARE_CARD_COLORS.mood.bg }]}>
+                    <CareIcon name="mood" color={CARE_CARD_COLORS.mood.icon} size={18} />
+                  </View>
+                  <Ionicons name="chevron-forward" size={14} color="#C4B4A7" />
+                </View>
+                <Text style={styles.careCardLabel}>Mood Status</Text>
+                <Text style={styles.careCardValueText}>
+                  {todayMoodLog?.mood ? capitaliseMood(todayMoodLog.mood) : "Neutral"}
+                </Text>
+                <Text style={styles.cardContextCaption}>Tap to specify details</Text>
+              </TouchableOpacity>
+
+              {/* Symptoms Severity Badge Card */}
+              <TouchableOpacity
+                style={[styles.interactiveGridCard, !hasCompletedOnboarding && styles.careCardDisabled]}
+                onPress={() =>
+                  hasCompletedOnboarding ? router.push("/tracker/symptoms" as any) : router.push(onboardingRedirectPath)
+                }
+                activeOpacity={0.82}
+                disabled={!hasCompletedOnboarding}
+              >
+                <View style={styles.cardHeaderActionRow}>
+                  <View style={[styles.iconBox, { backgroundColor: CARE_CARD_COLORS.symptoms.bg }]}>
+                    <CareIcon name="symptoms" color={CARE_CARD_COLORS.symptoms.icon} size={18} />
+                  </View>
+                  {todaySymptoms.length > 0 ? (
+                    <View style={[styles.severityInlineTag, { backgroundColor: severityInfo.bg }]}>
+                      <Text style={[styles.severityTagText, { color: severityInfo.color }]}>{severityInfo.label}</Text>
+                    </View>
+                  ) : <Ionicons name="chevron-forward" size={14} color="#C4B4A7" />}
+                </View>
+                <Text style={styles.careCardLabel}>Symptoms</Text>
+                <Text style={styles.careCardValueText}>
+                  {todaySymptoms.length} {todaySymptoms.length === 1 ? "logged" : "logs"}
+                </Text>
+                <Text style={styles.cardContextCaption}>
+                  {todaySymptoms.length > 0 ? "Tap to add updates" : "Feeling safe & steady"}
+                </Text>
+              </TouchableOpacity>
+
+            </View>
+
+            {/* Rest / Sleep Progress-Assigned Row Module Layout Integration */}
+            <TouchableOpacity
+              style={[styles.interactiveFullWidthCard, !hasCompletedOnboarding && styles.careCardDisabled, { marginTop: 12 }]}
+              onPress={() =>
+                hasCompletedOnboarding ? router.push("/tracker/sleep" as any) : router.push(onboardingRedirectPath)
+              }
+              activeOpacity={0.85}
+              disabled={!hasCompletedOnboarding}
+            >
+              <View style={styles.fullWidthLayoutRow}>
+                <View style={[styles.iconBox, { backgroundColor: sleepQuality.bgColor, marginRight: 12 }]}>
+                  <CareIcon name="sleep" color={sleepQuality.color} size={18} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={styles.textSpaceBetweenRow}>
+                    <Text style={styles.careCardLabel}>Rest & Sleep Quality</Text>
+                    {sleepBand && (
+                      <View style={[styles.qualityBadge, { backgroundColor: sleepQuality.bgColor }]}> 
+                        <Text style={[styles.qualityBadgeText, { color: sleepQuality.color }]}> 
+                          {sleepQuality.qualityLabel}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.fullWidthValueText}>{formatSleepDuration(sleepBand)}</Text>
+                  {sleepQuality.progress > 0 && (
+                    <View style={[styles.miniTrack, { marginTop: 6, marginBottom: 0 }]}>
+                      <View style={[styles.miniFill, { width: `${sleepQuality.progress}%`, backgroundColor: sleepQuality.color }]} />
+                    </View>
+                  )}
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#C4B4A7" style={{ marginLeft: 8 }} />
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* ── GROUP 3: Baby & Clinical Tracking ───────────────── */}
+          {canUseKickCounter && (
+            <View style={[styles.section, isLargeText && styles.sectionLarge, { marginBottom: 24 }]}>
+              <Text style={styles.sectionTitle}>Baby & Clinical Tracking</Text>
+              
+              {/* Kick Counter Large-Target Interactive Interface Component */}
+              <TouchableOpacity
+                style={[styles.interactiveFullWidthCard, !hasCompletedOnboarding && styles.careCardDisabled]}
+                onPress={() =>
+                  hasCompletedOnboarding ? router.push("/tracker/kicks" as any) : router.push(onboardingRedirectPath)
                 }
                 activeOpacity={0.85}
                 disabled={!hasCompletedOnboarding}
-                accessibilityRole="button"
-                accessibilityLabel="Appointment card"
               >
-                <View style={[styles.iconBox, { backgroundColor: colors.rose[50] }]}> 
-                  <Ionicons name="calendar-outline" size={18} color={colors.rose[400]} />
-                </View>
-                <Text style={styles.careCardLabel}>Appointment</Text>
-                <Text style={styles.careCardVal} numberOfLines={1} adjustsFontSizeToFit>
-                  {nextAppointment ? "Upcoming visit" : "No upcoming visit"}
-                </Text>
-                <Text style={styles.careCardSubtle} numberOfLines={1} adjustsFontSizeToFit>
-                  {nextAppointment ? formatAppointmentDate(nextAppointment.scheduled_at) : "Schedule your next check-up"}
-                </Text>
-                <View style={styles.miniTrackPlaceholder} />
-                <View style={styles.cardHintRow}>
-                  <Ionicons name="open-outline" size={12} color={colors.navy[300]} />
-                  <Text style={styles.cardHintText}>Tap to manage appointments</Text>
+                <View style={styles.fullWidthLayoutRow}>
+                  <View style={[styles.iconBox, { backgroundColor: "#FFF0F2", marginRight: 12 }]}>
+                    <Ionicons name="heart-outline" size={20} color={colors.rose[500]} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.careCardLabel}>Fetal Movement Counter</Text>
+                    <Text style={styles.fullWidthValueText}>
+                      {todayKickCount} <Text style={styles.careCardUnitText}>kicks recorded today</Text>
+                    </Text>
+                    <Text style={styles.cardContextCaption}>{formatKickDuration(todayKickDurationMinutes)}</Text>
+                  </View>
+                  <View style={styles.kickActionCapsuleAccent}>
+                    <Text style={styles.kickActionCapsuleText}>Open Counter</Text>
+                    <Ionicons name="chevron-forward" size={12} color={AUTH_UI.textWhite} />
+                  </View>
                 </View>
               </TouchableOpacity>
-
             </View>
-          </View>
+          )}
         </ScrollView>
-
-        <Modal
-          visible={showMoodSheet}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowMoodSheet(false)}
-        >
-          <View style={styles.moodSheetBackdrop}>
-            <TouchableOpacity
-              style={styles.moodSheetScrim}
-              activeOpacity={1}
-              onPress={() => setShowMoodSheet(false)}
-            />
-            <View style={styles.moodSheetCard}>
-              <Text style={styles.moodSheetTitle}>How are you feeling today?</Text>
-              <Text style={styles.moodSheetSubtitle}>Pick what feels closest right now.</Text>
-              <View style={styles.moodSheetGrid}>
-                {EXTRA_FEELING_OPTIONS.map((option) => (
-                  <TouchableOpacity
-                    key={option.label}
-                    style={styles.moodSheetOption}
-                    activeOpacity={0.86}
-                    onPress={() => {
-                      setShowMoodSheet(false);
-                      void handleFeelingSelect(option.mappedFeeling);
-                    }}
-                  >
-                    <Text style={styles.moodSheetOptionText}>{option.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </View>
-        </Modal>
       </LinearGradient>
+
+      {/* ── More Options Emotional Bottom Sheet Overlay ──────── */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showMoodSheet}
+        onRequestClose={() => setShowMoodSheet(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlayScrim} 
+          activeOpacity={1} 
+          onPress={() => setShowMoodSheet(false)}
+        >
+          <View style={styles.modalContentSheet}>
+            <View style={styles.modalDragHandleIndicator} />
+            <Text style={styles.modalTitleText}>How are you feeling inside, mama?</Text>
+            <Text style={styles.modalSubtitleText}>Select an expanded emotional tag to instantly sync with your journal logs.</Text>
+            
+            <View style={styles.modalOptionGrid}>
+              {EXTRA_FEELING_OPTIONS.map((opt, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.modalTagItem}
+                  onPress={() => {
+                    setShowMoodSheet(false);
+                    void handleFeelingSelect(opt.mappedFeeling);
+                  }}
+                >
+                  <Text style={styles.modalTagItemText}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity 
+              style={styles.modalCancelButton}
+              onPress={() => setShowMoodSheet(false)}
+            >
+              <Text style={styles.modalCancelButtonText}>Close choices</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-
-const CARD_GAP = 12;
-const CARD_WIDTH = `${(100 - CARD_GAP * 0.5) / 2}%` as const;
-
 const styles = StyleSheet.create({
-  screen:    { flex: 1, backgroundColor: AUTH_UI.warmBackground },
+  screen: { flex: 1, backgroundColor: AUTH_UI.warmBackground },
   bgOverlay: { flex: 1 },
-  content: {
-    padding: 15,
-    paddingTop: 16,
-    paddingBottom: 56,
-  },
-  contentWide: {
-    width: "100%",
-    maxWidth: 1180,
-    alignSelf: "center",
-    padding: 32,
-    paddingTop: 28,
-  },
-  contentCompact: {
-    paddingHorizontal: 16,
-  },
-  contentLargeText: {
-    paddingBottom: 40,
-  },
+  content: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 40 },
+  contentWide: { maxWidth: 600, alignSelf: "center", width: "100%" },
+  contentCompact: { paddingHorizontal: 12 },
+  contentLargeText: { paddingTop: 24 },
 
-  // ── Next Visit Banner ──────────────────────────────────────
-  banner: {
-    marginHorizontal: 16,
-    marginTop: 52,    // below safe area
-    marginBottom: 4,
-    borderRadius: 16,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: colors.rose[200],
-    elevation: 3,
-    shadowColor: colors.rose[500],
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  bannerGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    gap: 12,
-  },
-  bannerIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: colors.rose[50],
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  bannerText: { flex: 1 },
-  bannerTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: AUTH_UI.linkBerry,
-    letterSpacing: 0.2,
-    marginBottom: 2,
-    fontFamily: FONT_FRIENDLY_SANS,
-  },
-  bannerDate: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: AUTH_UI.textHeading,
-    fontFamily: FONT_FRIENDLY_SANS,
-  },
-  bannerActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  bannerDismiss: {
-    padding: 8,
-  },
-  trackerBanner: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 4,
-    borderRadius: 16,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: colors.rose[200],
-    elevation: 2,
-    shadowColor: colors.rose[500],
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  trackerBannerStandalone: {
-    marginTop: 52,
-  },
-  trackerBannerIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: colors.rose[50],
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  trackerBannerTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: AUTH_UI.linkBerry,
-    letterSpacing: 0.2,
-    marginBottom: 2,
-    fontFamily: FONT_FRIENDLY_SANS,
-  },
-  trackerBannerDate: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: AUTH_UI.textHeading,
-    fontFamily: FONT_FRIENDLY_SANS,
-  },
+  banner: { marginHorizontal: 16, marginTop: 12, borderRadius: 16, overflow: "hidden", borderWidth: 1, borderColor: AUTH_UI.lineSoftWarm },
+  bannerGradient: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
+  bannerIconWrap: { width: 34, height: 34, borderRadius: 10, backgroundColor: "#FFF0F2", justifyContent: "center", alignItems: "center" },
+  bannerText: { flex: 1, gap: 2 },
+  bannerTitle: { fontSize: 13, fontWeight: "700", color: AUTH_UI.textHeading, fontFamily: FONT_FRIENDLY_SANS },
+  bannerDate: { fontSize: 14, fontWeight: "800", color: colors.rose[500], fontFamily: FONT_WARM_SERIF },
+  bannerActions: { flexDirection: "row", alignItems: "center", gap: 10 },
+  bannerDismiss: { width: 22, height: 22, borderRadius: 11, backgroundColor: "rgba(0,0,0,0.04)", justifyContent: "center", alignItems: "center" },
 
-  // ── Hero ────────────────────────────────────────────────────
-  greetingText: { fontSize: 30, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF, letterSpacing: -0.5 },
-  greetingTextStandalone: {
-    marginTop: 8,
-    marginBottom: 16,
-    alignSelf: "flex-start",
-  },
-  greetingTextStandaloneLarge: {
-    marginBottom: 20,
-  },
-  sparkle:      { fontSize: 20 },
-  weekRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 5,
-  },
-  weekText: { fontSize: 16, fontWeight: "600", color: AUTH_UI.linkBerry, flex: 1, fontFamily: FONT_FRIENDLY_SANS },
-  eggContainer: {
-    width: 50, height: 50, borderRadius: 25,
-    backgroundColor: AUTH_UI.textWhite,
-    alignItems: "center", justifyContent: "center",
-    elevation: 4, shadowOpacity: 0.1,
-  },
-  eggIcon: { fontSize: 24 },
+  trackerBanner: { marginHorizontal: 16, marginTop: 8, borderRadius: 16, overflow: "hidden", borderWidth: 1, borderColor: AUTH_UI.lineSoftWarm },
+  trackerBannerStandalone: { marginTop: 14 },
+  trackerBannerIconWrap: { width: 34, height: 34, borderRadius: 10, backgroundColor: AUTH_UI.avatarRoseBg, justifyContent: "center", alignItems: "center" },
+  trackerBannerTitle: { fontSize: 13, fontWeight: "700", color: AUTH_UI.textHeading, fontFamily: FONT_FRIENDLY_SANS },
+  trackerBannerDate: { fontSize: 12, color: AUTH_UI.textWarmStrong, fontFamily: FONT_FRIENDLY_SANS },
 
-  // ── Sections ────────────────────────────────────────────────
-  section: { marginTop: 28 },
-  sectionLarge: { marginTop: 32 },
-  sectionTitle: {
-    fontSize: 22, fontWeight: "700",
-    color: AUTH_UI.textHeading, marginBottom: 14, fontFamily: FONT_WARM_SERIF,
-  },
+  greetingText: { fontSize: 26, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF, marginBottom: 4 },
+  greetingTextStandalone: { paddingHorizontal: 4, marginTop: 6 },
+  greetingTextStandaloneLarge: { fontSize: 30 },
+  sparkle: { fontSize: 22 },
 
-  // ── Feeling row ─────────────────────────────────────────────
-  feelingRow: { flexDirection: "row", justifyContent: "space-between" },
-  feelingRowWrap: {
-    flexWrap: "wrap",
-    rowGap: 14,
-  },
-  feelingCol:  { alignItems: "center", width: "22%" },
-  feelingColLarge: {
-    width: "47%",
-  },
-  feelingColWide: {
-    width: "auto",
-    minWidth: 110,
-  },
-  moodCircle: {
-    width: 55, height: 55, borderRadius: 28,
-    backgroundColor: AUTH_UI.textWhite,
-    alignItems: "center", justifyContent: "center",
-    elevation: 2, shadowOpacity: 0.05,
-  },
-  moodCircleActive: {
-    borderWidth: 2, borderColor: colors.rose[500],
-    transform: [{ scale: 1.1 }],
-  },
-  moodCircleMore: {
-    backgroundColor: colors.rose[50],
-  },
-  moodEmoji:       { fontSize: 24 },
-  moodEmojiMore: { color: AUTH_UI.linkBerry, fontWeight: "700", fontFamily: FONT_FRIENDLY_SANS },
-  moodLabel:       { fontSize: 14, marginTop: 8, color: AUTH_UI.textBlack, fontFamily: FONT_FRIENDLY_SANS },
-  moodLabelActive: { color: AUTH_UI.linkBerry, fontWeight: "700", fontFamily: FONT_FRIENDLY_SANS },
+  onboardingNotice: { backgroundColor: "#FFF9E6", borderWidth: 1, borderColor: "#FFEAA6", borderRadius: 16, padding: 14, marginBottom: 16, marginTop: 4 },
+  onboardingNoticeTitle: { fontSize: 14, fontWeight: "700", color: "#8A6D00", fontFamily: FONT_FRIENDLY_SANS, marginBottom: 2 },
+  onboardingNoticeText: { fontSize: 13, color: "#665100", lineHeight: 18, fontFamily: FONT_FRIENDLY_SANS },
 
-  // ── Care grid ───────────────────────────────────────────────
-  careGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: CARD_GAP,
-  },
-  careCard: {
-    width: CARD_WIDTH,
-    minHeight: 156,
-    backgroundColor: AUTH_UI.cream,
-    borderRadius: 20,
-    padding: 14,
-    flexDirection: "column",
-    justifyContent: "flex-start",
-    borderWidth: 1,
-    borderColor: colors.rose[200],
-    elevation: 3,
-    shadowColor: colors.rose[500],
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  careCardWide: {
-    width: "23.5%",
-    minWidth: 210,
-  },
-  iconBox: {
-    width: 34, height: 34, borderRadius: 11,
-    alignItems: "center", justifyContent: "center",
-    marginBottom: 8,
-  },
-  careCardLabel: {
-    fontSize: 14,
-    color: AUTH_UI.textBlack,
-    fontWeight: "700",
-    letterSpacing: 0.2,
-    marginBottom: 4,
-    fontFamily: FONT_FRIENDLY_SANS,
-  },
-  careCardVal: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: AUTH_UI.textHeading,
-    fontFamily: FONT_FRIENDLY_SANS,
-  },
-  careCardSubtle: {
-    marginTop: 2,
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: "700",
-    color: AUTH_UI.textBlack,
-    fontFamily: FONT_FRIENDLY_SANS,
-  },
-  careCardDisabled: {
-    opacity: 0.65,
-  },
-  onboardingNotice: {
-    marginTop: 18,
-    marginBottom: 8,
-    padding: 16,
-    borderRadius: 18,
-    backgroundColor: AUTH_UI.semanticNeutralBg,
-    borderWidth: 1,
-    borderColor: colors.navy[100],
-  },
-  onboardingNoticeTitle: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: AUTH_UI.textHeading,
-    marginBottom: 4,
-    fontFamily: FONT_WARM_SERIF,
-  },
-  onboardingNoticeText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: AUTH_UI.textBlack,
-    fontFamily: FONT_FRIENDLY_SANS,
-  },
+  section: { marginTop: 22 },
+  sectionLarge: { marginTop: 28 },
+  sectionTitle: { fontSize: 16, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF, marginBottom: 14, paddingHorizontal: 2, letterSpacing: 0.1 },
 
-  // Quality / severity badge
-  qualityBadge: {
-    alignSelf: "flex-start",
-    borderRadius: 6,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    marginTop: 5,
-  },
-  qualityBadgeText: {
-    fontSize: 13,
-    fontWeight: "800",
-    letterSpacing: 0.3,
-  },
+  feelingRow: { flexDirection: "row", justifyContent: "space-between", backgroundColor: "#FFFFFF", borderRadius: 24, paddingVertical: 14, paddingHorizontal: 8, borderWidth: 1, borderColor: AUTH_UI.lineSoftWarm },
+  feelingRowWrap: { flexWrap: "wrap", gap: 10 },
+  feelingCol: { flex: 1, alignItems: "center", gap: 6 },
+  feelingColWide: { maxWidth: 90 },
+  feelingColLarge: { gap: 8 },
+  moodCircle: { width: 46, height: 46, borderRadius: 23, backgroundColor: "#FAF5F0", justifyContent: "center", alignItems: "center" },
+  moodCircleMore: { backgroundColor: "#FFF0F2" },
+  moodCircleActive: { backgroundColor: AUTH_UI.linkBerry, borderWidth: 1, borderColor: AUTH_UI.shadowRose },
+  moodEmoji: { fontSize: 20, textAlign: "center" },
+  moodEmojiMore: { color: AUTH_UI.linkBerry, fontWeight: "700" },
+  moodLabel: { fontSize: 12, color: AUTH_UI.textWarmStrong, fontWeight: "600", fontFamily: FONT_FRIENDLY_SANS },
+  moodLabelActive: { color: AUTH_UI.linkBerry, fontWeight: "700" },
 
-  // Urgent red dot on symptoms icon
-  urgentDot: {
-    position: "absolute",
-    top: -2, right: -2,
-    width: 8, height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.rose[500],
-    borderWidth: 1.5,
-    borderColor: AUTH_UI.cream,
-  },
+  gridRowTwoColumn: { flexDirection: "row", gap: 12, justifyContent: "space-between" },
+  interactiveGridCard: { flex: 1, backgroundColor: "#FFFFFF", borderRadius: 20, padding: 14, borderWidth: 1, borderColor: "#F5EEE7", position: "relative", justifyContent: "space-between", minHeight: 128 },
+  cardHeaderActionRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
+  iconBox: { width: 34, height: 34, borderRadius: 10, justifyContent: "center", alignItems: "center" },
+  actionCircleTrigger: { width: 22, height: 22, borderRadius: 11, backgroundColor: "#FAF5F0", justifyContent: "center", alignItems: "center" },
+  careCardLabel: { fontSize: 13, fontWeight: "700", color: AUTH_UI.textWarm, fontFamily: FONT_FRIENDLY_SANS, marginBottom: 2 },
+  careCardValueText: { fontSize: 18, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF },
+  careCardUnitText: { fontSize: 12, fontWeight: "600", color: AUTH_UI.textWarmStrong },
+  completedValueText: { color: AUTH_UI.linkBerry },
+  cardContextCaption: { fontSize: 11, color: "#A89A8E", fontFamily: FONT_FRIENDLY_SANS, marginTop: 4 },
 
-  // Progress bar
-  miniTrack: {
-    height: 6,
-    backgroundColor: colors.rose[100],
-    borderRadius: 3,
-    overflow: "hidden",
-    marginTop: "auto",
-  },
+  miniTrack: { height: 5, backgroundColor: "#F0E6DD", borderRadius: 3, marginTop: 10, overflow: "hidden", width: "100%" },
   miniFill: { height: "100%", borderRadius: 3 },
-  miniTrackPlaceholder: { height: 6, marginTop: "auto" },
-  cardHintRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginTop: 7,
-    alignSelf: "flex-start",
-    backgroundColor: colors.rose[50],
-    borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    minHeight: 28,
-  },
-  cardHintRowMuted: {
-    backgroundColor: AUTH_UI.semanticNeutralBg,
-  },
-  cardHintText: {
-    fontSize: 13,
-    color: AUTH_UI.linkBerry,
-    fontWeight: "700",
-    fontFamily: FONT_FRIENDLY_SANS,
-  },
-  cardHintTextMuted: {
-    color: AUTH_UI.mutedText,
-  },
-  moodSheetBackdrop: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  moodSheetScrim: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: AUTH_UI.overlayScrim,
-  },
-  moodSheetCard: {
-    backgroundColor: AUTH_UI.cream,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 28,
-    gap: 10,
-  },
-  moodSheetTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: AUTH_UI.textHeading,
-    fontFamily: FONT_WARM_SERIF,
-  },
-  moodSheetSubtitle: {
-    fontSize: 15,
-    color: AUTH_UI.textBlack,
-    lineHeight: 22,
-    marginBottom: 2,
-    fontFamily: FONT_FRIENDLY_SANS,
-  },
-  moodSheetGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  moodSheetOption: {
-    width: "48%",
-    minHeight: 44,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.rose[200],
-    backgroundColor: AUTH_UI.textWhite,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-  },
-  moodSheetOptionText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: AUTH_UI.linkBerry,
-    fontFamily: FONT_FRIENDLY_SANS,
-  },
-  widgetBtn: { backgroundColor: AUTH_UI.overlayCard80, paddingVertical: 5, borderRadius: 15, alignItems: 'center', borderWidth: 1, borderColor: AUTH_UI.lineFaint },
-  widgetBtnText: { fontWeight: "700", color: AUTH_UI.textHeading, fontFamily: FONT_FRIENDLY_SANS },
+  careCardDisabled: { opacity: 0.5 },
 
+  severityInlineTag: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  severityTagText: { fontSize: 11, fontWeight: "700", fontFamily: FONT_FRIENDLY_SANS },
 
+  interactiveFullWidthCard: { width: "100%", backgroundColor: "#FFFFFF", borderRadius: 20, padding: 14, borderWidth: 1, borderColor: "#F5EEE7" },
+  fullWidthLayoutRow: { flexDirection: "row", alignItems: "center" },
+  textSpaceBetweenRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  qualityBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  qualityBadgeText: { fontSize: 11, fontWeight: "700", fontFamily: FONT_FRIENDLY_SANS },
+  fullWidthValueText: { fontSize: 16, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF, marginTop: 2 },
+
+  kickActionCapsuleAccent: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: AUTH_UI.linkBerry, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12 },
+  kickActionCapsuleText: { fontSize: 12, fontWeight: "700", color: AUTH_UI.textWhite, fontFamily: FONT_FRIENDLY_SANS },
+
+  modalOverlayScrim: { flex: 1, backgroundColor: "rgba(24,18,15,0.4)", justifyContent: "flex-end" },
+  modalContentSheet: { backgroundColor: "#FFFFFF", borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: Platform.OS === "ios" ? 40 : 24, width: "100%" },
+  modalDragHandleIndicator: { width: 40, height: 5, borderRadius: 2.5, backgroundColor: "#E6DCD3", alignSelf: "center", marginBottom: 16 },
+  modalTitleText: { fontSize: 19, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF, textAlign: "center", marginBottom: 6 },
+  modalSubtitleText: { fontSize: 14, color: AUTH_UI.textWarmStrong, fontFamily: FONT_FRIENDLY_SANS, textAlign: "center", marginBottom: 20, paddingHorizontal: 12, lineHeight: 20 },
+  modalOptionGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, justifyContent: "center", marginBottom: 24 },
+  modalTagItem: { backgroundColor: "#FAF5F0", borderWidth: 1, borderColor: "#EFE6DD", paddingHorizontal: 16, paddingVertical: 10, borderRadius: 14 },
+  modalTagItemText: { fontSize: 14, fontWeight: "700", color: AUTH_UI.textHeading, fontFamily: FONT_FRIENDLY_SANS },
+  modalCancelButton: { backgroundColor: "#F7EDF0", paddingVertical: 14, borderRadius: 16, alignItems: "center" },
+  modalCancelButtonText: { fontSize: 15, fontWeight: "700", color: AUTH_UI.linkBerry, fontFamily: FONT_FRIENDLY_SANS },
 });
