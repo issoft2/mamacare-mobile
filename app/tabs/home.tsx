@@ -34,6 +34,7 @@ import {
   useLogHydration,
   useLogMood,
   useActivePregnancy,
+  useStartKickSession
 } from "@safeborn/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -637,6 +638,8 @@ export default function HomeScreen() {
     [todayKickSessions, kickSessions]
   );
 
+  const startKick = useStartKickSession();
+  
   const greeting = useMemo(() => getTimeBasedGreeting(), []);
 
   return (
@@ -914,13 +917,13 @@ export default function HomeScreen() {
               {/* Kick Counter Large-Target Interactive Interface Component */}
               <TouchableOpacity
                 style={[styles.interactiveFullWidthCard, !hasCompletedOnboarding && styles.careCardDisabled]}
-                onPress={() =>
-                  canUseKickCounter
-                    ? activeKickSession
-                      ? router.push(`/tracker/kick/${activeKickSession.id}` as any)
-                      : router.push("/tabs/tracker")
-                    : undefined
-                }
+                onPress={async () => {
+                     if(activeKickSession) router.push(`/tracker/kick/${activeKickSession.id}` as any);
+                     else {
+                       const session = await startKick.mutateAsync(profile?.gestational_week ?? 12);
+                       router.push(`/tracker/kick/${session.id}` as any);
+                     }
+                  }}
                 activeOpacity={0.85}
                 disabled={!hasCompletedOnboarding}
               >
