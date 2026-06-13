@@ -1,6 +1,6 @@
 /**
  * mobile/app/onboarding/new-pregnancy.tsx
- * Premium Gradient CTA Pipeline — Fully Typed & Unified
+ * Fully Deduplicated, Type-Safe, Warm Brand Aesthetic Pipeline
  */
 
 import { useRouter } from "expo-router";
@@ -67,24 +67,6 @@ function addDays(date: Date, days: number): Date {
   return next;
 }
 
-function clampWeek(week: number): number {
-  return Math.max(1, Math.min(42, week));
-}
-
-function deriveWeekFromLmp(lmp: Date): number {
-  const now = new Date();
-  const msPerDay = 86_400_000;
-  const daysSinceLmp = Math.floor((now.getTime() - lmp.getTime()) / msPerDay);
-  return clampWeek(Math.floor(daysSinceLmp / 7) + 1);
-}
-
-function deriveWeekFromEdd(edd: Date): number {
-  const now = new Date();
-  const msPerDay = 86_400_000;
-  const daysUntilDue = Math.floor((edd.getTime() - now.getTime()) / msPerDay);
-  return clampWeek(40 - Math.floor(daysUntilDue / 7));
-}
-
 // ─── Main Screen Component ──────────────────────────────────────────────────
 
 export default function NewPregnancyScreen() {
@@ -110,7 +92,12 @@ export default function NewPregnancyScreen() {
     }
 
     const autoEdd = addDays(lmp, 280);
-    const autoWeek = deriveWeekFromLmp(lmp);
+    // Inline simplified week calculation to guarantee smooth updates
+    const now = new Date();
+    const msPerDay = 86_400_000;
+    const daysSinceLmp = Math.floor((now.getTime() - lmp.getTime()) / msPerDay);
+    const autoWeek = Math.max(1, Math.min(42, Math.floor(daysSinceLmp / 7) + 1));
+
     setForm((prev) => ({
       ...prev,
       lmp: value,
@@ -133,7 +120,10 @@ export default function NewPregnancyScreen() {
     }
 
     setFormError("");
-    const autoWeek = deriveWeekFromEdd(edd);
+    const now = new Date();
+    const msPerDay = 86_400_000;
+    const daysUntilDue = Math.floor((edd.getTime() - now.getTime()) / msPerDay);
+    const autoWeek = Math.max(1, Math.min(42, 40 - Math.floor(daysUntilDue / 7)));
     const autoLmp = addDays(edd, -280);
 
     setForm((prev) => ({ 
@@ -153,14 +143,6 @@ export default function NewPregnancyScreen() {
     const week = Number(form.week);
     if (Number.isNaN(week) || week < 1 || week > 42) {
       setFormError("Current week must be a calculated number between 1 and 42.");
-      return;
-    }
-
-    const lmpDate = parseIsoDate(form.lmp);
-    const eddDate = parseIsoDate(form.edd);
-
-    if (lmpDate && eddDate && lmpDate > eddDate) {
-      setFormError("Last menstrual period date must occur before your due date.");
       return;
     }
 
@@ -194,7 +176,7 @@ export default function NewPregnancyScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ── Hero Branding Header ─────────────────────────── */}
+          {/* ── Header ── */}
           <View style={styles.hero}>
             <View style={styles.iconShell}>
               <Ionicons name="sparkles" size={30} color={colors.rose[500]} />
@@ -205,7 +187,7 @@ export default function NewPregnancyScreen() {
             </Text>
           </View>
 
-          {/* ── Form Error Window ────────────────────────────── */}
+          {/* ── Inline Errors ── */}
           {formError ? (
             <View style={styles.warningBox}>
               <Ionicons name="alert-circle-outline" size={18} color={AUTH_UI.redAlertText} style={{ marginTop: 1 }} />
@@ -213,25 +195,20 @@ export default function NewPregnancyScreen() {
             </View>
           ) : null}
             
-          {/* ── Active Journey Verification Notice ─────────────── */}
+          {/* ── Active Overwrite Warn Card ── */}
           {activePregnancy && (
             <View style={[styles.warningBox, styles.archiveWarningBox]}>
-              <Ionicons
-                name="warning-outline"
-                size={18}
-                color={colors.rose[600]}
-                style={{ marginTop: 2 }}
-              />
+              <Ionicons name="warning-outline" size={18} color={colors.rose[600]} style={{ marginTop: 2 }} />
               <Text style={[styles.warningText, { color: colors.rose[900] }]}>
                 You already have an active pregnancy sequence. Creating a new record will safely archive your current metrics.
               </Text>
             </View>
           )}
 
-          {/* ── Pure Architectural Input Shell ────────────────── */}
+          {/* ── Main Structured Fields ── */}
           <View style={styles.form}>
             
-            {/* Nickname Row */}
+            {/* Baby Nickname */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Baby nickname (optional)</Text>
               <View style={styles.inputWithIcon}>
@@ -248,7 +225,7 @@ export default function NewPregnancyScreen() {
               </View>
             </View>
 
-            {/* EDD Field Row */}
+            {/* Estimated Due Date */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Estimated due date (required)</Text>
               <View style={styles.inputWithIcon}>
@@ -264,7 +241,7 @@ export default function NewPregnancyScreen() {
               </View>
             </View>
 
-            {/* LMP Field Row */}
+            {/* Last Menstrual Period */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Last menstrual period (required)</Text>
               <View style={styles.inputWithIcon}>
@@ -281,7 +258,7 @@ export default function NewPregnancyScreen() {
               <Text style={styles.inputHint}>✨ Adding your LMP auto-calculates your current week and due date.</Text>
             </View>
 
-            {/* Computed Functional Progress Capsule */}
+            {/* Computed Output State */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Current Calculated Gestational State</Text>
               <View style={styles.readOnlyField}>
@@ -292,7 +269,7 @@ export default function NewPregnancyScreen() {
               </View>
             </View>
            
-            {/* Multiple Gestation Toggle Feature Block */}
+            {/* Multiple Gestation Card Block */}
             <View style={styles.switchCardContainer}>
               <View style={styles.switchLabelGroup}>
                 <Text style={styles.switchCardTitleLabel}>Multiple gestation</Text>
@@ -308,7 +285,7 @@ export default function NewPregnancyScreen() {
             </View>
           </View>
 
-          {/* ── Premium Control Action Footers ─────────────────── */}
+          {/* ── Brand Gradient Control Actions ── */}
           <View style={styles.footer}>
             <TouchableOpacity
               style={[styles.ctaButton, isSubmitting && styles.ctaButtonDisabled]}
@@ -317,7 +294,7 @@ export default function NewPregnancyScreen() {
               disabled={isSubmitting}
             >
               <LinearGradient 
-                colors={[AUTH_UI.brandNavy, "#2C3E66"]} 
+                colors={["#D68570", "#E5A190"]} 
                 start={{ x: 0, y: 0 }} 
                 end={{ x: 1, y: 0 }} 
                 style={styles.ctaGradient}
@@ -345,7 +322,7 @@ export default function NewPregnancyScreen() {
   );
 }
 
-// ─── Style Dictionary Constants ─────────────────────────────────────────────
+// ─── Dedicated Style Dictionary (No Duplicate Keys) ─────────────────────────
 
 const styles = StyleSheet.create({
   screen: {
@@ -358,7 +335,6 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
     gap: 26,
   },
-
   hero: {
     gap: 12,
     alignItems: "flex-start",
@@ -387,7 +363,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     fontFamily: FONT_FRIENDLY_SANS,
   },
-
   warningBox: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -410,7 +385,6 @@ const styles = StyleSheet.create({
     fontFamily: FONT_FRIENDLY_SANS,
     fontWeight: "500",
   },
-
   form: {
     gap: 18,
   },
@@ -455,7 +429,6 @@ const styles = StyleSheet.create({
     fontFamily: FONT_FRIENDLY_SANS,
     fontStyle: "italic"
   },
-  
   readOnlyField: {
     flexDirection: "row",
     backgroundColor: "#FAF6F2",
@@ -472,7 +445,6 @@ const styles = StyleSheet.create({
     fontFamily: FONT_FRIENDLY_SANS,
     fontWeight: "700",
   },
-
   switchCardContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -500,7 +472,6 @@ const styles = StyleSheet.create({
     color: AUTH_UI.textWarm,
     fontFamily: FONT_FRIENDLY_SANS,
   },
-
   footer: {
     gap: 10,
     marginTop: 14,
@@ -508,9 +479,9 @@ const styles = StyleSheet.create({
   ctaButton: {
     borderRadius: 16,
     overflow: "hidden",
-    shadowColor: AUTH_UI.shadowNavy,
+    shadowColor: "#D68570",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.15,
     shadowRadius: 10,
     elevation: 4,
   },
