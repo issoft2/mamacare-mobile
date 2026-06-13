@@ -136,7 +136,16 @@ function handleEddChange(value: string) {
   setFormError("");
 
   const autoWeek = deriveWeekFromEdd(edd);
-  setForm((prev) => ({ ...prev, edd: value, week: String(autoWeek) }));
+
+  const autoLmp = addDays(edd, -280);
+
+  setForm((prev) => ({ 
+    ...prev, 
+    edd: value,     
+    week: String(autoWeek),
+    lmp: formatIsoDate(autoLmp),
+  
+  }));
 }
 
 
@@ -253,7 +262,7 @@ function handleEddChange(value: string) {
             </View>
 
            <View style={styles.inputGroup}>
-            <Text style={styles.label}>Estimated due date</Text>
+            <Text style={styles.label}>Estimated due date (required)</Text>
             <View style={styles.inputWithIcon}>
               <Ionicons name="heart-outline" size={18} color={AUTH_UI.linkBerry} style={styles.inputIcon} />
               <TextInput
@@ -267,7 +276,7 @@ function handleEddChange(value: string) {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Last menstrual period (optional)</Text>
+            <Text style={styles.label}>Last menstrual period (required)</Text>
             <View style={styles.inputWithIcon}>
               <Ionicons name="calendar-outline" size={18} color={AUTH_UI.linkBerry} style={styles.inputIcon} />
               <TextInput
