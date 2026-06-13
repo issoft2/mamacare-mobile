@@ -1,6 +1,6 @@
 /**
- * mobile/app/tabs/new-pregnancy.tsx
- * Redesigned for High-Tier Maternal Warmth, Cohesive Input Rows, and Absolute Structural Consistency
+ * mobile/app/onboarding/new-pregnancy.tsx
+ * Premium Gradient CTA Pipeline — Fully Typed & Unified
  */
 
 import { useRouter } from "expo-router";
@@ -205,7 +205,7 @@ export default function NewPregnancyScreen() {
             </Text>
           </View>
 
-          {/* ── Form Error Window (Fixed Crash) ──────────────── */}
+          {/* ── Form Error Window ────────────────────────────── */}
           {formError ? (
             <View style={styles.warningBox}>
               <Ionicons name="alert-circle-outline" size={18} color={AUTH_UI.redAlertText} style={{ marginTop: 1 }} />
@@ -316,11 +316,18 @@ export default function NewPregnancyScreen() {
               activeOpacity={0.84}
               disabled={isSubmitting}
             >
-              {isSubmitting ? (
-                <ActivityIndicator color={AUTH_UI.textWhite} />
-              ) : (
-                <Text style={styles.ctaLabel}>Begin this journey</Text>
-              )}
+              <LinearGradient 
+                colors={[AUTH_UI.brandNavy, "#2C3E66"]} 
+                start={{ x: 0, y: 0 }} 
+                end={{ x: 1, y: 0 }} 
+                style={styles.ctaGradient}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color={AUTH_UI.textWhite} />
+                ) : (
+                  <Text style={styles.ctaLabel}>Begin this journey</Text>
+                )}
+              </LinearGradient>
             </TouchableOpacity>
             
             <TouchableOpacity
@@ -371,7 +378,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: "800",
     color: AUTH_UI.textHeading,
-    fontFamily: FONT_WARM_SERIF || FONT_WARM_SERIF,
+    fontFamily: FONT_WARM_SERIF,
     letterSpacing: -0.2,
   },
   subtitle: {
@@ -499,17 +506,20 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   ctaButton: {
-    backgroundColor: AUTH_UI.brandNavy,
     borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: "center",
-    justifyContent: "center",
+    overflow: "hidden",
     shadowColor: AUTH_UI.shadowNavy,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 10,
     elevation: 4,
+  },
+  ctaGradient: {
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
     minHeight: 54,
+    width: "100%",
   },
   ctaButtonDisabled: {
     opacity: 0.5,
