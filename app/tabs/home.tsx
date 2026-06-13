@@ -39,18 +39,6 @@ export default function HomeScreen() {
   return (
     <LinearGradient colors={["#FFFDF9", "#FFF5F0"]} style={styles.container}>
       {/* Premium Navigation Header Component */}
-      <View style={styles.headerBar}>
-        <TouchableOpacity style={styles.headerMenuBtn} activeOpacity={0.7}>
-          <Feather name="menu" size={18} color="#9C7A66" />
-        </TouchableOpacity>
-        <View style={styles.logoWrapper}>
-          <View style={styles.logoDot} />
-          <Text style={styles.logoText}>safeborn</Text>
-        </View>
-        <TouchableOpacity style={styles.headerMenuBtn} activeOpacity={0.7}>
-          <Feather name="bell" size={18} color="#9C7A66" />
-        </TouchableOpacity>
-      </View>
 
       <ScrollView 
         style={styles.scrollContainer}
