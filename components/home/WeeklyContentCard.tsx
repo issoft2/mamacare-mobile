@@ -1,240 +1,540 @@
 /**
  * mobile/components/home/WeeklyContentCard.tsx
- * * Premium 1:1 Hero Card - 100% TypeScript Compliant
+ *
+ * Displays the current week's pregnancy content on the home screen.
+ * Aligned with the single source of truth design token palette and fonts.
  */
 
-import React, { useState, useMemo } from "react";
+import { useRouter } from "expo-router";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
+  ActivityIndicator,
+  Alert,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { MaterialCommunityIcons, Feather } from "@expo/vector-icons";
-import { type WeeklyContent } from "@safeborn/api";
 
-interface WeeklyContentCardProps {
-  week?: number | null;
-  content?: WeeklyContent | null;
+import {
+  useWeekContent,
+  useCreateChatSession,
+  apiRequest,
+  type WeeklyContent,
+  useActivePregnancy,
+  useChatSessions,
+} from "@safeborn/api";
+import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
+import { ctaButtonStyles, ctaGradientColors } from "../styles/ctaButton";
+import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
+
+// ── Weekly Size Visual Tokens Map ─────────────────────────────────────────────
+const WEEKLY_SIZE_VISUALS: Record<number, { emoji: string; tint: string }> = {
+  4:  { emoji: "🌱", tint: "#EBF7ED" }, // Poppy Seed
+  8:  { emoji: "🍇", tint: "#F5EEFF" }, // Raspberry
+  12: { emoji: "🍋", tint: "#FFFDE6" }, // Lime
+  16: { emoji: "🥑", tint: "#EAF6EA" }, // Avocado
+  20: { emoji: "🍌", tint: "#FFFBEB" }, // Banana
+  24: { emoji: "🍈", tint: "#F4FBEA" }, // Cantaloupe
+  28: { emoji: "🍆", tint: "#FAEEFF" }, // Eggplant
+  32: { emoji: "🍍", tint: "#FFF9E6" }, // Pineapple
+  36: { emoji: "🍉", tint: "#FFF0F2" }, // Watermelon
+  40: { emoji: "🎃", tint: "#FFF3EB" }, // Pumpkin
+};
+
+function getWeeklySizeVisual(week: number) {
+  const keys = Object.keys(WEEKLY_SIZE_VISUALS).map(Number).sort((a, b) => b - a);
+  const matchedKey = keys.find((k) => week >= k) || 4;
+  return WEEKLY_SIZE_VISUALS[matchedKey];
 }
 
-const EMOTIONS = [
-  { label: "Tired", iconProvider: "MaterialCommunityIcons" as const, iconName: "sleep" as const, color: "#8A7365" },
-  { label: "Calm", iconProvider: "Feather" as const, iconName: "heart" as const, color: "#A3B899" },
-  { label: "Anxious", iconProvider: "Feather" as const, iconName: "zap" as const, color: "#D9A05B" },
-  { label: "Hopeful", iconProvider: "MaterialCommunityIcons" as const, iconName: "sparkles" as const, color: "#EAA383" },
-];
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function getDailyTip(tips: string[]): string {
+  if (!tips.length) return "";
+  const dayOfYear = Math.floor(
+    (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) /
+      86_400_000
+  );
+  return tips[dayOfYear % tips.length];
+}
 
-export function WeeklyContentCard({ week, content }: WeeklyContentCardProps) {
-  const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null);
+function trimesterLabel(t: number): string {
+  if (t === 1) return "1st trimester";
+  if (t === 2) return "2nd trimester";
+  return "3rd trimester";
+}
 
-  const displayWeek = week ?? 16;
-  const sizeLabel = content?.baby_size_label ?? "avocado";
-  const sizeCm = content?.baby_size_cm ?? "11.6";
+function getTrimesterStatusText(trimester: number, week: number): string {
+  if (trimester === 1) {
+    return week <= 4 ? "Welcome to Trimester 1" : "Growing in Trimester 1";
+  }
+  if (trimester === 2) {
+    if (week >= 13 && week <= 15) return "Welcome to Trimester 2";
+    if (week >= 24) return "Nearing Trimester 3";
+    return "Cruising through Trimester 2";
+  }
+  if (trimester === 3) {
+    if (week >= 28 && week <= 30) return "Welcome to Trimester 3";
+    if (week >= 37) return "Approaching full term!";
+    return "Deep in Trimester 3";
+  }
+  return "Your weekly update";
+}
+
+function buildWeeklyPrompt(content: WeeklyContent, week: number): string {
+  const sizeLabel = content.baby_size_label ?? "growing beautifully";
+  const currentTrimester = trimesterLabel(content.trimester);
+
+  return [
+    `Hi SafeBorn! I am officially in week ${week} of my pregnancy, running through my ${currentTrimester}.`,
+    `My homepage tracking card says my little one is about the size of a ${sizeLabel} right now! 🥰`,
+    `Can you give me a warm, older-sister overview of what is happening inside my body and with my baby's development this specific week?`,
+    `I would love some practical, reassuring advice on how to comfortably navigate changes at this stage, what self-care routines I should keep up with, and what standard warning signs I should keep in mind to stay safe. Thank you!`
+  ].join("\n\n");
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+export function WeeklyContentCard() {
+  const { width, fontScale } = useWindowDimensions();
+  const isCompact = width < 380;
+  const isLargeText = fontScale >= 1.2;
+  const router = useRouter();
   
-  // Universal elegant icon progression matching your native Expo glyph sets perfectly
-  const babyIconName = useMemo(() => {
-    if (displayWeek <= 8) return "sprout" as const;          // Early seed stages
-    if (displayWeek <= 13) return "leaf" as const;           // 1st Trimester transition
-    if (displayWeek <= 28) return "food-apple" as const;     // 2nd Trimester fruit milestones
-    return "baby-carriage" as const;                         // 3rd Trimester nesting
-  }, [displayWeek]);
+  const { data: pregnancy, isLoading: isActivePregnancyLoading } = useActivePregnancy();
+  const currentWeek = useMemo(() => resolveCurrentGestationalWeek(pregnancy), [pregnancy]);
+  
+  const { data: weekResponse, isLoading: isWeekLoading } = useWeekContent(currentWeek ?? 0);
+  const content = weekResponse?.content;
+  
+  const createSession = useCreateChatSession();
+  const [opening, setOpening] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
+  
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMounted = useRef(true);
+  const { data: chatSessions } = useChatSessions();
 
-  return (
-    <LinearGradient
-      colors={["#FFF0E6", "#FFE4D1"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.heroCard}
-    >
-      <View style={styles.decorativeBlur} />
+  // Defensive memory cleanup if component unmounts mid-stream
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
-      <View style={styles.topRow}>
-        <View style={styles.topLeft}>
-          <View style={styles.weekBadge}>
-            <Text style={styles.weekBadgeText}>{displayWeek} Weeks</Text>
+  const dailyTip = useMemo(
+    () => (content?.tips ? getDailyTip(content.tips) : ""),
+    [content?.tips]
+  );
+
+  const sizeVisual = useMemo(() => {
+    return currentWeek ? getWeeklySizeVisual(currentWeek) : { emoji: "🌱", tint: "#EBF7ED" };
+  }, [currentWeek]);
+
+  async function handleTap() {
+    if (!content || !currentWeek || opening) return;
+
+    const existingWeeklySession = chatSessions?.find(
+      (session: any) => session.gestational_week === currentWeek
+    );
+
+    if (existingWeeklySession) {
+      router.push(`/chat/${existingWeeklySession.id}`);
+      return;
+    }
+
+    setOpening(true);
+    setLoadingMessage("Connecting you with your Safe Born Assistant... Take a deep breath, we're preparing a beautiful space for you and your little one. 💕");
+
+    timerRef.current = setTimeout(() => {
+      if (isMounted.current) {
+        setLoadingMessage("Still working on it, mama! We're getting everything ready for you. Just a tiny moment more... ✨👶");
+      }
+    }, 2000);
+
+    try {
+      const session = await createSession.mutateAsync({
+        gestational_week: currentWeek,
+      });
+
+      const sessionId = session.id.toString();
+      const prompt = buildWeeklyPrompt(content, currentWeek);
+      
+      await apiRequest(`/chat/sessions/${sessionId}/messages`, {
+        method: "POST",
+        body: JSON.stringify({ content: prompt }),
+      });
+
+      if (timerRef.current) clearTimeout(timerRef.current);
+      
+      if (isMounted.current) {
+        router.push(`/chat/${sessionId}`);
+      }
+
+    } catch (err) {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      console.error("WeeklyContentCard error:", err);
+      
+      if (isMounted.current) {
+        Alert.alert(
+           "We're so sorry, mama",
+           "We had a little trouble creating your chat room. Please give it just a moment and try again. We're right with you! ❤️"
+         );
+      }
+    } finally {
+      if (isMounted.current) {
+        setOpening(false);
+        setLoadingMessage("");
+      }
+    }
+  }
+
+  // ── Loading State ──────────────────────────────────────────────────────────
+  if (isActivePregnancyLoading || (currentWeek != null && isWeekLoading)) {
+    return (
+      <View style={[styles.card, isCompact && styles.cardCompact, isLargeText && styles.cardLargeText, styles.loadingCard]}>
+        <ActivityIndicator color={AUTH_UI.linkBerry} size="small" />
+        <Text style={styles.loadingText}>Loading your weekly update…</Text>
+      </View>
+    );
+  }
+
+  // ── No Week Set State ──────────────────────────────────────────────────────
+  if (!currentWeek || !content) {
+    return (
+      <TouchableOpacity
+        style={[styles.card, isCompact && styles.cardCompact, isLargeText && styles.cardLargeText]}
+        onPress={() => router.push("/onboarding/profile-setup")}
+        activeOpacity={0.88}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel="Set your pregnancy due date to unlock customized content."
+      >
+        <LinearGradient
+          colors={[AUTH_UI.roseSoftBg, AUTH_UI.warmBackground]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.gradient, isLargeText && styles.gradientLargeText]}
+        >
+          <View style={styles.noWeekIconWrap}>
+            <Ionicons name="calendar-outline" size={26} color={AUTH_UI.shadowRose} />
           </View>
-          <Text style={styles.trimesterHeading}>
-            {displayWeek <= 12 ? "1st Trimester" : displayWeek <= 26 ? "Cruising through your 2nd Trimester" : "Deep in your 3rd Trimester"}
+          <Text style={styles.noWeekTitle}>What week are you on, mama?</Text>
+          <Text style={styles.noWeekSubtitle}>
+            Add your due date and we'll bring your week-by-week journey to life — just for you.
           </Text>
-        </View>
-        
-        <View style={styles.heroIconContainer}>
-          <MaterialCommunityIcons name={babyIconName} size={28} color="#5C4333" />
-        </View>
-      </View>
+          <View style={styles.noWeekCta}>
+            <Text style={styles.noWeekCtaText}>Set my due date</Text>
+            <Ionicons name="chevron-forward" size={14} color={AUTH_UI.linkBerry} />
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  }
 
-      <View style={styles.sizeCalloutBox}>
-        <Text style={styles.sizeCalloutText}>
-          Your little one is the size of an <Text style={styles.boldText}>{sizeLabel} ({sizeCm} cm)</Text>. They can hear your voice now!
-        </Text>
-      </View>
+  // ── Active Content State ───────────────────────────────────────────────────
+  return (
+    <View>
+      <TouchableOpacity
+        style={[styles.card, isCompact && styles.cardCompact, isLargeText && styles.cardLargeText]}
+        onPress={handleTap}
+        activeOpacity={0.88}
+        disabled={opening}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={`Week ${currentWeek} update. Trimester status: ${getTrimesterStatusText(content.trimester, currentWeek)}. Baby size: ${content.baby_size_label}. Double tap to discuss this milestone with your AI assistant.`}
+      >
+        <LinearGradient
+          colors={[AUTH_UI.roseSoftBg, AUTH_UI.warmBackground]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.gradient, isLargeText && styles.gradientLargeText]}
+        >
+          {/* ── Top Header Row ─────────────────────────────────── */}
+          <View style={[styles.topRow, isCompact && styles.topRowCompact, isLargeText && styles.topRowWrap]}>
+            <View style={[styles.weekBadge, isCompact && styles.weekBadgeCompact]}>
+              <Text style={styles.weekBadgeNumber}>{currentWeek}</Text>
+              <Text style={styles.weekBadgeLabel}>weeks</Text>
+            </View>
+            <View style={styles.topRight}>
+              <Text style={styles.trimesterLabel}>
+                {trimesterLabel(content.trimester)}
+              </Text>
+              <Text style={[styles.contentTitle, isCompact && styles.contentTitleCompact]} numberOfLines={1}>
+                {getTrimesterStatusText(content.trimester, currentWeek)}
+              </Text>
+            </View>
+            <Ionicons name="heart" size={18} color={AUTH_UI.shadowRose} style={styles.heartAccent} />
+          </View>
 
-      <View style={styles.emotionSection}>
-        <Text style={styles.emotionTitle}>How is your heart feeling right now?</Text>
-        <View style={styles.emotionGrid}>
-          {EMOTIONS.map((item) => {
-            const isSelected = selectedEmotion === item.label;
-            return (
-              <TouchableOpacity
-                key={item.label}
-                activeOpacity={0.8}
-                style={[
-                  styles.emotionButton,
-                  isSelected && styles.emotionButtonActive,
-                ]}
-                onPress={() => setSelectedEmotion(item.label)}
-              >
-                <View style={styles.emotionButtonContent}>
-                  {item.iconProvider === "Feather" ? (
-                    <Feather 
-                      name={item.iconName as any} 
-                      size={13} 
-                      color={isSelected ? "#CC7E5C" : item.color} 
-                      style={styles.buttonInlineIcon}
-                    />
-                  ) : (
-                    <MaterialCommunityIcons 
-                      name={item.iconName as any} 
-                      size={14} 
-                      color={isSelected ? "#CC7E5C" : item.color} 
-                      style={styles.buttonInlineIcon}
-                    />
-                  )}
-                  <Text style={[styles.emotionButtonText, isSelected && styles.emotionButtonTextActive]}>
-                    {item.label}
-                  </Text>
+          {/* ── Divider ─────────────────────────────────────────── */}
+          <View style={styles.divider} />
+
+          {/* ── Baby Size Data Row ── */}
+          {content.baby_size_label ? (
+            <View style={styles.sizeRowContainer}>
+              <View style={[styles.visualBadge, { backgroundColor: sizeVisual.tint }]}>
+                <Text style={styles.badgeVisualText}>{sizeVisual.emoji}</Text>
+              </View>
+              <View style={styles.sizeTextWrap}>
+                <Text style={styles.sizeLabelText}>YOUR BABY IS THE SIZE OF A</Text>
+                <Text style={styles.sizeValueText}>
+                  {content.baby_size_label}
+                  {content.baby_size_cm ? ` (${content.baby_size_cm} cm)` : ""}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
+          {/* ── Daily Personalized Tip ──────────────────────────── */}
+          {dailyTip ? (
+            <View style={styles.tipBox}>
+              <Ionicons name="sparkles" size={14} color={AUTH_UI.linkBerry} />
+              <Text style={styles.tipText} numberOfLines={2}>
+                {dailyTip}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* ── Slimmed Down & Compact Chat CTA Bar ──────────────── */}
+          <View style={[ctaButtonStyles.button, styles.ctaSlimOverride]}>
+            <LinearGradient
+              colors={ctaGradientColors}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.ctaGradientWrapper}
+            >
+              {opening ? (
+                <View style={styles.ctaContentRow}>
+                  <ActivityIndicator size="small" color={AUTH_UI.textWhite} />
+                  <Text style={[ctaButtonStyles.text, styles.ctaSingleLineText]}>Opening weekly chat…</Text>
                 </View>
-              </TouchableOpacity>
-            );
-          })}
+              ) : (
+                <View style={styles.ctaContentRow}>
+                  <Ionicons name="chatbubble-ellipses-outline" size={15} color={AUTH_UI.textWhite} style={styles.ctaIconVerticalFix} />
+                  <Text 
+                    style={[ctaButtonStyles.text, styles.ctaSingleLineText]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    Discuss Week {currentWeek} with Safeborn Agent
+                  </Text>
+                  <Ionicons name="chevron-forward" size={15} color={AUTH_UI.textWhite} style={styles.ctaIconVerticalFix} />
+                </View>
+              )}
+            </LinearGradient>
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+
+      {/* Inline dynamic loading context feedback layout */}
+      {opening && loadingMessage ? (
+        <View style={styles.inlineLoadingContainer}>
+          <ActivityIndicator size="small" color={AUTH_UI.linkBerry} style={{ marginBottom: 4 }} />
+          <Text style={styles.inlineLoadingFeedbackText}>{loadingMessage}</Text>
         </View>
-      </View>
-    </LinearGradient>
+      ) : null}
+    </View>
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  heroCard: {
+  card: {
     borderRadius: 24,
-    borderWidth: 1,
-    borderColor: "#FAD9C1",
-    padding: 20,
-    position: "relative",
-    overflow: "hidden",
-    marginBottom: 20,
-  },
-  decorativeBlur: {
-    position: "absolute",
-    right: -24,
-    bottom: -24,
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: "#FFD3B4",
-    opacity: 0.4,
-  },
-  topRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
     marginBottom: 16,
+    overflow: "hidden",
+    borderWidth: 1.5,
+    borderColor: AUTH_UI.lineSoftWarm,
+    ...Platform.select({
+      ios: {
+        shadowColor: AUTH_UI.shadowRose,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 12,
+      },
+      android: { elevation: 3 },
+    }),
   },
-  topLeft: {
-    flex: 1,
-    paddingRight: 8,
-  },
-  weekBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: "#EAA383",
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginBottom: 8,
-  },
-  weekBadgeText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  trimesterHeading: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#5C4333",
-  },
-  heroIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: "rgba(255, 255, 255, 0.4)",
+  cardCompact: { borderRadius: 20 },
+  cardLargeText: { marginBottom: 20 },
+  gradient: { padding: 18 },
+  gradientLargeText: { padding: 20 },
+
+  loadingCard: {
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.6)",
+    gap: 10,
+    backgroundColor: AUTH_UI.overlayCard,
+    paddingVertical: 28,
   },
-  sizeCalloutBox: {
-    backgroundColor: "rgba(255, 255, 255, 0.65)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.5)",
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 20,
+  loadingText: {
+    fontSize: 15,
+    color: AUTH_UI.textWarm,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
-  sizeCalloutText: {
-    fontSize: 12,
-    color: "#7A6150",
-    lineHeight: 17,
+
+  noWeekIconWrap: {
+    width: 52, height: 52, borderRadius: 26,
+    backgroundColor: AUTH_UI.avatarRoseBg,
+    justifyContent: "center", alignItems: "center",
+    marginBottom: 12, alignSelf: "center",
   },
-  boldText: {
-    fontWeight: "700",
-    color: "#5C4333",
+  noWeekTitle: {
+    fontSize: 18, fontWeight: "700", color: AUTH_UI.textHeading,
+    textAlign: "center", marginBottom: 8,
+    fontFamily: FONT_WARM_SERIF,
   },
-  emotionSection: {
-    borderTopWidth: 1,
-    borderColor: "rgba(245, 205, 175, 0.7)",
-    paddingTop: 16,
+  noWeekSubtitle: {
+    fontSize: 15, color: AUTH_UI.textBlack,
+    textAlign: "center", lineHeight: 22, marginBottom: 16,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
-  emotionTitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#7A6150",
-    textAlign: "center",
-    marginBottom: 12,
+  noWeekCta: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4 },
+  noWeekCtaText: { fontSize: 14, fontWeight: "700", color: AUTH_UI.linkBerry, fontFamily: FONT_FRIENDLY_SANS },
+
+  topRow: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 12 },
+  topRowCompact: { gap: 10, marginBottom: 10 },
+  topRowWrap: { alignItems: "flex-start" },
+  weekBadge: {
+    width: 54, height: 54, borderRadius: 27,
+    justifyContent: "center", alignItems: "center",
+    backgroundColor: AUTH_UI.linkBerry,
+    ...Platform.select({
+      ios: {
+        shadowColor: AUTH_UI.linkBerry,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 6,
+      },
+      android: { elevation: 3 },
+    }),
   },
-  emotionGrid: {
+  weekBadgeNumber: { fontSize: 20, fontWeight: "800", color: AUTH_UI.textWhite, lineHeight: 22 },
+  weekBadgeCompact: { width: 50, height: 50, borderRadius: 25 },
+  weekBadgeLabel: { fontSize: 10, fontWeight: "700", color: "rgba(255,255,255,0.82)", letterSpacing: 0.2 },
+  topRight: { flex: 1, gap: 2 },
+  trimesterLabel: { fontSize: 12, fontWeight: "700", color: AUTH_UI.textWarmStrong, letterSpacing: 0.4, fontFamily: FONT_FRIENDLY_SANS },
+  contentTitle: { fontSize: 19, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF },
+  contentTitleCompact: { fontSize: 17 },
+  heartAccent: { alignSelf: "flex-start", marginTop: 4 },
+
+  divider: { height: 1, backgroundColor: AUTH_UI.lineSoftWarm, marginBottom: 14 },
+
+  sizeRowContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: AUTH_UI.overlayCard,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: AUTH_UI.mutedBorder20,
+    marginBottom: 14,
+  },
+  visualBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  badgeVisualText: {
+    fontSize: 24,
+    textAlign: "center",
+  },
+  sizeTextWrap: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  sizeLabelText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: AUTH_UI.textWarm,
+    letterSpacing: 0.6,
+    fontFamily: FONT_FRIENDLY_SANS,
+    marginBottom: 1,
+  },
+  sizeValueText: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: AUTH_UI.textHeading,
+    fontFamily: FONT_WARM_SERIF,
+  },
+
+  tipBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: AUTH_UI.avatarRoseBg,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 6,
+    borderLeftWidth: 3,
+    borderLeftColor: AUTH_UI.shadowRose,
+  },
+  tipText: { flex: 1, fontSize: 14, color: AUTH_UI.textWarmStrong, lineHeight: 20, fontFamily: FONT_FRIENDLY_SANS },
+
+  ctaSlimOverride: {
+    height: "auto",
+    minHeight: 48,
+    marginTop: 10,
+    borderRadius: 16,
+    overflow: "hidden",
+    padding: 0,
+  },
+  ctaGradientWrapper: {
+    width: "100%",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  ctaContentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
     gap: 6,
   },
-  emotionButton: {
+  ctaSingleLineText: {
     flex: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.85)",
-    borderRadius: 12,
-    paddingVertical: 9,
+    fontSize: 14,
+    fontWeight: "700",
+    color: AUTH_UI.textWhite,
+    textAlign: "center",
+    marginTop: 0,
+    marginBottom: 0,
+    lineHeight: Platform.OS === "ios" ? 18 : 20,
+    ...Platform.select({
+      android: {
+        includeFontPadding: false,
+        textAlignVertical: "center",
+      },
+    }),
+  },
+  ctaIconVerticalFix: {
+    alignSelf: "center",
+  },
+  inlineLoadingContainer: {
+    marginTop: -4,
+    marginBottom: 16,
+    paddingHorizontal: 16,
     alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "transparent",
   },
-  emotionButtonActive: {
-    borderColor: "#EAA383",
-    backgroundColor: "#FFFFFF",
-  },
-  emotionButtonContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonInlineIcon: {
-    marginRight: 4,
-  },
-  emotionButtonText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#5C4333",
-  },
-  emotionButtonTextActive: {
-    color: "#CC7E5C",
+  inlineLoadingFeedbackText: {
+    fontSize: 13,
+    color: AUTH_UI.textWarmStrong,
+    textAlign: "center",
+    lineHeight: 18,
+    fontFamily: FONT_FRIENDLY_SANS,
   },
 });
