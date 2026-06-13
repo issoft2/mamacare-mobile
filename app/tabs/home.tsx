@@ -632,6 +632,11 @@ export default function HomeScreen() {
     [todayKickSessions]
   );
 
+  const activeKickSession = useMemo(
+    () => todayKickSessions.find((session) => !session.ended_at) ?? kickSessions?.find((session) => !session.ended_at),
+    [todayKickSessions, kickSessions]
+  );
+
   const greeting = useMemo(() => getTimeBasedGreeting(), []);
 
   return (
@@ -839,7 +844,7 @@ export default function HomeScreen() {
               <TouchableOpacity
                 style={[styles.interactiveGridCard, !hasCompletedOnboarding && styles.careCardDisabled]}
                 onPress={() =>
-                  hasCompletedOnboarding ? router.push("/tracker/symptoms" as any) : router.push(onboardingRedirectPath)
+                  hasCompletedOnboarding ? router.push("/tabs/symptoms" as any) : router.push(onboardingRedirectPath)
                 }
                 activeOpacity={0.82}
                 disabled={!hasCompletedOnboarding}
@@ -910,7 +915,11 @@ export default function HomeScreen() {
               <TouchableOpacity
                 style={[styles.interactiveFullWidthCard, !hasCompletedOnboarding && styles.careCardDisabled]}
                 onPress={() =>
-                  hasCompletedOnboarding ? router.push("/tracker/kicks" as any) : router.push(onboardingRedirectPath)
+                  canUseKickCounter
+                    ? activeKickSession
+                      ? router.push(`/tracker/kick/${activeKickSession.id}` as any)
+                      : router.push("/tabs/tracker")
+                    : undefined
                 }
                 activeOpacity={0.85}
                 disabled={!hasCompletedOnboarding}
