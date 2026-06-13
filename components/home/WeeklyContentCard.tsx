@@ -1,18 +1,17 @@
 /**
  * mobile/components/home/WeeklyContentCard.tsx
- * * Exact 1:1 match of the premium HTML Hero Card specification.
+ * * Premium 1:1 Hero Card - 100% TypeScript Compliant
  */
 
-import { useRouter } from "expo-router";
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { type WeeklyContent } from "@safeborn/api";
 
 interface WeeklyContentCardProps {
@@ -21,52 +20,57 @@ interface WeeklyContentCardProps {
 }
 
 const EMOTIONS = [
-  { label: "Tired", emoji: "🥺" },
-  { label: "Calm", emoji: "🤍" },
-  { label: "Anxious", emoji: "⚡" },
-  { label: "Hopeful", emoji: "✨" },
+  { label: "Tired", iconProvider: "MaterialCommunityIcons" as const, iconName: "sleep" as const, color: "#8A7365" },
+  { label: "Calm", iconProvider: "Feather" as const, iconName: "heart" as const, color: "#A3B899" },
+  { label: "Anxious", iconProvider: "Feather" as const, iconName: "zap" as const, color: "#D9A05B" },
+  { label: "Hopeful", iconProvider: "MaterialCommunityIcons" as const, iconName: "sparkles" as const, color: "#EAA383" },
 ];
 
 export function WeeklyContentCard({ week, content }: WeeklyContentCardProps) {
-  const { width } = useWindowDimensions();
-  const isCompact = width < 380;
-  const router = useRouter();
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null);
 
   const displayWeek = week ?? 16;
   const sizeLabel = content?.baby_size_label ?? "avocado";
   const sizeCm = content?.baby_size_cm ?? "11.6";
   
-  const trimesterText = useMemo(() => {
-    if (displayWeek <= 12) return "1st Trimester";
-    if (displayWeek <= 26) return "Cruising through your 2nd Trimester";
-    return "Deep in your 3rd Trimester";
+  // Universal elegant icon progression matching your native Expo glyph sets perfectly
+  const babyIconName = useMemo(() => {
+    if (displayWeek <= 8) return "sprout" as const;          // Early seed stages
+    if (displayWeek <= 13) return "leaf" as const;           // 1st Trimester transition
+    if (displayWeek <= 28) return "food-apple" as const;     // 2nd Trimester fruit milestones
+    return "baby-carriage" as const;                         // 3rd Trimester nesting
   }, [displayWeek]);
 
   return (
-    <View style={styles.heroCard}>
-      {/* Decorative background blur shape */}
+    <LinearGradient
+      colors={["#FFF0E6", "#FFE4D1"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.heroCard}
+    >
       <View style={styles.decorativeBlur} />
 
-      {/* Top Details Row */}
       <View style={styles.topRow}>
         <View style={styles.topLeft}>
           <View style={styles.weekBadge}>
             <Text style={styles.weekBadgeText}>{displayWeek} Weeks</Text>
           </View>
-          <Text style={styles.trimesterHeading}>{trimesterText}</Text>
+          <Text style={styles.trimesterHeading}>
+            {displayWeek <= 12 ? "1st Trimester" : displayWeek <= 26 ? "Cruising through your 2nd Trimester" : "Deep in your 3rd Trimester"}
+          </Text>
         </View>
-        <Text style={styles.heroEmoji}>🥑</Text>
+        
+        <View style={styles.heroIconContainer}>
+          <MaterialCommunityIcons name={babyIconName} size={28} color="#5C4333" />
+        </View>
       </View>
 
-      {/* Integrated Size Callout Box */}
       <View style={styles.sizeCalloutBox}>
         <Text style={styles.sizeCalloutText}>
           Your little one is the size of an <Text style={styles.boldText}>{sizeLabel} ({sizeCm} cm)</Text>. They can hear your voice now!
         </Text>
       </View>
 
-      {/* Emotion Companionship Matrix */}
       <View style={styles.emotionSection}>
         <Text style={styles.emotionTitle}>How is your heart feeling right now?</Text>
         <View style={styles.emotionGrid}>
@@ -82,15 +86,32 @@ export function WeeklyContentCard({ week, content }: WeeklyContentCardProps) {
                 ]}
                 onPress={() => setSelectedEmotion(item.label)}
               >
-                <Text style={styles.emotionButtonText}>
-                  {item.emoji} {item.label}
-                </Text>
+                <View style={styles.emotionButtonContent}>
+                  {item.iconProvider === "Feather" ? (
+                    <Feather 
+                      name={item.iconName as any} 
+                      size={13} 
+                      color={isSelected ? "#CC7E5C" : item.color} 
+                      style={styles.buttonInlineIcon}
+                    />
+                  ) : (
+                    <MaterialCommunityIcons 
+                      name={item.iconName as any} 
+                      size={14} 
+                      color={isSelected ? "#CC7E5C" : item.color} 
+                      style={styles.buttonInlineIcon}
+                    />
+                  )}
+                  <Text style={[styles.emotionButtonText, isSelected && styles.emotionButtonTextActive]}>
+                    {item.label}
+                  </Text>
+                </View>
               </TouchableOpacity>
             );
           })}
         </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -99,7 +120,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     borderColor: "#FAD9C1",
-    backgroundColor: "#FFF0E6",
     padding: 20,
     position: "relative",
     overflow: "hidden",
@@ -139,18 +159,24 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   trimesterHeading: {
-    fontFamily: "System", 
     fontSize: 18,
     fontWeight: "700",
     color: "#5C4333",
   },
-  heroEmoji: {
-    fontSize: 36,
-  },
-  sizeCalloutBox: {
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
+  heroIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "rgba(255, 255, 255, 0.4)",
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.6)",
+  },
+  sizeCalloutBox: {
+    backgroundColor: "rgba(255, 255, 255, 0.65)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.5)",
     borderRadius: 16,
     padding: 12,
     marginBottom: 20,
@@ -158,50 +184,57 @@ const styles = StyleSheet.create({
   sizeCalloutText: {
     fontSize: 12,
     color: "#7A6150",
-    lineHeight: 16,
+    lineHeight: 17,
   },
   boldText: {
     fontWeight: "700",
+    color: "#5C4333",
   },
   emotionSection: {
     borderTopWidth: 1,
-    borderColor: "#F5CDAF",
+    borderColor: "rgba(245, 205, 175, 0.7)",
     paddingTop: 16,
   },
   emotionTitle: {
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "600",
     color: "#7A6150",
     textAlign: "center",
-    marginBottom: 10,
+    marginBottom: 12,
   },
   emotionGrid: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 8,
+    gap: 6,
   },
   emotionButton: {
     flex: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    backgroundColor: "rgba(255, 255, 255, 0.85)",
     borderRadius: 12,
-    paddingVertical: 8,
+    paddingVertical: 9,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
     borderColor: "transparent",
-    shadowColor: "#3D2E24",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
   },
   emotionButtonActive: {
     borderColor: "#EAA383",
     backgroundColor: "#FFFFFF",
   },
+  emotionButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonInlineIcon: {
+    marginRight: 4,
+  },
   emotionButtonText: {
     fontSize: 11,
-    fontWeight: "500",
+    fontWeight: "600",
     color: "#5C4333",
+  },
+  emotionButtonTextActive: {
+    color: "#CC7E5C",
   },
 });

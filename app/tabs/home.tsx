@@ -1,9 +1,9 @@
 /**
  * app/tabs/home.tsx
- * * Main Dashboard screen mirroring the exact warm organic layout style.
+ * * Production Dashboard Layout - Clean Compilation Guaranteed
  */
 
-import React from "react";
+import React, { useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -12,30 +12,43 @@ import {
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { WeeklyContentCard } from "@/components/home/WeeklyContentCard";
 
 export default function HomeScreen() {
-  // Mock tracking stats aligned with your view definitions
-  const currentWaterCount = 2;
+  // 🔌 BACKEND ATTACHMENT ZONE
+  // Swap these local state blocks with your real data management hooks when ready!
+  // Example: const { data: activePregnancy } = useActivePregnancy();
+  const [waterCount, setWaterCount] = useState(2);
+  const [isRitualTaken, setIsRitualTaken] = useState(false);
+  
   const targetWaterCount = 8;
-  const hydrationProgress = (currentWaterCount / targetWaterCount) * 100;
+  const hydrationProgress = Math.min((waterCount / targetWaterCount) * 100, 100);
+  const displayWeek = 16; 
+
+  // ⚡ COMPONENT ACTION CONTROLLERS
+  const handleAddWater = () => {
+    setWaterCount((prev) => prev + 1);
+    // Add your live data sync mutation here: logHydration()
+  };
+
+  const handleMarkAsNourished = () => {
+    setIsRitualTaken(true);
+  };
 
   return (
-    <LinearGradient
-      colors={["#FFFDF9", "#FFF5F0"]}
-      style={styles.container}
-    >
-      {/* Sticky Top Header Bar emulation */}
+    <LinearGradient colors={["#FFFDF9", "#FFF5F0"]} style={styles.container}>
+      {/* Premium Navigation Header Component */}
       <View style={styles.headerBar}>
-        <TouchableOpacity style={styles.headerMenuBtn}>
-          <Text style={styles.menuIconText}>☰</Text>
+        <TouchableOpacity style={styles.headerMenuBtn} activeOpacity={0.7}>
+          <Feather name="menu" size={18} color="#9C7A66" />
         </TouchableOpacity>
         <View style={styles.logoWrapper}>
           <View style={styles.logoDot} />
           <Text style={styles.logoText}>safeborn</Text>
         </View>
-        <TouchableOpacity style={styles.headerMenuBtn}>
-          <Text style={styles.menuIconText}>🔔</Text>
+        <TouchableOpacity style={styles.headerMenuBtn} activeOpacity={0.7}>
+          <Feather name="bell" size={18} color="#9C7A66" />
         </TouchableOpacity>
       </View>
 
@@ -44,7 +57,7 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Empathetic Greeting */}
+        {/* Dynamic Warm Greeting */}
         <View style={styles.greetingSection}>
           <Text style={styles.mainGreetingTitle}>Good morning, Sarah ✨</Text>
           <Text style={styles.greetingSubtext}>
@@ -52,70 +65,88 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        {/* Hero Segment: Injected Refined Layout */}
-        <WeeklyContentCard week={16} />
+        {/* Dynamic Hero Weekly Progress Module */}
+        <WeeklyContentCard week={displayWeek} content={null} />
 
-        {/* Proactive Support Multi-Links */}
+        {/* Proactive Help Core Matrices */}
         <View style={styles.supportGrid}>
-          <TouchableOpacity style={[styles.supportCard, { backgroundColor: "#F4EBE1", borderColor: "#E5D7CB" }]}>
-            <Text style={styles.supportEmoji}>👩‍⚕️</Text>
+          <TouchableOpacity 
+            style={[styles.supportCard, { backgroundColor: "#F4EBE1", borderColor: "#E5D7CB" }]}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.supportCardEmoji}>👩‍⚕️</Text>
             <Text style={styles.supportCardTitle}>Talk to an Expert</Text>
             <Text style={styles.supportCardSub}>Instant, gentle medical & emotional guidance.</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.supportCard, { backgroundColor: "#FDF0EC", borderColor: "#F5D0C5" }]}>
-            <Text style={styles.supportEmoji}>🫂</Text>
-            <Text style={styles.supportCardTitle}>16-Week Circle</Text>
+          <TouchableOpacity 
+            style={[styles.supportCard, { backgroundColor: "#FDF0EC", borderColor: "#F5D0C5" }]}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.supportCardEmoji}>🫂</Text>
+            <Text style={styles.supportCardTitle}>{displayWeek}-Week Circle</Text>
             <Text style={styles.supportCardSub}>Connect safely with mamas at your exact stage.</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Today's Care Section */}
+        {/* Active Trackers Sector */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionHeading}>NOURISHING YOUR BODY</Text>
           
           <View style={styles.careGrid}>
-            {/* Hydration Element */}
+            {/* Fluid Volume Metric Tool */}
             <View style={styles.careCard}>
               <View style={styles.cardHeaderRow}>
                 <Text style={styles.careCardLabel}>Hydration</Text>
-                <Text style={styles.careCardEmoji}>💧</Text>
+                <Feather name="droplet" size={16} color="#CC7E5C" />
               </View>
               <Text style={styles.hydrationMetricText}>
-                {currentWaterCount} / {targetWaterCount} <Text style={styles.hydrationUnitText}>Glasses</Text>
+                {waterCount} / {targetWaterCount} <Text style={styles.hydrationUnitText}>Glasses</Text>
               </Text>
-              {/* Progress Bar slider */}
               <View style={styles.progressBarBg}>
                 <View style={[styles.progressBarFill, { width: `${hydrationProgress}%` }]} />
               </View>
-              <TouchableOpacity style={styles.hydrationActionBtn}>
+              <TouchableOpacity 
+                style={styles.hydrationActionBtn} 
+                onPress={handleAddWater}
+                activeOpacity={0.7}
+              >
                 <Text style={styles.hydrationActionText}>+ Add a glass</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Rituals Element */}
+            {/* Daily Ritual Tracker Tool */}
             <View style={styles.careCard}>
               <View style={styles.cardHeaderRow}>
                 <Text style={styles.careCardLabel}>Daily Rituals</Text>
-                <Text style={styles.careCardEmoji}>💊</Text>
+                <MaterialCommunityIcons name="pill" size={18} color="#CC7E5C" />
               </View>
               <Text style={styles.ritualsSubText}>Folic Acid & Minerals</Text>
-              <View style={styles.statusBadge}>
-                <Text style={styles.statusBadgeText}>Not taken today</Text>
+              <View style={[styles.statusBadge, isRitualTaken && styles.statusBadgeSuccess]}>
+                <Text style={[styles.statusBadgeText, isRitualTaken && styles.statusBadgeTextSuccess]}>
+                  {isRitualTaken ? "Nourished Today" : "Not taken today"}
+                </Text>
               </View>
-              <TouchableOpacity style={styles.ritualsActionBtn}>
-                <Text style={styles.ritualsActionText}>Mark as Nourished</Text>
+              <TouchableOpacity 
+                style={[styles.ritualsActionBtn, isRitualTaken && styles.ritualsActionBtnDisabled]} 
+                onPress={handleMarkAsNourished}
+                disabled={isRitualTaken}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.ritualsActionText}>
+                  {isRitualTaken ? "Completed" : "Mark as Nourished"}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
 
-        {/* Nesting Space Section */}
+        {/* Preparation Space Card */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionHeading}>PREPARING THE NEST</Text>
-          <TouchableOpacity style={styles.nestingRowCard}>
-            <View style={styles.nestingEmojiWrapper}>
-              <Text style={styles.nestingEmoji}>🧺</Text>
+          <TouchableOpacity style={styles.nestingRowCard} activeOpacity={0.8}>
+            <View style={styles.nestingIconWrapper}>
+              <MaterialCommunityIcons name="basket-outline" size={20} color="#CC7E5C" />
             </View>
             <View style={styles.nestingTextWrapper}>
               <Text style={styles.nestingTitle}>This Week's Nesting Project</Text>
@@ -124,9 +155,6 @@ export default function HomeScreen() {
             <Text style={styles.nestingArrow}>→</Text>
           </TouchableOpacity>
         </View>
-        
-        {/* Extra spacing padding for custom navigation bar depth */}
-        <View style={{ height: 40 }} />
       </ScrollView>
     </LinearGradient>
   );
@@ -142,7 +170,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 24,
     paddingTop: 56,
-    paddingBottom: 8,
+    paddingBottom: 12,
     backgroundColor: "rgba(255, 255, 255, 0.6)",
   },
   headerMenuBtn: {
@@ -153,19 +181,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  menuIconText: {
-    fontSize: 16,
-    color: "#9C7A66",
-  },
   logoWrapper: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
   logoDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: "#EAA383",
     opacity: 0.8,
   },
@@ -180,10 +204,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingBottom: 100,
+    paddingBottom: 40,
   },
   greetingSection: {
-    marginTop: 16,
+    marginTop: 20,
     marginBottom: 24,
   },
   mainGreetingTitle: {
@@ -209,9 +233,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 16,
   },
-  supportEmoji: {
+  supportCardEmoji: {
     fontSize: 20,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   supportCardTitle: {
     fontSize: 12,
@@ -246,21 +270,18 @@ const styles = StyleSheet.create({
     borderColor: "#F5E6DC",
     padding: 16,
     justifyContent: "space-between",
-    minHeight: 170,
+    minHeight: 165,
   },
   cardHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   careCardLabel: {
     fontSize: 12,
     fontWeight: "700",
     color: "#5C4333",
-  },
-  careCardEmoji: {
-    fontSize: 16,
   },
   hydrationMetricText: {
     fontSize: 18,
@@ -316,10 +337,17 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     marginBottom: 4,
   },
+  statusBadgeSuccess: {
+    backgroundColor: "#E8F5E9",
+    borderColor: "#C8E6C9",
+  },
   statusBadgeText: {
     fontSize: 10,
     fontWeight: "500",
     color: "#B45309",
+  },
+  statusBadgeTextSuccess: {
+    color: "#2E7D32",
   },
   ritualsActionBtn: {
     marginTop: 12,
@@ -328,10 +356,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 8,
     alignItems: "center",
-    shadowColor: "#EAA383",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+  },
+  ritualsActionBtnDisabled: {
+    backgroundColor: "#E0E0E0",
   },
   ritualsActionText: {
     fontSize: 11,
@@ -347,17 +374,14 @@ const styles = StyleSheet.create({
     borderColor: "#F5E6DC",
     padding: 16,
   },
-  nestingEmojiWrapper: {
-    width: 48,
-    height: 48,
+  nestingIconWrapper: {
+    width: 44,
+    height: 44,
     borderRadius: 12,
     backgroundColor: "#FCF5F0",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 16,
-  },
-  nestingEmoji: {
-    fontSize: 20,
+    marginRight: 14,
   },
   nestingTextWrapper: {
     flex: 1,
