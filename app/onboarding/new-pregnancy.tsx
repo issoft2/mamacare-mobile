@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: "800",
     color: AUTH_UI.textHeading,
-    fontFamily: FONT_WARY_SERIF || FONT_WARM_SERIF,
+    fontFamily: FONT_WARM_SERIF || FONT_WARM_SERIF,
     letterSpacing: -0.2,
   },
   subtitle: {
