@@ -333,7 +333,7 @@ export default function ChatConversationScreen() {
               ListEmptyComponent={
                 isWaitingForAI ? null : (
                   <View style={styles.emptyContainer}>
-                    <Text style={welcomeEmoji}>✨🤰✨</Text>
+                    <Text style={styles.welcomeEmoji}>✨🤰✨</Text>
                     <Text style={styles.welcomeTitle}>Your quiet sanctuary</Text>
                     <Text style={styles.welcomeSubtitle}>
                       Whether you have questions about changes in your body, your baby, or just want a validating voice—I'm here for you. What's on your heart?
