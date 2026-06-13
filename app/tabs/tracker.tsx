@@ -25,7 +25,8 @@ import {
   useMoodLogs,
   useSleepLogs, 
   useProfile,
-  useActivePregnancy
+  useActivePregnancy,
+  useStartKickSession,
 } from "@safeborn/api";
 import { colors } from "@safeborn/ui";
 import { ctaGradientColors } from "../../components/styles/ctaButton";
@@ -65,6 +66,8 @@ export default function TrackerScreen() {
   const { data: todayFolicAcidLog } = useTodayFolicAcidLog();
   const { data: sleep } = useSleepLogs();
   const { data: mood } = useMoodLogs();
+
+  const startKick = useStartKickSession();
 
   const logWater = useLogHydration();
   const logFolicAcid = useLogFolicAcid();
@@ -183,16 +186,12 @@ export default function TrackerScreen() {
                     (!canUseKickCounter || !hasCompletedOnboarding) && styles.widgetBtnDisabled,
                   ]}
                   disabled={!canUseKickCounter || !hasCompletedOnboarding}
-                  onPress={() => {
-                    if (!hasCompletedOnboarding) { promptFinishOnboarding(router); return; }
-                    if (!canUseKickCounter) return;
-                    
-                    // ── FIX: Pure Routing Redirection Only (No API mutations triggered here) ──
-                    if (activeKick) {
-                      router.push(`/tracker/kick/${activeKick.id}` as any);
-                    } else {
-                      router.push("/tracker/kick" as any);
-                    }
+                  onPress={async () => {
+                     if(activeKick) router.push(`/tracker/kick/${activeKick.id}` as any);
+                     else {
+                       const session = await startKick.mutateAsync(profile?.gestational_week ?? 12);
+                       router.push(`/tracker/kick/${session.id}` as any);
+                     }
                   }}
                 >
                   <Text style={[styles.widgetBtnText, { color: AUTH_UI.textWhite }]}>
