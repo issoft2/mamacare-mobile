@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   bgOverlay: { flex: 1 },
   content: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 32 },
   contentWide: { width: "100%", maxWidth: 1180, alignSelf: "center", padding: 32 },
-  screenTitle: { fontSize: 30, fontWeight: "800", color: AUTH_UI.textHeading, marginBottom: 25, fontFamily: FONT_WARY_SERIF, letterSpacing: -0.6 },
+  screenTitle: { fontSize: 30, fontWeight: "800", color: AUTH_UI.textHeading, marginBottom: 25, fontFamily: FONT_WARM_SERIF, letterSpacing: -0.6 },
   dashboardGrid: { gap: 15 },
   dashboardGridWide: { flexDirection: "row", flexWrap: "wrap", alignItems: "stretch" },
   glassCard: {

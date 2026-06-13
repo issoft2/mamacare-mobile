@@ -757,7 +757,7 @@ export default function HomeScreen() {
                     <CareIcon name="water" color={CARE_CARD_COLORS.water.icon} size={18} />
                   </View>
                   <View style={styles.actionCircleTrigger}>
-                    <Ionicons name="plus" size={16} color={CARE_CARD_COLORS.water.icon} />
+                    <Ionicons name="add" size={16} color={CARE_CARD_COLORS.water.icon} />
                   </View>
                 </View>
                 <Text style={styles.careCardLabel}>Hydration</Text>
@@ -781,7 +781,7 @@ export default function HomeScreen() {
                 disabled={!hasCompletedOnboarding || folicTakenToday || logFolicAcid.isPending}
                 accessible={true}
                 accessibilityRole="checkbox"
-                accessibilityChecked={folicTakenToday}
+                accessibilityState={{ checked: folicTakenToday }}
                 accessibilityLabel="Folic Acid prenatal intake tracking card."
               >
                 <View style={styles.cardHeaderActionRow}>
@@ -917,7 +917,7 @@ export default function HomeScreen() {
               >
                 <View style={styles.fullWidthLayoutRow}>
                   <View style={[styles.iconBox, { backgroundColor: "#FFF0F2", marginRight: 12 }]}>
-                    <Ionicons name="heart-pulse-outline" size={20} color={colors.rose[500]} />
+                    <Ionicons name="heart-outline" size={20} color={colors.rose[500]} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.careCardLabel}>Fetal Movement Counter</Text>
