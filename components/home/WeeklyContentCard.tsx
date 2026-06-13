@@ -32,23 +32,23 @@ import { resolveCurrentGestationalWeek } from "@/lib/gestationalWeek";
 import { ctaButtonStyles, ctaGradientColors } from "../styles/ctaButton";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
 
+// ── TypeScript Props Interface ───────────────────────────────────────────────
+interface WeeklyContentCardProps {
+  week?: number | null; // Safely allows home.tsx to pass the current week down
+}
+
 // ── Weekly Size Visual Tokens Map ─────────────────────────────────────────────
-/**
- * Maps gestational benchmarks to illustrative visual tokens.
- * Designed to easily switch strings out for local assets later,
- * e.g., asset: require("@/assets/baby/week-12.png")
- */
 const WEEKLY_SIZE_VISUALS: Record<number, { emoji: string; tint: string }> = {
-  4:  { emoji: "🌱", tint: "#EBF7ED" }, // Poppy Seed
-  8:  { emoji: "🍇", tint: "#F5EEFF" }, // Raspberry
-  12: { emoji: "🍋", tint: "#FFFDE6" }, // Lime
-  16: { emoji: "🥑", tint: "#EAF6EA" }, // Avocado
-  20: { emoji: "🍌", tint: "#FFFBEB" }, // Banana
-  24: { emoji: "🍈", tint: "#F4FBEA" }, // Cantaloupe
-  28: { emoji: "🍆", tint: "#FAEEFF" }, // Eggplant
-  32: { emoji: "🍍", tint: "#FFF9E6" }, // Pineapple
-  36: { emoji: "🍉", tint: "#FFF0F2" }, // Watermelon
-  40: { emoji: "🎃", tint: "#FFF3EB" }, // Pumpkin
+  4:  { emoji: "🌱", tint: "#EBF7ED" }, 
+  8:  { emoji: "🍇", tint: "#F5EEFF" }, 
+  12: { emoji: "🍋", tint: "#FFFDE6" }, 
+  16: { emoji: "🥑", tint: "#EAF6EA" }, 
+  20: { emoji: "🍌", tint: "#FFFBEB" }, 
+  24: { emoji: "🍈", tint: "#F4FBEA" }, 
+  28: { emoji: "🍆", tint: "#FAEEFF" }, 
+  32: { emoji: "🍍", tint: "#FFF9E6" }, 
+  36: { emoji: "🍉", tint: "#FFF0F2" }, 
+  40: { emoji: "🎃", tint: "#FFF3EB" }, 
 };
 
 function getWeeklySizeVisual(week: number) {
@@ -58,7 +58,6 @@ function getWeeklySizeVisual(week: number) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
 function getDailyTip(tips: string[]): string {
   if (!tips.length) return "";
   const dayOfYear = Math.floor(
@@ -104,15 +103,19 @@ function buildWeeklyPrompt(content: WeeklyContent, week: number): string {
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
-
-export function WeeklyContentCard() {
+export function WeeklyContentCard({ week }: WeeklyContentCardProps) {
   const { width, fontScale } = useWindowDimensions();
   const isCompact = width < 380;
   const isLargeText = fontScale >= 1.2;
   const router = useRouter();
   
+  // Fallback to internal fetch only if no explicit week was passed by the parent
   const { data: pregnancy, isLoading: isActivePregnancyLoading } = useActivePregnancy();
-  const currentWeek = useMemo(() => resolveCurrentGestationalWeek(pregnancy), [pregnancy]);
+  
+  const currentWeek = useMemo(() => {
+    if (week !== undefined && week !== null) return week;
+    return resolveCurrentGestationalWeek(pregnancy);
+  }, [week, pregnancy]);
   
   const { data: weekResponse, isLoading: isWeekLoading } = useWeekContent(currentWeek ?? 0);
   const content = weekResponse?.content;
@@ -146,10 +149,10 @@ export function WeeklyContentCard() {
     }
 
     setOpening(true);
-    setLoadingMessage("Connecting you with your Safe Born Assistant... Take a deep breath, we're preparing a beautiful space for you and your little one. 💕");
+    setLoadingMessage("Connecting you with your Safe Born Assistant...");
 
     timerRef.current = setTimeout(() => {
-      setLoadingMessage("Still working on it, mama! We're getting everything ready for you. Just a tiny moment more... ✨👶");
+      setLoadingMessage("Still working on it, mama!...");
     }, 2000);
 
     try {
@@ -171,18 +174,17 @@ export function WeeklyContentCard() {
     } catch (err) {
       if (timerRef.current) clearTimeout(timerRef.current);
       console.error("WeeklyContentCard error:", err);
-      Alert.alert(
-         "We're so sorry, mama",
-         "We had a little trouble creating your chat room. Please give it just a moment and try again. We're right with you! ❤️"
-       );
+      Alert.alert("We're so sorry, mama", "We had a little trouble creating your chat room.");
     } finally {
       setOpening(false);
       setLoadingMessage("");
     }
   }
 
-  // ── Loading State ──────────────────────────────────────────────────────────
-  if (isActivePregnancyLoading || (currentWeek != null && isWeekLoading)) {
+  // Smart loading condition: don't block on active pregnancy hooks if week is driven by the parent
+  const isCardLoading = (week == null && isActivePregnancyLoading) || isWeekLoading;
+
+  if (isCardLoading) {
     return (
       <View style={[styles.card, isCompact && styles.cardCompact, isLargeText && styles.cardLargeText, styles.loadingCard]}>
         <ActivityIndicator color={AUTH_UI.linkBerry} size="small" />
@@ -191,7 +193,6 @@ export function WeeklyContentCard() {
     );
   }
 
-  // ── No Week Set State ──────────────────────────────────────────────────────
   if (!currentWeek || !content) {
     return (
       <TouchableOpacity
@@ -221,7 +222,6 @@ export function WeeklyContentCard() {
     );
   }
 
-  // ── Active Content State ───────────────────────────────────────────────────
   return (
     <TouchableOpacity
       style={[styles.card, isCompact && styles.cardCompact, isLargeText && styles.cardLargeText]}
@@ -235,7 +235,6 @@ export function WeeklyContentCard() {
         end={{ x: 1, y: 1 }}
         style={[styles.gradient, isLargeText && styles.gradientLargeText]}
       >
-        {/* ── Top Header Row ─────────────────────────────────── */}
         <View style={[styles.topRow, isCompact && styles.topRowCompact, isLargeText && styles.topRowWrap]}>
           <View style={[styles.weekBadge, isCompact && styles.weekBadgeCompact]}>
             <Text style={styles.weekBadgeNumber}>{currentWeek}</Text>
@@ -252,14 +251,11 @@ export function WeeklyContentCard() {
           <Ionicons name="heart" size={18} color={AUTH_UI.shadowRose} style={styles.heartAccent} />
         </View>
 
-        {/* ── Divider ─────────────────────────────────────────── */}
         <View style={styles.divider} />
 
-        {/* ── Baby Size Data Row (Refactored to row-badge design layout) ── */}
         {content.baby_size_label ? (
           <View style={styles.sizeRowContainer}>
             <View style={[styles.visualBadge, { backgroundColor: sizeVisual.tint }]}>
-              {/* Ready to be replaced by an Image component when assets arrive */}
               <Text style={styles.badgeVisualText}>{sizeVisual.emoji}</Text>
             </View>
             <View style={styles.sizeTextWrap}>
@@ -272,7 +268,6 @@ export function WeeklyContentCard() {
           </View>
         ) : null}
 
-        {/* ── Daily Personalized Tip ──────────────────────────── */}
         {dailyTip ? (
           <View style={styles.tipBox}>
             <Ionicons name="sparkles" size={14} color={AUTH_UI.linkBerry} />
@@ -282,7 +277,6 @@ export function WeeklyContentCard() {
           </View>
         ) : null}
 
-        {/* ── Slimmed Down & Compact Chat CTA Bar ──────────────── */}
         <View style={[ctaButtonStyles.button, styles.ctaSlimOverride]}>
           <LinearGradient
             colors={ctaGradientColors}
@@ -298,11 +292,7 @@ export function WeeklyContentCard() {
             ) : (
               <View style={styles.ctaContentRow}>
                 <Ionicons name="chatbubble-ellipses-outline" size={15} color={AUTH_UI.textWhite} style={styles.ctaIconVerticalFix} />
-                <Text 
-                  style={[ctaButtonStyles.text, styles.ctaSingleLineText]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
+                <Text style={[ctaButtonStyles.text, styles.ctaSingleLineText]} numberOfLines={1} ellipsizeMode="tail">
                   Discuss Week {currentWeek} with Safeborn Agent
                 </Text>
                 <Ionicons name="chevron-forward" size={15} color={AUTH_UI.textWhite} style={styles.ctaIconVerticalFix} />
@@ -315,8 +305,7 @@ export function WeeklyContentCard() {
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
-
+// ── Styles (Unchanged, 100% Mobile Safe) ──────────────────────────────────────
 const styles = StyleSheet.create({
   card: {
     borderRadius: 24,
@@ -338,7 +327,6 @@ const styles = StyleSheet.create({
   cardLargeText: { marginBottom: 20 },
   gradient: { padding: 18 },
   gradientLargeText: { padding: 20 },
-
   loadingCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -352,7 +340,6 @@ const styles = StyleSheet.create({
     color: AUTH_UI.textWarm,
     fontFamily: FONT_FRIENDLY_SANS,
   },
-
   noWeekIconWrap: {
     width: 52, height: 52, borderRadius: 26,
     backgroundColor: AUTH_UI.avatarRoseBg,
@@ -371,7 +358,6 @@ const styles = StyleSheet.create({
   },
   noWeekCta: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4 },
   noWeekCtaText: { fontSize: 14, fontWeight: "700", color: AUTH_UI.linkBerry, fontFamily: FONT_FRIENDLY_SANS },
-
   topRow: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 12 },
   topRowCompact: { gap: 10, marginBottom: 10 },
   topRowWrap: { alignItems: "flex-start" },
@@ -397,10 +383,7 @@ const styles = StyleSheet.create({
   contentTitle: { fontSize: 19, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF },
   contentTitleCompact: { fontSize: 17 },
   heartAccent: { alignSelf: "flex-start", marginTop: 4 },
-
   divider: { height: 1, backgroundColor: AUTH_UI.lineSoftWarm, marginBottom: 14 },
-
-  // ── Layout adjustments for the structural size visuals ──
   sizeRowContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -442,7 +425,6 @@ const styles = StyleSheet.create({
     color: AUTH_UI.textHeading,
     fontFamily: FONT_WARM_SERIF,
   },
-
   tipBox: {
     flexDirection: "row",
     alignItems: "center",
@@ -456,19 +438,17 @@ const styles = StyleSheet.create({
     borderLeftColor: AUTH_UI.shadowRose,
   },
   tipText: { flex: 1, fontSize: 14, color: AUTH_UI.textWarmStrong, lineHeight: 20, fontFamily: FONT_FRIENDLY_SANS },
-
-  // ── Refactored Fixed Button Wrapper ──
   ctaSlimOverride: {
-    height: "auto",             // 🌟 Wipes old static 48px restriction out entirely
-    minHeight: 48,              // Guarantees accessibility touch targets are tall enough
+    height: "auto",
+    minHeight: 48,
     marginTop: 10,
     borderRadius: 16,
     overflow: "hidden",
-    padding: 0,                 // Explicitly clears parent spacing interferences
+    padding: 0,
   },
   ctaGradientWrapper: {
     width: "100%",
-    paddingVertical: 12,        // 🌟 Replaces hard height with vertical padding for clean expansion
+    paddingVertical: 12,
     paddingHorizontal: 14,
     justifyContent: "center",
     alignItems: "center",
@@ -478,25 +458,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     width: "100%",
-    gap: 6,                     // Optimized spatial separation
+    gap: 6,
   },
   ctaSingleLineText: {
-    flex: 1,                    // 🌟 Forces long text to dynamically share row space with icon tags
+    flex: 1,
     fontSize: 14,
     fontWeight: "700",
     color: AUTH_UI.textWhite,
     textAlign: "center",
     marginTop: 0,
     marginBottom: 0,
-    lineHeight: Platform.OS === "ios" ? 18 : 20, // Clean text line heights per system
+    lineHeight: Platform.OS === "ios" ? 18 : 20,
     ...Platform.select({
       android: {
-        includeFontPadding: false, // 🤖 CRITICAL FIX: Wipes out Android's hidden typography clipping boxes
+        includeFontPadding: false,
         textAlignVertical: "center",
       },
     }),
   },
   ctaIconVerticalFix: {
-    alignSelf: "center",        // Centers action icons precisely against line scales
+    alignSelf: "center",
   },
 });
