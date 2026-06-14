@@ -24,6 +24,7 @@ import { colors } from "@safeborn/ui";
 import { useCreatePregnancy } from "@safeborn/api";
 import { usePregnancyState } from "@/lib/pregnancyState";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
+import { DatePickerInput } from "@/components/DatePickerInput";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -84,6 +85,9 @@ export default function NewPregnancyScreen() {
 
   const [formError, setFormError] = useState("");
 
+  // System boundaries to pass into native layout wrappers
+  const today = new Date();
+
   function handleLmpChange(value: string) {
     const lmp = parseIsoDate(value);
     if (!lmp) {
@@ -92,7 +96,6 @@ export default function NewPregnancyScreen() {
     }
 
     const autoEdd = addDays(lmp, 280);
-    // Inline simplified week calculation to guarantee smooth updates
     const now = new Date();
     const msPerDay = 86_400_000;
     const daysSinceLmp = Math.floor((now.getTime() - lmp.getTime()) / msPerDay);
@@ -225,36 +228,24 @@ export default function NewPregnancyScreen() {
               </View>
             </View>
 
-            {/* Estimated Due Date */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Estimated due date (required)</Text>
-              <View style={styles.inputWithIcon}>
-                <Ionicons name="heart-outline" size={18} color={colors.rose[400]} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.inputStyleOverride}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={AUTH_UI.textWarmMuted}
-                  value={form.edd}
-                  onChangeText={handleEddChange}
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
+            {/* Estimated Due Date Selection */}
+            <DatePickerInput
+              label="Estimated due date (required)"
+              value={form.edd}
+              placeholder="YYYY-MM-DD"
+              minimumDate={today}
+              onChange={handleEddChange}
+            />
 
-            {/* Last Menstrual Period */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Last menstrual period (required)</Text>
-              <View style={styles.inputWithIcon}>
-                <Ionicons name="calendar-outline" size={18} color={colors.rose[400]} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.inputStyleOverride}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={AUTH_UI.textWarmMuted}
-                  value={form.lmp}
-                  onChangeText={handleLmpChange}
-                  keyboardType="numeric"
-                />
-              </View>
+            {/* Last Menstrual Period Selection */}
+            <View style={styles.lmpWrapper}>
+              <DatePickerInput
+                label="Last menstrual period (required)"
+                value={form.lmp}
+                placeholder="YYYY-MM-DD"
+                maximumDate={today}
+                onChange={handleLmpChange}
+              />
               <Text style={styles.inputHint}>✨ Adding your LMP auto-calculates your current week and due date.</Text>
             </View>
 
@@ -322,7 +313,7 @@ export default function NewPregnancyScreen() {
   );
 }
 
-// ─── Dedicated Style Dictionary (No Duplicate Keys) ─────────────────────────
+// ─── Dedicated Style Dictionary ─────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   screen: {
@@ -391,6 +382,9 @@ const styles = StyleSheet.create({
   inputGroup: { 
     gap: 8 
   },
+  lmpWrapper: {
+    gap: 6,
+  },
   label: {
     fontSize: 13,
     fontWeight: "700",
@@ -427,7 +421,8 @@ const styles = StyleSheet.create({
     marginLeft: 4, 
     lineHeight: 18, 
     fontFamily: FONT_FRIENDLY_SANS,
-    fontStyle: "italic"
+    fontStyle: "italic",
+    marginTop: 2,
   },
   readOnlyField: {
     flexDirection: "row",
