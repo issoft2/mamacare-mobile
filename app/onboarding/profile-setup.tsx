@@ -5,7 +5,17 @@
 
 import { Stack, useRouter } from "expo-router";
 import { type ReactNode, useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from "react-native";
+import { 
+  ActivityIndicator, 
+  ScrollView, 
+  StyleSheet, 
+  Switch, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  View, 
+  useWindowDimensions 
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Constants from "expo-constants";
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +31,10 @@ import {
   useActivePregnancy,
 } from "@safeborn/api";
 import { colors } from "@safeborn/ui";
+
+// ── IMPORT YOUR STANDALONE DATE PICKER COMPONENT ──────────────────────────
+import { DatePickerInput } from "../../components/DatePickerInput";
+
 import { ctaButtonStyles, ctaGradientColors } from "../../components/styles/ctaButton";
 import { getActiveLegalDocument, getActiveLegalRoute } from "@/lib/legal";
 import { AUTH_UI, FONT_FRIENDLY_SANS, FONT_WARM_SERIF } from "@/lib/authUiTokens";
@@ -39,7 +53,7 @@ export default function ProfileSetupScreen() {
     data: activePregnancy,
     isPending: isPregnancyPending,
     isFetching: isPregnancyFetching,
-   } = useActivePregnancy();
+  } = useActivePregnancy();
   const activePrivacyDoc = getActiveLegalDocument("privacy");
   const accountFirstName = (user?.firstName ?? "").trim();
   const accountLastName = (user?.lastName ?? "").trim();
@@ -63,8 +77,12 @@ export default function ProfileSetupScreen() {
     model_training: true,
   } as const;
 
-    const isBusy = isSaving || consentSubmitting || isPregnancyFetching;
+  const isBusy = isSaving || consentSubmitting || isPregnancyFetching;
   const isAuthReady = !!effectiveClerkUserId;
+
+  // Enforce 13-year age boundary constraints context dynamically based on the current system year
+  const maxDobDate = new Date();
+  maxDobDate.setFullYear(maxDobDate.getFullYear() - 13);
 
   function getJurisdictionFromRegion(region: "ng" | "uk"): "NG" | "GB" {
     return region === "uk" ? "GB" : "NG";
@@ -73,9 +91,7 @@ export default function ProfileSetupScreen() {
   function parseIsoDate(value: string): Date | null {
     const trimmed = value.trim();
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
-    if (!match) {
-      return null;
-    }
+    if (!match) return null;
 
     const year = Number(match[1]);
     const month = Number(match[2]);
@@ -92,8 +108,6 @@ export default function ProfileSetupScreen() {
 
     return parsed;
   }
-
-
 
   async function submitConsentEvents(
     userId: string,
@@ -112,7 +126,6 @@ export default function ProfileSetupScreen() {
       action: enabled ? "granted" : "withdrawn",
       consent_text_version: activePrivacyDoc.version,
       jurisdiction,
-      // Default to a valid placeholder and let backend overwrite from request metadata.
       ip_address: "0.0.0.0",
       captured_at: capturedAt,
       documentType: "privacy",
@@ -135,7 +148,6 @@ export default function ProfileSetupScreen() {
 
     if (failedTiers.length > 0) {
       console.error("Consent event post failed for some tiers:", failedTiers);
-
       if (failedTiers.length === events.length) {
         throw new Error("Failed to sync consent preferences.");
       }
@@ -161,13 +173,11 @@ export default function ProfileSetupScreen() {
     }
   }, [accountFirstName, accountLastName, profile]);
 
-  // handle save
   async function persistProfileAndConsents(selectedConsents: Record<ConsentTier, boolean>) {
     setFormError('');
     const firstName = (form.firstName.trim() || accountFirstName).trim();
     const lastName = (form.lastName.trim() || accountLastName).trim();
     const dob = form.dob.trim();
-  
 
     if (!firstName || !lastName || !dob) {
       setFormError('Please complete all profile fields.');
@@ -180,7 +190,11 @@ export default function ProfileSetupScreen() {
       return;
     }
 
-  
+    if (parsedDob > maxDobDate) {
+      setFormError('You must be at least 13 years of age to register.');
+      return;
+    }
+
     if (!isAuthReady || !effectiveClerkUserId) {
       setFormError('Your account is still loading. Please wait a moment and try again.');
       return;
@@ -194,35 +208,22 @@ export default function ProfileSetupScreen() {
         date_of_birth: dob,
       };
 
-      console.info("Onboarding profile payload", payload, {
-        profileId: profile?.id,
-        isNewProfile: !profile?.id,
-      });
-
       let savedProfile;
 
       if (profile?.id) {
         try {
           savedProfile = await updateProfile.mutateAsync(payload);
         } catch (err) {
-          // Profile may have been deleted or not yet created on backend.
           if (err instanceof ApiRequestError && err.isNotFound) {
-            savedProfile = await createProfile.mutateAsync({
-              ...payload,
-           
-            });
+            savedProfile = await createProfile.mutateAsync({ ...payload });
           } else {
             throw err;
           }
         }
       } else {
         try {
-          savedProfile = await createProfile.mutateAsync({
-            ...payload,
-           
-          });
+          savedProfile = await createProfile.mutateAsync({ ...payload });
         } catch (err) {
-          // If profile already exists, backend may return conflict/validation.
           if (err instanceof ApiRequestError && (err.status === 409 || err.status === 422)) {
             savedProfile = await updateProfile.mutateAsync(payload);
           } else {
@@ -231,12 +232,12 @@ export default function ProfileSetupScreen() {
         }
       }
 
-     try {
+      try {
         await submitConsentEvents(savedProfile.user_id, effectiveClerkUserId, selectedConsents);
       } catch (consentErr) {
-        // Profile save should not be blocked if consent sync endpoint is temporarily unavailable.
         console.error("Profile saved but consent sync failed:", consentErr);
       }
+      
       if (!activePregnancy) {
         router.replace("/onboarding/new-pregnancy");
       } else {
@@ -245,10 +246,8 @@ export default function ProfileSetupScreen() {
 
     } catch (err: any) {
       if (err instanceof ApiRequestError) {
-        console.error("Failed to save profile:", err.status, err.code, err.body);
         setFormError(`An error occurred while saving (${err.status}). Please try again.`);
       } else {
-        console.error("Failed to save profile:", err);
         setFormError("An error occurred while saving. Please try again.");
       }
     } finally {
@@ -266,7 +265,7 @@ export default function ProfileSetupScreen() {
     await persistProfileAndConsents(allOn as Record<ConsentTier, boolean>);
   }
   
-   if (isPending || isPregnancyPending) {
+  if (isPending || isPregnancyPending) {
     return (
       <View style={[styles.screen, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={colors.rose[500]} />
@@ -301,7 +300,7 @@ export default function ProfileSetupScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="Sarah"
-                  placeholderTextColor={AUTH_UI.textBlack}
+                  placeholderTextColor={colors.gray[400]}
                   value={form.firstName}
                   onChangeText={(v) => setForm({ ...form, firstName: v })}
                 />
@@ -311,28 +310,21 @@ export default function ProfileSetupScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="Thompson"
-                  placeholderTextColor={AUTH_UI.textBlack}
+                  placeholderTextColor={colors.gray[400]}
                   value={form.lastName}
                   onChangeText={(v) => setForm({ ...form, lastName: v })}
                 />
               </View>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Date of birth</Text>
-              <View style={styles.inputWithIcon}>
-                <Ionicons name="calendar-outline" size={18} color={AUTH_UI.textBlack} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={AUTH_UI.textBlack}
-                  value={form.dob}
-                  onChangeText={(v) => setForm({ ...form, dob: v })}
-                />
-              </View>
-            </View>
-
-           
+            {/* ── USED HERE AS A CLEAN IMPORTED COMPONENT ────────────────────── */}
+            <DatePickerInput
+              label="Date of birth"
+              value={form.dob}
+              placeholder="YYYY-MM-DD"
+              maximumDate={maxDobDate}
+              onChange={(formattedDate) => setForm({ ...form, dob: formattedDate })}
+            />
 
             <View style={styles.consentGroup}>
               <Text style={styles.consentHeading}>Customize your experience</Text>
@@ -468,10 +460,7 @@ const styles = StyleSheet.create({
   rowStack: { flexDirection: "column", gap: 10 },
   inputGroup: { gap: 8 },
   label: { fontSize: 14, fontWeight: "600", color: AUTH_UI.textBlack, marginLeft: 2, fontFamily: FONT_FRIENDLY_SANS },
-  inputHint: { fontSize: 13, color: AUTH_UI.textBlack, marginLeft: 2, lineHeight: 20, fontFamily: FONT_FRIENDLY_SANS },
   input: { flex: 1, backgroundColor: AUTH_UI.textWhite, borderRadius: AUTH_UI.inputRadius, paddingHorizontal: AUTH_UI.fieldPaddingX, paddingVertical: AUTH_UI.fieldPaddingY, fontSize: 16, color: AUTH_UI.textBlack, borderWidth: AUTH_UI.borderWidth, borderColor: colors.rose[200], fontFamily: FONT_FRIENDLY_SANS },
-  inputWithIcon: { flexDirection: "row", alignItems: "center", backgroundColor: AUTH_UI.textWhite, borderRadius: AUTH_UI.inputRadius, borderWidth: AUTH_UI.borderWidth, borderColor: colors.rose[200] },
-  inputIcon: { marginLeft: 15 },
   consentGroup: { gap: 14, marginTop: 10, marginBottom: 8 },
   consentHeading: { fontSize: 24, fontWeight: "800", color: AUTH_UI.textHeading, fontFamily: FONT_WARM_SERIF },
   consentSubheading: { fontSize: 15, color: AUTH_UI.textBlack, lineHeight: 24, fontFamily: FONT_FRIENDLY_SANS },
@@ -491,18 +480,7 @@ const styles = StyleSheet.create({
     backgroundColor: AUTH_UI.textWhite,
   },
   secondaryConsentActionText: { color: AUTH_UI.linkBerry, fontSize: 16, fontWeight: "800", fontFamily: FONT_FRIENDLY_SANS },
-  authHintRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    marginTop: 4,
-  },
-  authHintText: {
-    color: AUTH_UI.textBlack,
-    fontSize: 13,
-    fontWeight: "600",
-    fontFamily: FONT_FRIENDLY_SANS,
-  },
+  authHintRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 4 },
+  authHintText: { color: AUTH_UI.textBlack, fontSize: 13, fontWeight: "600", fontFamily: FONT_FRIENDLY_SANS },
   submitBtnDisabled: { opacity: 0.72 },
 });
